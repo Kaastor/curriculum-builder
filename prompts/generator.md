@@ -21,9 +21,12 @@ The graph must satisfy these properties:
 | Constraint | Value |
 |---|---|
 | Maximum graph depth (layers) | **5** (layers 0–4) |
-| Target node count | **15–25 nodes** |
+| Target node count | **18–25 nodes** |
 | Maximum prerequisites per node | **3** (introduce intermediate node if exceeded) |
 | Maximum recursion depth in generation | **5** (stop expanding prerequisites beyond layer 0) |
+| Debug/read exercises | **2–3 nodes** at layers 3–4 |
+| Capstone exercises | **exactly 1** at layer 4 |
+| Exercise types | `write`, `debug`, `read`, `integrate` |
 
 ### Node Schema
 
@@ -31,16 +34,18 @@ Every node in the graph is an **actionable learning exercise** with exactly thes
 
 | Field | Type | Description |
 |---|---|---|
-| `id` | `string` | Unique identifier. Prefix by category: `F` = foundation, `S` = selection, `O` = ordering, `A` = arguments, `R` = output (R for "read results"), `H` = hallucination, `V` = avoidance |
+| `id` | `string` | Unique identifier. Prefix by category: `F` = foundation, `S` = selection, `O` = ordering, `A` = arguments, `R` = output (R for "read results"), `H` = hallucination, `V` = avoidance, `D` = debug/read, `C` = capstone |
 | `title` | `string` | Short name (3–7 words) |
-| `category` | `enum` | One of: `foundation`, `selection`, `ordering`, `arguments`, `output`, `hallucination`, `avoidance` |
+| `category` | `enum` | One of: `foundation`, `selection`, `ordering`, `arguments`, `output`, `hallucination`, `avoidance`, `debug`, `capstone` |
 | `layer` | `int` | 0–4. Layer 0 = no prerequisites. Layer N depends only on layers 0 to N-1 |
 | `difficulty` | `enum` | `beginner`, `intermediate`, `advanced` |
 | `estimated_time_minutes` | `int` | Expected time to complete (30–90 minutes) |
+| `exercise_type` | `enum` | `write` = build from scratch, `debug` = find and fix bugs in provided code, `read` = analyze existing code and answer questions, `integrate` = combine multiple earlier exercises into one system |
 | `failure_mode` | `string` | What goes wrong if you skip this? One sentence |
-| `exercise` | `string` | "Write a Python file (~50-150 lines) that [does X]." |
+| `exercise` | `string` | For `write`/`integrate`: "Write a Python file (~50-150 lines) that [does X]." For `debug`: "Here is a broken tool system. Find [N] bugs and explain what failure mode each creates." For `read`: "Read [file] and map each [component] to [concept]." |
 | `pass_condition` | `string` | "Passes when [observable outcome]." |
 | `fail_condition` | `string` | "Fails when [observable outcome]." |
+| `reference_hint` | `string` | A brief hint revealed *after* the learner completes the exercise, pointing to the key design insight or a common mistake. Phrased as: "Compare your solution: [insight]." |
 | `prerequisites` | `string[]` | Node IDs that must be completed first (max 3) |
 | `dependents` | `string[]` | Node IDs that depend on this node (reverse of prerequisites) |
 | `teaches` | `string` | One sentence: what the learner understands after completing this |
@@ -48,7 +53,7 @@ Every node in the graph is an **actionable learning exercise** with exactly thes
 | `tags` | `string[]` | Freeform tags for filtering |
 | `skeleton_file` | `string` | Path for future scaffold file (e.g., `exercises/F1_define_tool.py`). Do NOT generate the file — only name it |
 
-**No other fields.** Do not add fields not listed above.
+**No other fields.** Do not add fields not listed above (18 fields total).
 
 ### Termination Criterion
 
@@ -69,6 +74,12 @@ If the exercise requires understanding a concept that hasn't been introduced by 
 4. **Concrete, not abstract.** Exercises use a realistic but simple domain: a **flight booking agent** with tools like `search_flights`, `reserve_seat`, `process_payment`, `send_confirmation`. This grounds every concept in something tangible.
 
 5. **No LLM required.** All exercises use deterministic, scripted "agents" (like the `ScriptedProposer` in `agent-runtime`). The point is to learn the *infrastructure* that makes tool use reliable, not to train a model.
+
+6. **Reading and debugging exercises.** Include 2-3 nodes with `exercise_type: "debug"` or `"read"` at layers 3-4. These present the learner with *existing code* (broken or production-grade) rather than asking them to write from scratch. At least one debug node should present a broken tool system with multiple bugs that map to earlier failure modes. At least one read node should reference actual `agent-runtime` files (`contracts.py`, `envelope.py`, or `noisy.py`) and ask the learner to map components to concepts from earlier exercises.
+
+7. **Capstone integration.** The final node (layer 4) must have `exercise_type: "integrate"` and `category: "capstone"`. It combines registry, validation, ordering, and output checking into a single system (~200 lines). The learner runs a scripted adversarial agent against it and reports which failure modes their system catches vs. misses. This is the synthesis step.
+
+8. **Reference hints for self-feedback.** Every node must include a `reference_hint` — a post-completion insight revealed *after* the learner finishes. This is not the answer; it's the "aha" moment: a design decision they might have missed, a common mistake, or a pointer to how `agent-runtime` solves the same problem. Phrased as: "Compare your solution: [insight]."
 
 ---
 
@@ -185,6 +196,8 @@ Top-level structure:
 | `R` | output (reading results) | Milestones use `MS` |
 | `H` | hallucination | — |
 | `V` | avoidance | — |
+| `D` | debug/read exercises | — |
+| `C` | capstone | — |
 | `MS` | milestones | Output nodes use `R` |
 
 **Never reuse a prefix across categories.**
@@ -226,9 +239,12 @@ The curriculum exercises should teach the *concepts* that motivate these impleme
 
 Before producing the final JSON, verify every item:
 
-- [ ] Every node has exactly the 16 fields listed in Node Schema — no more, no less
+- [ ] Every node has exactly the 18 fields listed in Node Schema — no more, no less
 - [ ] No node requires concepts not covered by its predecessors
 - [ ] `dependents` is the exact inverse of `prerequisites` across all nodes
+- [ ] At least 2 nodes have `exercise_type` of `debug` or `read` (at layers 3-4)
+- [ ] Exactly 1 node has `exercise_type: "integrate"` and `category: "capstone"` (at layer 4)
+- [ ] Every node has a non-empty `reference_hint` (min 20 characters)
 - [ ] All IDs in `prerequisites`, `dependents`, edges, milestones, and `coverage_map` exist in `nodes`
 - [ ] No ID prefix collision (`R` for output nodes, `MS` for milestones)
 - [ ] `layer` values are 0–4 (max depth 5)

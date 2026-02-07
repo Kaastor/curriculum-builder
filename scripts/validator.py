@@ -23,9 +23,12 @@ from collections import defaultdict
 VALID_CATEGORIES = {
     "foundation", "selection", "ordering",
     "arguments", "output", "hallucination", "avoidance",
+    "debug", "capstone",
 }
 
 VALID_DIFFICULTIES = {"beginner", "intermediate", "advanced"}
+
+VALID_EXERCISE_TYPES = {"write", "debug", "read", "integrate"}
 
 CATEGORY_PREFIXES = {
     "foundation": "F",
@@ -35,14 +38,16 @@ CATEGORY_PREFIXES = {
     "output": "R",
     "hallucination": "H",
     "avoidance": "V",
+    "debug": "D",
+    "capstone": "C",
 }
 
 REQUIRED_NODE_FIELDS = {
     "id", "title", "category", "layer", "difficulty",
-    "estimated_time_minutes", "failure_mode", "exercise",
-    "pass_condition", "fail_condition", "prerequisites",
-    "dependents", "teaches", "connects_to_field_map",
-    "tags", "skeleton_file",
+    "estimated_time_minutes", "exercise_type", "failure_mode",
+    "exercise", "pass_condition", "fail_condition",
+    "reference_hint", "prerequisites", "dependents",
+    "teaches", "connects_to_field_map", "tags", "skeleton_file",
 }
 
 REQUIRED_COVERAGE_KEYS = {
@@ -55,7 +60,7 @@ REQUIRED_COVERAGE_KEYS = {
 }
 
 MAX_LAYER = 4
-MIN_NODES = 15
+MIN_NODES = 18
 MAX_NODES = 25
 MAX_PREREQS = 3
 TIME_MIN = 30
@@ -204,7 +209,7 @@ def check_id_prefixes(nodes: list, r: ValidationResult):
 
 
 def check_enums(nodes: list, r: ValidationResult):
-    """Category and difficulty values are valid enums."""
+    """Category, difficulty, and exercise_type values are valid enums."""
     errors = 0
     for node in nodes:
         nid = node.get("id", "???")
@@ -216,8 +221,65 @@ def check_enums(nodes: list, r: ValidationResult):
         if diff not in VALID_DIFFICULTIES:
             r.fail(f"Node {nid}: invalid difficulty '{diff}'")
             errors += 1
+        etype = node.get("exercise_type")
+        if etype not in VALID_EXERCISE_TYPES:
+            r.fail(f"Node {nid}: invalid exercise_type '{etype}'")
+            errors += 1
     if errors == 0:
-        r.ok("All category and difficulty values valid")
+        r.ok("All category, difficulty, and exercise_type values valid")
+
+
+def check_exercise_type_distribution(nodes: list, r: ValidationResult):
+    """Verify debug/read and capstone exercise requirements."""
+    debug_read = [n for n in nodes if n.get("exercise_type") in ("debug", "read")]
+    capstone = [n for n in nodes if n.get("exercise_type") == "integrate"]
+    errors = 0
+
+    # 2-3 debug/read nodes at layers 3-4
+    if len(debug_read) < 2:
+        r.fail(f"Only {len(debug_read)} debug/read nodes — need at least 2")
+        errors += 1
+    elif len(debug_read) > 3:
+        r.warn(f"{len(debug_read)} debug/read nodes — expected 2-3")
+    else:
+        r.ok(f"{len(debug_read)} debug/read nodes (within 2-3 range)")
+
+    for node in debug_read:
+        layer = node.get("layer", 0)
+        if layer < 3:
+            r.fail(
+                f"Debug/read node {node['id']} at layer {layer} "
+                f"— should be at layer 3 or 4"
+            )
+            errors += 1
+
+    # Exactly 1 capstone at layer 4
+    if len(capstone) != 1:
+        r.fail(f"{len(capstone)} capstone (integrate) nodes — need exactly 1")
+        errors += 1
+    else:
+        cap = capstone[0]
+        if cap.get("layer") != 4:
+            r.fail(f"Capstone {cap['id']} at layer {cap.get('layer')} — must be layer 4")
+            errors += 1
+        if cap.get("category") != "capstone":
+            r.fail(f"Capstone {cap['id']} has category '{cap.get('category')}' — must be 'capstone'")
+            errors += 1
+        if errors == 0:
+            r.ok(f"Capstone node {cap['id']} correctly placed at layer 4")
+
+
+def check_reference_hints(nodes: list, r: ValidationResult):
+    """Every node must have a non-trivial reference_hint."""
+    errors = 0
+    for node in nodes:
+        nid = node["id"]
+        hint = node.get("reference_hint", "")
+        if not hint or len(hint.strip()) < 20:
+            r.fail(f"Node {nid}: reference_hint is missing or too short ({len(hint.strip())} chars)")
+            errors += 1
+    if errors == 0:
+        r.ok("All nodes have non-trivial reference_hint (≥20 chars)")
 
 
 def check_layers(nodes: list, r: ValidationResult):
@@ -508,7 +570,7 @@ def check_string_quality(nodes: list, r: ValidationResult):
     errors = 0
     for node in nodes:
         nid = node["id"]
-        for field in ("exercise", "pass_condition", "fail_condition", "failure_mode", "teaches"):
+        for field in ("exercise", "pass_condition", "fail_condition", "failure_mode", "teaches", "reference_hint"):
             val = node.get(field, "")
             if not val or len(val.strip()) < 10:
                 r.warn(f"Node {nid}: '{field}' is too short or empty: '{val}'")
@@ -541,6 +603,8 @@ def validate(path: Path) -> ValidationResult:
     check_node_schema(nodes, r)
     check_id_prefixes(nodes, r)
     check_enums(nodes, r)
+    check_exercise_type_distribution(nodes, r)
+    check_reference_hints(nodes, r)
     check_layers(nodes, r)
     check_time_estimates(nodes, r)
     check_prerequisite_count(nodes, r)
