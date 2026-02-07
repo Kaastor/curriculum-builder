@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Curriculum Inspector</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="bg-orb orb-1" aria-hidden="true"></div>
+    <div class="bg-orb orb-2" aria-hidden="true"></div>
+
+    <div class="app-shell">
+      <header class="topbar panel">
+        <div>
+          <p class="eyebrow">Agentic Reliability</p>
+          <h1>Curriculum Inspector</h1>
+          <p class="subtitle">
+            Inspect graph quality, dependencies, and learning flow for
+            <code>prompts/generator.md</code> outputs.
+          </p>
+        </div>
+      </header>
+
+      <div class="workspace">
+        <aside class="panel controls">
+          <h2>Data Source</h2>
+          <p class="help-text">
+            Load generated curriculum JSON or use the mock dataset.
+          </p>
+          <div class="button-group">
+            <button id="loadDefaultBtn" type="button">Load data/curriculum.json</button>
+            <button id="loadMockBtn" type="button">Load mock dataset</button>
+          </div>
+          <label class="file-input-label" for="fileInput">Load local file</label>
+          <input id="fileInput" type="file" accept="application/json" />
+
+          <h2>Filters</h2>
+          <label for="searchInput">Search</label>
+          <input id="searchInput" type="search" placeholder="Find by id, title, or text" />
+
+          <div class="filter-block">
+            <h3>Layer</h3>
+            <div id="layerFilters" class="chip-grid"></div>
+          </div>
+
+          <div class="filter-block">
+            <h3>Category</h3>
+            <div id="categoryFilters" class="chip-grid"></div>
+          </div>
+
+          <div class="filter-block">
+            <h3>Exercise Type</h3>
+            <div id="typeFilters" class="chip-grid"></div>
+          </div>
+        </aside>
+
+        <main class="panel main-content">
+          <div id="statusBanner" class="status-banner" role="status"></div>
+
+          <section>
+            <h2>Overview</h2>
+            <div id="metricCards" class="metric-grid"></div>
+          </section>
+
+          <section>
+            <div class="section-header">
+              <h2>Layer Explorer</h2>
+              <p id="visibleCount" class="muted"></p>
+            </div>
+            <div id="layerExplorer" class="layer-explorer"></div>
+          </section>
+
+          <section>
+            <h2>Node Inventory</h2>
+            <div id="nodeTable"></div>
+          </section>
+
+          <section>
+            <h2>Coverage Map</h2>
+            <div id="coverageMap" class="coverage-grid"></div>
+          </section>
+
+          <section>
+            <h2>Learning Path</h2>
+            <div id="learningPath" class="path-list"></div>
+          </section>
+
+          <section>
+            <h2>Milestones</h2>
+            <div id="milestones" class="milestone-grid"></div>
+          </section>
+        </main>
+
+        <aside class="panel details">
+          <h2>Node Details</h2>
+          <div id="nodeDetails" class="details-body"></div>
+        </aside>
+      </div>
+    </div>
+
+    <script type="module" src="./main.js"></script>
+  </body>
+</html>

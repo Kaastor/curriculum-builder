@@ -71,8 +71,9 @@ Do the exercises actually teach what the coverage_map claims?
 
 Would completing this curriculum prepare someone to understand production tool-use reliability?
 
-- Do exercises model realistic failure scenarios?
-- After completing all nodes, could the learner read `agent-runtime`'s `contracts.py`, `envelope.py`, and `noisy.py` and understand the design decisions?
+- Do exercises model realistic failure scenarios (not toy examples)?
+- After completing all nodes, could the learner read *any* production tool-governance codebase (registry, contract validation, envelope parsing, adversarial testing) and understand the design decisions?
+- Are the five core patterns covered: closed intent set, parameter validation, structured parsing, adversarial stress-testing, output validation?
 - Are there any important practical concepts completely missing?
 
 ---

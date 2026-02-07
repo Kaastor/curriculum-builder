@@ -73,13 +73,13 @@ If the exercise requires understanding a concept that hasn't been introduced by 
 
 4. **Concrete, not abstract.** Exercises use a realistic but simple domain: a **flight booking agent** with tools like `search_flights`, `reserve_seat`, `process_payment`, `send_confirmation`. This grounds every concept in something tangible.
 
-5. **No LLM required.** All exercises use deterministic, scripted "agents" (like the `ScriptedProposer` in `agent-runtime`). The point is to learn the *infrastructure* that makes tool use reliable, not to train a model.
+5. **No LLM required.** All exercises use deterministic, scripted agents — hard-coded sequences of tool calls that let the learner control exactly what happens. The point is to learn the *infrastructure* that makes tool use reliable, not to train a model.
 
-6. **Reading and debugging exercises.** Include 2-3 nodes with `exercise_type: "debug"` or `"read"` at layers 3-4. These present the learner with *existing code* (broken or production-grade) rather than asking them to write from scratch. At least one debug node should present a broken tool system with multiple bugs that map to earlier failure modes. At least one read node should reference actual `agent-runtime` files (`contracts.py`, `envelope.py`, or `noisy.py`) and ask the learner to map components to concepts from earlier exercises.
+6. **Reading and debugging exercises.** Include 2-3 nodes with `exercise_type: "debug"` or `"read"` at layers 3-4. These present the learner with *existing code* (broken or production-grade) rather than asking them to write from scratch. At least one debug node should present a broken tool system with multiple bugs that map to earlier failure modes. At least one read node should provide a well-structured reference implementation and ask the learner to map components to concepts from earlier exercises. All code for debug/read exercises must be self-contained — provided inline or generated as part of the exercise, not referencing external repositories.
 
 7. **Capstone integration.** The final node (layer 4) must have `exercise_type: "integrate"` and `category: "capstone"`. It combines registry, validation, ordering, and output checking into a single system (~200 lines). The learner runs a scripted adversarial agent against it and reports which failure modes their system catches vs. misses. This is the synthesis step.
 
-8. **Reference hints for self-feedback.** Every node must include a `reference_hint` — a post-completion insight revealed *after* the learner finishes. This is not the answer; it's the "aha" moment: a design decision they might have missed, a common mistake, or a pointer to how `agent-runtime` solves the same problem. Phrased as: "Compare your solution: [insight]."
+8. **Reference hints for self-feedback.** Every node must include a `reference_hint` — a post-completion insight revealed *after* the learner finishes. This is not the answer; it's the "aha" moment: a design decision they might have missed, a common mistake, or a general design principle that production systems use to solve the same problem. Phrased as: "Compare your solution: [insight]."
 
 ---
 
@@ -221,17 +221,17 @@ Top-level structure:
 >
 > This is "function calling / tool selection correctness." It's separate from tool *fault tolerance*.
 
-### Existing Implementation Reference
+### Design Patterns to Cover
 
-The `agent-runtime` repository already implements Domain 1 at the governance level:
+Production tool-use governance systems typically implement these patterns. The curriculum should teach the *concepts* that motivate them:
 
-- `ContractRegistry` — closed intent set, rejects unknown tools
-- `ParamRule` — type and value validation on tool parameters
-- `EnvelopeParser` — structured parsing of unstructured proposals
-- `NoisyProposer` — adversarial stress-testing of tool-use correctness
-- `quorum_validator` — multi-source output validation
+- **Closed intent set** — a registry that only allows known tools, rejecting everything else
+- **Parameter validation** — type and value constraints on tool arguments before execution
+- **Structured parsing** — converting unstructured agent output into typed tool-call envelopes
+- **Adversarial stress-testing** — injecting malformed, reordered, or hallucinated tool calls to verify defenses
+- **Output validation** — checking tool results for consistency before acting on them
 
-The curriculum exercises should teach the *concepts* that motivate these implementations. A learner who completes all nodes should be able to read the `agent-runtime` code and understand every design decision.
+A learner who completes all nodes should understand each of these patterns well enough to recognize them in any production codebase.
 
 ---
 
