@@ -20,7 +20,7 @@ and measurable mastery outcomes.
 ## Task
 
 Generate a `curriculum.json` DAG of actionable exercises for the specified coding topic.
-The graph must be coherent, testable, and suitable for downstream repository generation.
+The graph must be coherent, testable, and suitable for downstream structural and pedagogical review.
 
 ---
 
@@ -47,7 +47,7 @@ Read from `topic_spec.constraints` (with defaults from topic spec contract):
 - `TARGET_HOURS_MIN`, `TARGET_HOURS_MAX`
 
 Read from `topic_spec.assessment`:
-- `TRANSFER_REQUIRED`
+- `TRANSFER_REQUIRED` (from `transfer_deliverable_required`, or legacy `transfer_task_required`)
 - `CAPSTONE_REQUIRED_FAILURE_MODES`
 - `MAX_UNCAUGHT_FAILURE_MODES`
 

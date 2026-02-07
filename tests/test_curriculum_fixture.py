@@ -8,7 +8,6 @@ from scripts.validator import validate
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_CURRICULUM = ROOT / "data" / "curriculum.json"
-MOCK_CURRICULUM = ROOT / "data" / "reliability" / "curriculum.mock.json"
 
 
 class CurriculumFixtureTests(unittest.TestCase):
@@ -143,7 +142,7 @@ class CurriculumFixtureTests(unittest.TestCase):
             "design_patterns": [],
             "assessment": {
                 "mastery_threshold": "Capstone blocks required failure modes.",
-                "transfer_task_required": False,
+                "transfer_deliverable_required": False,
                 "capstone_required_failure_modes": ["wrong_call_order"],
                 "max_uncaught_failure_modes": 1,
             },
@@ -162,11 +161,6 @@ class CurriculumFixtureTests(unittest.TestCase):
                 "target_total_hours_min": 12,
                 "target_total_hours_max": 24,
             },
-            "repo_preferences": {
-                "repo_name": "tool-use-learning",
-                "package_name": "tool_use_learning",
-                "use_makefile": True,
-            },
         }
 
     def test_default_curriculum_passes_validator(self):
@@ -174,17 +168,6 @@ class CurriculumFixtureTests(unittest.TestCase):
         self.assertTrue(
             result.success,
             msg="Default curriculum failed validator:\n" + "\n".join(result.failed),
-        )
-
-    def test_mock_curriculum_matches_default(self):
-        default_data = json.loads(DEFAULT_CURRICULUM.read_text())
-        mock_data = json.loads(MOCK_CURRICULUM.read_text())
-
-        self.assertEqual(default_data["nodes"], mock_data["nodes"])
-        self.assertEqual(default_data["edges"], mock_data["edges"])
-        self.assertEqual(default_data["coverage_map"], mock_data["coverage_map"])
-        self.assertEqual(
-            default_data["pattern_coverage_map"], mock_data["pattern_coverage_map"]
         )
 
     def test_pattern_coverage_map_required_when_topic_spec_declares_patterns(self):
@@ -224,8 +207,7 @@ class CurriculumFixtureTests(unittest.TestCase):
 
             topic_spec.pop("spec_version", None)
             topic_spec.pop("constraints", None)
-            topic_spec.pop("repo_preferences", None)
-            topic_spec["assessment"].pop("transfer_task_required", None)
+            topic_spec["assessment"].pop("transfer_deliverable_required", None)
             topic_spec["assessment"].pop("max_uncaught_failure_modes", None)
 
             topic_spec_path.write_text(json.dumps(topic_spec), encoding="utf-8")

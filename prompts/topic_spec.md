@@ -8,7 +8,7 @@ It defines topic scope, constraints, quality bars, and assessment targets.
 Used by:
 - `prompts/curriculum_generator.md`
 - `prompts/curriculum_validator.md`
-- `prompts/repo_generator.md`
+- `prompts/structural_validator.md`
 - `prompts/workflow.md`
 
 ---
@@ -73,13 +73,8 @@ Used by:
   "assessment": {
     "capstone_required_failure_modes": ["failure_mode_keys"],
     "mastery_threshold": "Objective pass threshold",
-    "transfer_task_required": true,
+    "transfer_deliverable_required": true,
     "max_uncaught_failure_modes": 1
-  },
-  "repo_preferences": {
-    "repo_name": "optional-repo-name",
-    "package_name": "optional_package_name",
-    "use_makefile": true
   }
 }
 ```
@@ -100,7 +95,7 @@ Used by:
 10. `constraints.node_count_min <= constraints.node_count_max`.
 11. `constraints.debug_read_min <= constraints.debug_read_max`.
 12. `constraints.capstone_layer` must be in `[0, constraints.max_layers - 1]`.
-13. If `allow_external_services` is `false`, exercises and tests must be runnable offline.
+13. If `allow_external_services` is `false`, exercises must be runnable offline.
 14. `transfer_scenario` must differ materially from `scenario`.
 
 ---
@@ -121,9 +116,8 @@ Used by:
 - `constraints.allow_external_services`: `false`
 - `constraints.target_total_hours_min`: `12`
 - `constraints.target_total_hours_max`: `24`
-- `assessment.transfer_task_required`: `true`
+- `assessment.transfer_deliverable_required`: `true`
 - `assessment.max_uncaught_failure_modes`: `1`
-- `repo_preferences.use_makefile`: `true`
 
 ---
 
@@ -240,14 +234,9 @@ Before running generators:
   },
   "assessment": {
     "capstone_required_failure_modes": ["fragile_assertions", "slow_feedback"],
-    "mastery_threshold": "Capstone passes and transfer suite >=80%.",
-    "transfer_task_required": true,
+    "mastery_threshold": "Capstone demonstrates required failure-mode coverage.",
+    "transfer_deliverable_required": true,
     "max_uncaught_failure_modes": 1
-  },
-  "repo_preferences": {
-    "repo_name": "python-testing-learning",
-    "package_name": "python_testing",
-    "use_makefile": true
   }
 }
 ```

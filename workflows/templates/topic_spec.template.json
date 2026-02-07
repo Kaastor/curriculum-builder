@@ -71,12 +71,7 @@
       "example_failure_mode"
     ],
     "mastery_threshold": "Define objective mastery criteria.",
-    "transfer_task_required": true,
+    "transfer_deliverable_required": true,
     "max_uncaught_failure_modes": 1
-  },
-  "repo_preferences": {
-    "repo_name": "optional-repo-name",
-    "package_name": "optional_package_name",
-    "use_makefile": true
   }
 }

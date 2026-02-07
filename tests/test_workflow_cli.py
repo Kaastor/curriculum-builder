@@ -182,13 +182,8 @@ class WorkflowCliTests(unittest.TestCase):
         topic_spec["assessment"] = {
             "capstone_required_failure_modes": ["wrong_call_order"],
             "mastery_threshold": "Capstone passes all reliability checks.",
-            "transfer_task_required": False,
+            "transfer_deliverable_required": False,
             "max_uncaught_failure_modes": 1,
-        }
-        topic_spec["repo_preferences"] = {
-            "repo_name": "tool-use-learning",
-            "package_name": "tool_use_learning",
-            "use_makefile": True,
         }
         topic_spec_path.write_text(json.dumps(topic_spec, indent=2) + "\n", encoding="utf-8")
 
@@ -208,7 +203,6 @@ class WorkflowCliTests(unittest.TestCase):
             self.assertTrue((run_dir / "inputs" / "automation.json").exists(), msg="Missing automation config")
             self.assertTrue((run_dir / "outputs" / "curriculum").exists(), msg="Missing curriculum output dir")
             self.assertTrue((run_dir / "outputs" / "reviews").exists(), msg="Missing reviews output dir")
-            self.assertTrue((run_dir / "outputs" / "repository").exists(), msg="Missing repository output dir")
             self.assertTrue((run_dir / "logs").exists(), msg="Missing logs dir")
 
     def test_validate_requires_ready_topic_spec(self):
@@ -312,52 +306,38 @@ class WorkflowCliTests(unittest.TestCase):
             self.assertNotEqual(0, failed.returncode, msg="Run should fail without configured commands")
             self.assertIn("curriculum_cmd is not configured", failed.stderr)
 
-    def test_run_requires_repo_gate_and_only_marks_done_after_gate(self):
+    def test_run_requires_pedagogical_review_command(self):
         with tempfile.TemporaryDirectory() as tmp_dir:
             env = self._env(tmp_dir)
-            self._run(env, "init", "Gate Required")
+            self._run(env, "init", "Pedagogical Command Required")
             run_dir = sorted((Path(tmp_dir) / "runs").iterdir())[0]
 
             topic_spec_path = run_dir / "inputs" / "topic_spec.json"
-            self._write_topic_spec_for_sample_curriculum(topic_spec_path, "gate_required_topic")
+            self._write_topic_spec_for_sample_curriculum(topic_spec_path, "pedag_required_topic")
 
             curriculum_path = run_dir / "outputs" / "curriculum" / "curriculum.json"
-            pedagogical_path = run_dir / "outputs" / "reviews" / "curriculum_review.md"
-            repo_path = run_dir / "outputs" / "repository" / "gate-required-learning"
 
             automation_path = run_dir / "inputs" / "automation.json"
             automation = json.loads(automation_path.read_text(encoding="utf-8"))
             automation["curriculum_cmd"] = (
                 f"cp {shlex.quote(str(SAMPLE_CURRICULUM))} {shlex.quote(str(curriculum_path))}"
             )
-            automation["pedagogical_review_cmd"] = (
-                f"printf '# pedagogical review\\n' > {shlex.quote(str(pedagogical_path))}"
-            )
-            automation["repo_generation_cmd"] = (
-                f"mkdir -p {shlex.quote(str(repo_path))} && "
-                f"printf 'repo\\n' > {shlex.quote(str(repo_path / 'README.md'))}"
-            )
-            automation["repo_path"] = str(repo_path.relative_to(run_dir))
-            automation["repo_gate_cmd"] = ""
+            automation["pedagogical_review_cmd"] = ""
             automation_path.write_text(json.dumps(automation, indent=2) + "\n", encoding="utf-8")
 
             failed = self._run(env, "run", run_dir.name, check=False)
             self.assertNotEqual(
                 0,
                 failed.returncode,
-                msg="Run should fail when repo gate command is not configured",
+                msg="Run should fail when pedagogical review command is not configured",
             )
-            self.assertIn("repo_gate_cmd is not configured", failed.stderr)
+            self.assertIn("pedagogical_review_cmd is not configured", failed.stderr)
 
             run_meta = json.loads((run_dir / "run.json").read_text(encoding="utf-8"))
             self.assertEqual(
-                "repo_generated",
+                "structurally_validated",
                 run_meta["stage"],
-                msg="Run should stop at repo_generated when final gate is not configured",
-            )
-            self.assertFalse(
-                (run_dir / "logs" / "final_gate.ok").exists(),
-                msg="Done marker must not be created when gate is skipped",
+                msg="Run should stop after structural validation if pedagogical command is missing",
             )
 
     def test_status_demotes_when_curriculum_changes_after_structural_pass(self):
@@ -391,7 +371,7 @@ class WorkflowCliTests(unittest.TestCase):
                 msg="Run stage should demote when curriculum changes after structural validation",
             )
 
-    def test_status_demotes_done_when_repo_changes_after_gate(self):
+    def test_status_demotes_done_when_pedagogical_review_removed(self):
         with tempfile.TemporaryDirectory() as tmp_dir:
             env = self._env(tmp_dir)
             self._run(env, "init", "Done Freshness")
@@ -402,8 +382,6 @@ class WorkflowCliTests(unittest.TestCase):
 
             curriculum_path = run_dir / "outputs" / "curriculum" / "curriculum.json"
             pedagogical_path = run_dir / "outputs" / "reviews" / "curriculum_review.md"
-            repo_path = run_dir / "outputs" / "repository" / "done-freshness-learning"
-            repo_readme = repo_path / "README.md"
 
             automation_path = run_dir / "inputs" / "automation.json"
             automation = json.loads(automation_path.read_text(encoding="utf-8"))
@@ -413,31 +391,25 @@ class WorkflowCliTests(unittest.TestCase):
             automation["pedagogical_review_cmd"] = (
                 f"printf '# pedagogical review\\n' > {shlex.quote(str(pedagogical_path))}"
             )
-            automation["repo_generation_cmd"] = (
-                f"mkdir -p {shlex.quote(str(repo_path))} && "
-                f"printf 'repo\\n' > {shlex.quote(str(repo_readme))}"
-            )
-            automation["repo_path"] = str(repo_path.relative_to(run_dir))
-            automation["repo_gate_cmd"] = "test -f README.md"
             automation_path.write_text(json.dumps(automation, indent=2) + "\n", encoding="utf-8")
 
             run_result = self._run(env, "run", run_dir.name)
-            self.assertIn("Workflow run completed and gated", run_result.stdout)
+            self.assertIn("Workflow run completed", run_result.stdout)
 
             run_meta = json.loads((run_dir / "run.json").read_text(encoding="utf-8"))
             self.assertEqual("done", run_meta["stage"])
 
             time.sleep(0.01)
-            repo_readme.write_text("repo changed\n", encoding="utf-8")
+            pedagogical_path.unlink()
 
             status = self._run(env, "status", run_dir.name)
-            self.assertIn("Stage: repo_generated", status.stdout)
+            self.assertIn("Stage: structurally_validated", status.stdout)
 
             run_meta = json.loads((run_dir / "run.json").read_text(encoding="utf-8"))
             self.assertEqual(
-                "repo_generated",
+                "structurally_validated",
                 run_meta["stage"],
-                msg="Run stage should demote when repo output changes after final gate",
+                msg="Run stage should demote when pedagogical review is removed",
             )
 
 

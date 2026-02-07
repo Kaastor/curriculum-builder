@@ -107,8 +107,6 @@ PLACEHOLDER_STRINGS = {
     "prerequisite 2",
     "what learner can do after completing this curriculum.",
     "define objective mastery criteria.",
-    "optional-repo-name",
-    "optional_package_name",
     "example failure mode",
     "example pattern",
 }
@@ -470,22 +468,17 @@ def validate_topic_spec_contract(topic_spec: dict[str, Any]) -> list[str]:
 
     if not _is_non_empty_str(assessment.get("mastery_threshold")):
         errors.append("assessment.mastery_threshold must be a non-empty string")
-    transfer_required = assessment.get("transfer_task_required", True)
+    transfer_required = assessment.get("transfer_deliverable_required")
+    if transfer_required is None:
+        transfer_required = assessment.get("transfer_task_required", True)
     if not isinstance(transfer_required, bool):
-        errors.append("assessment.transfer_task_required must be boolean")
+        errors.append(
+            "assessment.transfer_deliverable_required must be boolean "
+            "(or use legacy assessment.transfer_task_required)"
+        )
     max_uncaught = assessment.get("max_uncaught_failure_modes", 1)
     if not isinstance(max_uncaught, int):
         errors.append("assessment.max_uncaught_failure_modes must be int")
-
-    repo_preferences = topic_spec.get("repo_preferences", {})
-    if repo_preferences is None:
-        repo_preferences = {}
-    if not isinstance(repo_preferences, dict):
-        errors.append("repo_preferences must be an object")
-    else:
-        use_makefile = repo_preferences.get("use_makefile", True)
-        if not isinstance(use_makefile, bool):
-            errors.append("repo_preferences.use_makefile must be boolean")
 
     return errors
 
@@ -573,6 +566,10 @@ def build_validation_config(topic_spec: dict[str, Any] | None) -> ValidationConf
         if str(item).strip()
     }
 
+    transfer_required_raw = assessment.get("transfer_deliverable_required")
+    if transfer_required_raw is None:
+        transfer_required_raw = assessment.get("transfer_task_required", True)
+
     return ValidationConfig(
         valid_categories=valid_categories,
         category_prefixes=category_prefixes,
@@ -606,7 +603,7 @@ def build_validation_config(topic_spec: dict[str, Any] | None) -> ValidationConf
             constraints.get("target_total_hours_max"),
             DEFAULT_CONSTRAINTS["target_total_hours_max"],
         ),
-        transfer_required=bool(assessment.get("transfer_task_required", True)),
+        transfer_required=bool(transfer_required_raw),
         capstone_required_failure_modes=capstone_required_failure_modes,
         topic_spec_provided=True,
     )

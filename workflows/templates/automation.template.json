@@ -1,7 +1,4 @@
 {
   "curriculum_cmd": "<command that generates outputs/curriculum/curriculum.json>",
-  "pedagogical_review_cmd": "<command that generates outputs/reviews/curriculum_review.md>",
-  "repo_generation_cmd": "<command that generates outputs/repository/...>",
-  "repo_path": "outputs/repository/<topic-id>-learning",
-  "repo_gate_cmd": "make gate"
+  "pedagogical_review_cmd": "<command that generates outputs/reviews/curriculum_review.md>"
 }

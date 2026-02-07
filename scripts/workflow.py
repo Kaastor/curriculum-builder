@@ -26,8 +26,6 @@ STAGES = [
     "spec_ready",
     "curriculum_generated",
     "structurally_validated",
-    "pedagogically_validated",
-    "repo_generated",
     "done",
 ]
 STAGE_INDEX = {name: idx for idx, name in enumerate(STAGES)}
@@ -72,8 +70,6 @@ def required_paths(run_dir: Path) -> dict[str, Path]:
         "structural_review": run_dir / "outputs" / "reviews" / "structural_validation.md",
         "structural_pass_marker": run_dir / "logs" / "structural_validation.ok",
         "pedagogical_review": run_dir / "outputs" / "reviews" / "curriculum_review.md",
-        "repository_output": run_dir / "outputs" / "repository",
-        "done_marker": run_dir / "logs" / "final_gate.ok",
         "run_meta": run_dir / "run.json",
     }
 
@@ -112,12 +108,6 @@ def topic_spec_errors(topic_spec_path: Path) -> list[str]:
     except json.JSONDecodeError:
         return ["invalid JSON"]
     return validate_topic_spec_contract(payload)
-
-
-def has_repo_output(repo_out: Path) -> bool:
-    if not repo_out.exists():
-        return False
-    return any(repo_out.iterdir())
 
 
 def latest_mtime_ns(path: Path) -> int | None:
@@ -174,13 +164,6 @@ def structural_validation_is_current(paths: dict[str, Path]) -> bool:
     )
 
 
-def final_gate_is_current(paths: dict[str, Path]) -> bool:
-    return marker_is_current(
-        paths["done_marker"],
-        [paths["repository_output"]],
-    )
-
-
 def infer_stage_from_artifacts(run_dir: Path) -> str:
     paths = required_paths(run_dir)
     stage = "initialized"
@@ -192,10 +175,6 @@ def infer_stage_from_artifacts(run_dir: Path) -> str:
     if stage == "curriculum_generated" and structural_validation_is_current(paths):
         stage = "structurally_validated"
     if stage == "structurally_validated" and paths["pedagogical_review"].exists():
-        stage = "pedagogically_validated"
-    if stage == "pedagogically_validated" and has_repo_output(paths["repository_output"]):
-        stage = "repo_generated"
-    if stage == "repo_generated" and final_gate_is_current(paths):
         stage = "done"
 
     return stage
@@ -237,7 +216,6 @@ def cmd_init(args: argparse.Namespace) -> int:
     (run_dir / "references").mkdir(parents=True)
     (run_dir / "outputs" / "curriculum").mkdir(parents=True)
     (run_dir / "outputs" / "reviews").mkdir(parents=True)
-    (run_dir / "outputs" / "repository").mkdir(parents=True)
     (run_dir / "logs").mkdir(parents=True)
 
     shutil.copy2(spec_template, run_dir / "inputs" / "topic_spec.json")
@@ -285,8 +263,6 @@ def cmd_status(args: argparse.Namespace) -> int:
     print(f"Structural review: {'ok' if paths['structural_review'].exists() else 'missing'}")
     print(f"Structural pass marker: {'ok' if paths['structural_pass_marker'].exists() else 'missing'}")
     print(f"Pedagogical review: {'ok' if paths['pedagogical_review'].exists() else 'missing'}")
-    print(f"Repository output: {'ok' if has_repo_output(paths['repository_output']) else 'missing'}")
-    print(f"Done marker: {'ok' if paths['done_marker'].exists() else 'missing'}")
     return 0
 
 
@@ -304,11 +280,7 @@ def cmd_next(args: argparse.Namespace) -> int:
     elif stage == "curriculum_generated":
         print(f"Next: run structural validation -> python scripts/workflow.py validate {args.run_id}")
     elif stage == "structurally_validated":
-        print(f"Next: create pedagogical review at {p['pedagogical_review']}")
-    elif stage == "pedagogically_validated":
-        print(f"Next: generate repository into {p['repository_output']}")
-    elif stage == "repo_generated":
-        print("Next: run repository gate, then mark done by creating logs/final_gate.ok")
+        print(f"Next: create pedagogical review at {p['pedagogical_review']} (or run workflow.py run)")
     else:
         print("Run is complete.")
     return 0
@@ -430,9 +402,6 @@ def cmd_run(args: argparse.Namespace) -> int:
 
     curriculum_cmd = str(automation.get("curriculum_cmd", ""))
     pedagogical_cmd = str(automation.get("pedagogical_review_cmd", ""))
-    repo_cmd = str(automation.get("repo_generation_cmd", ""))
-    repo_gate_cmd = str(automation.get("repo_gate_cmd", ""))
-    repo_path_value = str(automation.get("repo_path", "")).strip()
 
     if not paths["curriculum"].exists():
         if not is_command_set(curriculum_cmd):
@@ -454,36 +423,10 @@ def cmd_run(args: argparse.Namespace) -> int:
     if not paths["pedagogical_review"].exists():
         raise SystemExit(f"Pedagogical review missing: {paths['pedagogical_review']}")
 
-    if not has_repo_output(paths["repository_output"]):
-        if not is_command_set(repo_cmd):
-            raise SystemExit("repo_generation_cmd is not configured in inputs/automation.json")
-        run_shell(repo_cmd, REPO_ROOT, logs_dir / "03_repo_generation.log")
-
-    if not has_repo_output(paths["repository_output"]):
-        raise SystemExit(f"Repository output missing under: {paths['repository_output']}")
-
-    if ensure_stage(meta, "repo_generated", "repository output generated"):
+    if ensure_stage(meta, "done", "workflow run completed through pedagogical review"):
         write_json(run_dir / "run.json", meta)
 
-    if repo_path_value:
-        repo_path = Path(repo_path_value)
-        if not repo_path.is_absolute():
-            repo_path = run_dir / repo_path
-    else:
-        raise SystemExit("repo_path is not configured in inputs/automation.json")
-
-    if not repo_path.exists():
-        raise SystemExit(f"Configured repo_path does not exist: {repo_path}")
-    if not is_command_set(repo_gate_cmd):
-        raise SystemExit("repo_gate_cmd is not configured in inputs/automation.json")
-
-    run_shell(repo_gate_cmd, repo_path, logs_dir / "04_repo_gate.log")
-    paths["done_marker"].write_text("ok\n", encoding="utf-8")
-
-    if ensure_stage(meta, "done", "workflow run completed and final gate passed"):
-        write_json(run_dir / "run.json", meta)
-
-    print(f"Workflow run completed and gated: {args.run_id}")
+    print(f"Workflow run completed: {args.run_id}")
     return 0
 
 

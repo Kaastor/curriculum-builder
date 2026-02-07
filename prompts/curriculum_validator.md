@@ -19,7 +19,7 @@ Your task is pedagogical and practical effectiveness review.
 
 ## Review Objective
 
-Determine whether this curriculum is ready for repository generation and learner execution.
+Determine whether this curriculum is ready for learner execution.
 
 You must evaluate:
 - prerequisite correctness
@@ -63,7 +63,7 @@ If a `WEAK`/`FAIL` has no node/area reference, the review is invalid.
 
 Assign severity to each issue:
 - `CRITICAL`: blocks learning progression or makes assessment invalid
-- `MAJOR`: meaningful quality risk; should be fixed before repo generation
+- `MAJOR`: meaningful quality risk; should be fixed before run completion
 - `MINOR`: improvement opportunity
 
 Readiness rule:

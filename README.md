@@ -4,14 +4,14 @@ A local system for building coding-learning workflows from prompt specs.
 
 This repository has two purposes:
 1. Inspect curriculum graphs in a static UI.
-2. Run a structured workflow that produces curriculum, reviews, and repository outputs per run.
+2. Run a structured workflow that produces curriculum and validation reviews per run.
 
 ## Repository Goal
 
 Create a repeatable process for turning a topic spec into:
 - a curriculum graph,
-- structural and pedagogical reviews,
-- a generated learning repository.
+- a structural validation report,
+- a pedagogical review.
 
 Each execution is isolated in its own run folder under `workflows/runs/<run_id>/`.
 
@@ -21,7 +21,6 @@ Each execution is isolated in its own run folder under `workflows/runs/<run_id>/
 - `curriculum.json`: generated learning DAG.
 - Structural validation: graph/schema/constraint correctness.
 - Pedagogical validation: learning quality and sequencing quality.
-- Repository generation: produce learner-facing exercises/tests/docs in phased mode (`plan`, `scaffold`, `full`).
 
 ## Single Workflow
 
@@ -30,8 +29,6 @@ Each execution is isolated in its own run folder under `workflows/runs/<run_id>/
 3. Generate curriculum.
 4. Run structural validation.
 5. Run pedagogical validation.
-6. Generate repository outputs.
-7. Run final quality gate in generated repository.
 
 Prompt guides for these stages:
 - `prompts/workflow.md`
@@ -39,7 +36,6 @@ Prompt guides for these stages:
 - `prompts/curriculum_generator.md`
 - `prompts/structural_validator.md`
 - `prompts/curriculum_validator.md`
-- `prompts/repo_generator.md`
 
 ## Workflow Diagrams
 
@@ -50,11 +46,9 @@ flowchart LR
     A[initialized] -->|topic_spec contract passes| B[spec_ready]
     B -->|outputs/curriculum/curriculum.json exists| C[curriculum_generated]
     C -->|validate passes and structural marker is current| D[structurally_validated]
-    D -->|outputs/reviews/curriculum_review.md exists| E[pedagogically_validated]
-    E -->|outputs/repository contains files| F[repo_generated]
-    F -->|repo gate passes and final marker is current| G[done]
+    D -->|outputs/reviews/curriculum_review.md exists| E[done]
     D -.->|curriculum or spec changed after structural marker| C
-    G -.->|repository changed after final marker| F
+    E -.->|pedagogical review removed| D
 ```
 
 `workflow.py run <run_id>` execution flow:
@@ -77,19 +71,8 @@ flowchart TD
     I -->|Yes| K[Skip pedagogical generation]
     J --> L{curriculum_review.md now exists?}
     L -->|No| X4[Fail: pedagogical review missing]
-    L -->|Yes| M{repository output exists?}
+    L -->|Yes| M[Set stage to done]
     K --> M
-    M -->|No| N[Run repo_generation_cmd]
-    M -->|Yes| O[Skip repo generation]
-    N --> P{repository output now exists?}
-    P -->|No| X5[Fail: repository output missing]
-    P -->|Yes| Q{repo_path exists and repo_gate_cmd set?}
-    O --> Q
-    Q -->|No| X6[Fail: repo path/gate config invalid]
-    Q -->|Yes| R[Run repo_gate_cmd in repo_path]
-    R --> S{gate passed?}
-    S -->|No| X7[Fail: repo gate failed]
-    S -->|Yes| T[Write final marker and set stage to done]
 ```
 
 ## Commands
@@ -150,9 +133,6 @@ Edit:
 Each field must be real (not placeholders):
 - `curriculum_cmd`: must create `workflows/runs/<run_id>/outputs/curriculum/curriculum.json`
 - `pedagogical_review_cmd`: must create `workflows/runs/<run_id>/outputs/reviews/curriculum_review.md`
-- `repo_generation_cmd`: must create files under `workflows/runs/<run_id>/outputs/repository/`
-- `repo_path`: path to generated repo (relative to run dir or absolute)
-- `repo_gate_cmd`: command run inside `repo_path` that must exit `0`
 
 4. Check readiness and next action.
 
@@ -206,15 +186,6 @@ make workflow-archive RUN_ID="<run_id>"
 - `pedagogical_review_cmd is not configured in inputs/automation.json`
   Fix: set a command that writes `outputs/reviews/curriculum_review.md`.
 
-- `repo_generation_cmd is not configured in inputs/automation.json`
-  Fix: set a command that creates files under `outputs/repository/`.
-
-- `repo_path is not configured in inputs/automation.json` or `Configured repo_path does not exist: ...`
-  Fix: point `repo_path` at the generated repository directory.
-
-- `repo_gate_cmd is not configured in inputs/automation.json`
-  Fix: set the final gate command (for example `make gate` if that generated repo supports it).
-
 ## Run Folder Layout
 
 Directory structure at a glance:
@@ -233,7 +204,6 @@ flowchart TD
     E --> E2[reviews/]
     E2 --> E2a[structural_validation.md]
     E2 --> E2b[curriculum_review.md]
-    E --> E3[repository/]
     A --> F[logs/]
 ```
 
@@ -247,10 +217,9 @@ workflows/runs/<run_id>/
 |- outputs/
 |  |- curriculum/
 |  |  `- curriculum.json
-|  |- reviews/
-|  |  |- structural_validation.md
-|  |  `- curriculum_review.md
-|  `- repository/
+|  `- reviews/
+|     |- structural_validation.md
+|     `- curriculum_review.md
 `- logs/
 ```
 
@@ -263,8 +232,6 @@ Run stages:
 - `spec_ready`
 - `curriculum_generated`
 - `structurally_validated`
-- `pedagogically_validated`
-- `repo_generated`
 - `done`
 
 `spec_ready` is reached only when `inputs/topic_spec.json` passes the topic spec contract checks (not just `topic_id`).
@@ -280,13 +247,9 @@ Template file:
 Expected command slots:
 - `curriculum_cmd`
 - `pedagogical_review_cmd`
-- `repo_generation_cmd`
-- `repo_path`
-- `repo_gate_cmd`
 
 Important:
-- `done` stage is reached only after `repo_gate_cmd` succeeds.
-- If `repo_gate_cmd` is missing, the run stops before completion and does not create `logs/final_gate.ok`.
+- `done` is reached when structural validation has passed and `curriculum_review.md` exists.
 - `workflow.py validate` runs structural checks against both curriculum JSON and run-specific topic spec.
 - `pattern_coverage_map` is always required in `curriculum.json` (use `{}` when no design patterns are defined).
 
@@ -306,7 +269,7 @@ You can load a local JSON via the app file picker.
 
 ## Maintenance
 
-When updating repository behavior:
+When updating workflow behavior:
 1. Keep workflow paths and README in sync.
 2. Keep `scripts/workflow.py` stage logic aligned with run artifacts.
 3. Keep prompt contracts aligned:
@@ -332,8 +295,9 @@ Gate currently checks:
 - `data/`: baseline curriculum JSON data.
 - `prompts/`: workflow prompts and contracts.
 - `scripts/`: validator, workflow CLI, and gate script.
-- `tests/`: regression tests for fixtures and tooling.
+- `tests/`: regression tests for data and tooling.
 - `workflows/`: templates and run outputs (run outputs are ignored).
+- `attic/`: parked/disabled assets not part of active workflow.
 
 ## What To Remove / Keep Clean
 
