@@ -69,6 +69,35 @@ Direct CLI equivalents:
 - `python3.11 scripts/workflow.py list`
 - `python3.11 scripts/validator.py <curriculum.json> --topic-spec <topic_spec.json>`
 
+## Generate a Curriculum
+
+This repository is centered on generating and iterating a curriculum DAG.
+
+1. Start a run:
+   - `make workflow-start RUN_NAME="bayesian-decision-making"`
+2. Get the new `run_id`:
+   - `make workflow-list`
+3. Fill topic contract:
+   - edit `workflows/runs/<run_id>/inputs/topic_spec.json`
+4. Generate curriculum in `Map` stage:
+   - write `workflows/runs/<run_id>/outputs/curriculum/curriculum.json` manually, or
+   - set `map_cmd` in `workflows/runs/<run_id>/inputs/automation.json` to call your generator/LLM script.
+5. Validate:
+   - `make workflow-validate RUN_ID="<run_id>"`
+6. Build plan:
+   - `make workflow-plan RUN_ID="<run_id>"`
+7. Create iteration diff:
+   - `make workflow-iterate RUN_ID="<run_id>"`
+
+End-to-end shortcut:
+- `make workflow-run RUN_ID="<run_id>"`
+
+Generated outputs:
+- `outputs/curriculum/curriculum.json`
+- `outputs/reviews/validation_report.md`
+- `outputs/plan/plan.json`
+- `outputs/reviews/diff_report.json`
+
 ## Automation Config
 
 `workflows/templates/automation.template.json`:
