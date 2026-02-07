@@ -1,13 +1,25 @@
 #!/usr/bin/env bash
 set -euo pipefail
 export PYTHONDONTWRITEBYTECODE=1
+PYTHON_BIN="${PYTHON_BIN:-python3.11}"
+
+if ! command -v "$PYTHON_BIN" >/dev/null 2>&1; then
+  echo "error: required Python interpreter not found: $PYTHON_BIN" >&2
+  exit 1
+fi
+
+"$PYTHON_BIN" - <<'PY'
+import sys
+if sys.version_info < (3, 11):
+    raise SystemExit("error: Python 3.11+ is required")
+PY
 
 echo "== syntax check =="
-python3 - <<'PY'
+"$PYTHON_BIN" - <<'PY'
 import ast
 from pathlib import Path
 
-for root in (Path("scripts"), Path("tests")):
+for root in (Path("scripts"), Path("learning_compiler"), Path("tests")):
     if not root.exists():
         continue
     for path in sorted(root.rglob("*.py")):
@@ -18,9 +30,9 @@ print("syntax-ok")
 PY
 
 echo "== curriculum validation =="
-python3 scripts/validator.py data/curriculum.json
+"$PYTHON_BIN" scripts/validator.py data/curriculum.json
 
 echo "== tests =="
-python3 -m unittest discover -s tests -p 'test_*.py'
+"$PYTHON_BIN" -m unittest discover -s tests -p 'test_*.py'
 
 echo "\n✅ gate passed"

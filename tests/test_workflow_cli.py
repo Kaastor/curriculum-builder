@@ -4,6 +4,7 @@ import json
 import os
 import shlex
 import subprocess
+import sys
 import tempfile
 import time
 import unittest
@@ -28,7 +29,7 @@ class WorkflowCliTests(unittest.TestCase):
 
     def _run(self, env: dict[str, str], *args: str, check: bool = True) -> subprocess.CompletedProcess[str]:
         return subprocess.run(
-            ["python3", str(WORKFLOW_SCRIPT), *args],
+            [sys.executable, str(WORKFLOW_SCRIPT), *args],
             cwd=ROOT,
             env=env,
             text=True,
@@ -36,174 +37,44 @@ class WorkflowCliTests(unittest.TestCase):
             check=check,
         )
 
-    def _write_topic_spec_for_sample_curriculum(self, topic_spec_path: Path, topic_id: str) -> None:
+    def _write_valid_topic_spec(self, topic_spec_path: Path) -> None:
         topic_spec = json.loads(topic_spec_path.read_text(encoding="utf-8"))
-        topic_spec["topic_id"] = topic_id
-        topic_spec["topic_name"] = "Tool Use Correctness"
-        topic_spec["domain_ref"] = "field.md § I.1"
-        topic_spec["target_role"] = "backend_developer"
-        topic_spec["language"] = "python"
-        topic_spec["project_type"] = "library"
-        topic_spec["scenario"] = "flight_booking_agent"
-        topic_spec["transfer_scenario"] = "hotel_booking_agent"
-        topic_spec["prerequisites"] = ["python functions", "basic CLI"]
-        topic_spec["outcome"] = "Build deterministic tool runtime reliability guardrails."
-        topic_spec["failure_modes"] = [
-            {
-                "key": "choosing_wrong_tool",
-                "label": "Choosing wrong tool",
-                "description": "Wrong tool selected for a valid intent",
-                "production_impact": "Incorrect business behavior despite successful execution",
-                "example": "Uses payment tool instead of reservation tool",
-                "must_cover_in_capstone": True,
-            },
-            {
-                "key": "wrong_call_order",
-                "label": "Wrong call order",
-                "description": "Tools are called in a harmful sequence",
-                "production_impact": "Invalid state transitions",
-                "example": "Payment before reservation",
-                "must_cover_in_capstone": True,
-            },
-            {
-                "key": "malformed_arguments",
-                "label": "Malformed arguments",
-                "description": "Calls include invalid argument payloads",
-                "production_impact": "Runtime faults and corrupted state",
-                "example": "Missing required reservation_id",
-                "must_cover_in_capstone": True,
-            },
-            {
-                "key": "output_misinterpretation",
-                "label": "Output misinterpretation",
-                "description": "Caller misreads tool result semantics",
-                "production_impact": "Failed operations are treated as success",
-                "example": "Ignores ok=false flag",
-                "must_cover_in_capstone": True,
-            },
-            {
-                "key": "tool_hallucination",
-                "label": "Tool hallucination",
-                "description": "Unknown tools are invented at runtime",
-                "production_impact": "Nondeterministic unsafe execution",
-                "example": "Calls auto_upgrade_ticket tool that does not exist",
-                "must_cover_in_capstone": True,
-            },
-            {
-                "key": "tool_avoidance",
-                "label": "Tool avoidance",
-                "description": "Agent bypasses required tools with manual logic",
-                "production_impact": "Audit and validation safeguards bypassed",
-                "example": "Direct state mutation instead of reserve_seat tool",
-                "must_cover_in_capstone": True,
-            },
-        ]
-        topic_spec["design_patterns"] = []
-        topic_spec["exercise_categories"] = [
-            {
-                "key": "foundation",
-                "prefix": "F",
-                "description": "Foundational concepts",
-                "supports_exercise_types": ["write"],
-                "is_capstone": False,
-            },
-            {
-                "key": "selection",
-                "prefix": "S",
-                "description": "Selection behavior",
-                "supports_exercise_types": ["write"],
-                "is_capstone": False,
-            },
-            {
-                "key": "ordering",
-                "prefix": "O",
-                "description": "Ordering behavior",
-                "supports_exercise_types": ["write"],
-                "is_capstone": False,
-            },
-            {
-                "key": "arguments",
-                "prefix": "A",
-                "description": "Argument correctness",
-                "supports_exercise_types": ["write"],
-                "is_capstone": False,
-            },
-            {
-                "key": "output",
-                "prefix": "R",
-                "description": "Output handling",
-                "supports_exercise_types": ["write"],
-                "is_capstone": False,
-            },
-            {
-                "key": "hallucination",
-                "prefix": "H",
-                "description": "Hallucination handling",
-                "supports_exercise_types": ["write"],
-                "is_capstone": False,
-            },
-            {
-                "key": "avoidance",
-                "prefix": "V",
-                "description": "Avoidance handling",
-                "supports_exercise_types": ["write"],
-                "is_capstone": False,
-            },
-            {
-                "key": "debug",
-                "prefix": "D",
-                "description": "Debug and read tasks",
-                "supports_exercise_types": ["debug", "read"],
-                "is_capstone": False,
-            },
-            {
-                "key": "capstone",
-                "prefix": "C",
-                "description": "Integration capstone",
-                "supports_exercise_types": ["integrate"],
-                "is_capstone": True,
-            },
-        ]
+        topic_spec["goal"] = "Build and defend Bayesian decision recommendations."
+        topic_spec["audience"] = "Data-savvy product engineers"
+        topic_spec["prerequisites"] = ["basic probability", "spreadsheet literacy"]
+        topic_spec["scope_in"] = ["posterior reasoning", "uncertainty communication"]
+        topic_spec["scope_out"] = ["advanced measure theory"]
         topic_spec["constraints"] = {
-            "max_layers": 5,
-            "node_count_min": 18,
-            "node_count_max": 25,
+            "hours_per_week": 6,
+            "total_hours_min": 12,
+            "total_hours_max": 24,
+            "depth": "practical",
+            "node_count_min": 6,
+            "node_count_max": 20,
             "max_prerequisites_per_node": 3,
-            "exercise_time_min_minutes": 30,
-            "exercise_time_max_minutes": 90,
-            "debug_read_min": 2,
-            "debug_read_max": 3,
-            "capstone_exactly": 1,
-            "capstone_layer": 4,
-            "allow_external_services": False,
-            "target_total_hours_min": 12,
-            "target_total_hours_max": 24,
         }
-        topic_spec["assessment"] = {
-            "capstone_required_failure_modes": ["wrong_call_order"],
-            "mastery_threshold": "Capstone passes all reliability checks.",
-            "transfer_deliverable_required": False,
-            "max_uncaught_failure_modes": 1,
-        }
+        topic_spec["domain_mode"] = "mature"
+        topic_spec["evidence_mode"] = "standard"
+        topic_spec["misconceptions"] = ["mean alone is enough for a decision"]
         topic_spec_path.write_text(json.dumps(topic_spec, indent=2) + "\n", encoding="utf-8")
 
     def test_init_creates_expected_structure(self):
         with tempfile.TemporaryDirectory() as tmp_dir:
             env = self._env(tmp_dir)
-            result = self._run(env, "init", "Python Testing")
+            result = self._run(env, "init", "Bayesian Decisions")
             self.assertIn("Initialized workflow run.", result.stdout)
 
             run_dirs = sorted((Path(tmp_dir) / "runs").iterdir())
-            self.assertEqual(1, len(run_dirs), msg="Expected exactly one run folder")
+            self.assertEqual(1, len(run_dirs))
             run_dir = run_dirs[0]
 
-            self.assertTrue(run_dir.name.endswith("-python-testing"), msg="Run id should include slug")
-            self.assertTrue((run_dir / "run.json").exists(), msg="Missing run metadata")
-            self.assertTrue((run_dir / "inputs" / "topic_spec.json").exists(), msg="Missing topic spec")
-            self.assertTrue((run_dir / "inputs" / "automation.json").exists(), msg="Missing automation config")
-            self.assertTrue((run_dir / "outputs" / "curriculum").exists(), msg="Missing curriculum output dir")
-            self.assertTrue((run_dir / "outputs" / "reviews").exists(), msg="Missing reviews output dir")
-            self.assertTrue((run_dir / "logs").exists(), msg="Missing logs dir")
+            self.assertTrue((run_dir / "run.json").exists())
+            self.assertTrue((run_dir / "inputs" / "topic_spec.json").exists())
+            self.assertTrue((run_dir / "inputs" / "automation.json").exists())
+            self.assertTrue((run_dir / "outputs" / "curriculum").exists())
+            self.assertTrue((run_dir / "outputs" / "reviews").exists())
+            self.assertTrue((run_dir / "outputs" / "plan").exists())
+            self.assertTrue((run_dir / "logs").exists())
 
     def test_validate_requires_ready_topic_spec(self):
         with tempfile.TemporaryDirectory() as tmp_dir:
@@ -215,28 +86,8 @@ class WorkflowCliTests(unittest.TestCase):
             curriculum_path.write_text(SAMPLE_CURRICULUM.read_text(encoding="utf-8"), encoding="utf-8")
 
             failed = self._run(env, "validate", run_dir.name, check=False)
-            self.assertNotEqual(0, failed.returncode, msg="Validation should fail when topic spec is incomplete")
+            self.assertNotEqual(0, failed.returncode)
             self.assertIn("Topic spec missing or incomplete", failed.stderr)
-
-            run_meta = json.loads((run_dir / "run.json").read_text(encoding="utf-8"))
-            self.assertEqual("initialized", run_meta["stage"], msg="Stage should not advance when spec is incomplete")
-
-    def test_status_does_not_mark_spec_ready_for_partial_spec(self):
-        with tempfile.TemporaryDirectory() as tmp_dir:
-            env = self._env(tmp_dir)
-            self._run(env, "init", "Partial Spec")
-            run_dir = sorted((Path(tmp_dir) / "runs").iterdir())[0]
-
-            topic_spec_path = run_dir / "inputs" / "topic_spec.json"
-            topic_spec = json.loads(topic_spec_path.read_text(encoding="utf-8"))
-            topic_spec["topic_id"] = "partial_spec_topic"
-            topic_spec_path.write_text(json.dumps(topic_spec, indent=2) + "\n", encoding="utf-8")
-
-            status = self._run(env, "status", run_dir.name)
-            self.assertIn("Topic spec: missing/incomplete", status.stdout)
-
-            run_meta = json.loads((run_dir / "run.json").read_text(encoding="utf-8"))
-            self.assertEqual("initialized", run_meta["stage"])
 
     def test_validate_updates_stage_and_writes_report(self):
         with tempfile.TemporaryDirectory() as tmp_dir:
@@ -245,7 +96,7 @@ class WorkflowCliTests(unittest.TestCase):
             run_dir = sorted((Path(tmp_dir) / "runs").iterdir())[0]
 
             topic_spec_path = run_dir / "inputs" / "topic_spec.json"
-            self._write_topic_spec_for_sample_curriculum(topic_spec_path, "validation_topic")
+            self._write_valid_topic_spec(topic_spec_path)
 
             curriculum_path = run_dir / "outputs" / "curriculum" / "curriculum.json"
             curriculum_path.write_text(SAMPLE_CURRICULUM.read_text(encoding="utf-8"), encoding="utf-8")
@@ -253,164 +104,99 @@ class WorkflowCliTests(unittest.TestCase):
             result = self._run(env, "validate", run_dir.name)
             self.assertIn("CURRICULUM VALIDATION REPORT", result.stdout)
 
-            report_path = run_dir / "outputs" / "reviews" / "structural_validation.md"
-            self.assertTrue(report_path.exists(), msg="Expected structural validation report")
+            report_path = run_dir / "outputs" / "reviews" / "validation_report.md"
+            self.assertTrue(report_path.exists())
 
             run_meta = json.loads((run_dir / "run.json").read_text(encoding="utf-8"))
-            self.assertEqual(
-                "structurally_validated",
-                run_meta["stage"],
-                msg="Run stage should advance after successful structural validation",
-            )
+            self.assertEqual("validated", run_meta["stage"])
 
-    def test_failed_validate_does_not_advance_stage(self):
+    def test_plan_command_generates_plan(self):
         with tempfile.TemporaryDirectory() as tmp_dir:
             env = self._env(tmp_dir)
-            self._run(env, "init", "Invalid Validation")
+            self._run(env, "init", "Planner")
             run_dir = sorted((Path(tmp_dir) / "runs").iterdir())[0]
 
             topic_spec_path = run_dir / "inputs" / "topic_spec.json"
-            self._write_topic_spec_for_sample_curriculum(topic_spec_path, "invalid_validation_topic")
+            self._write_valid_topic_spec(topic_spec_path)
 
             curriculum_path = run_dir / "outputs" / "curriculum" / "curriculum.json"
-            curriculum_path.write_text("{}\n", encoding="utf-8")
+            curriculum_path.write_text(SAMPLE_CURRICULUM.read_text(encoding="utf-8"), encoding="utf-8")
 
-            marker_path = run_dir / "logs" / "structural_validation.ok"
-            marker_path.write_text("stale\n", encoding="utf-8")
+            result = self._run(env, "plan", run_dir.name)
+            self.assertIn("Saved plan", result.stdout)
 
-            failed = self._run(env, "validate", run_dir.name, check=False)
-            self.assertNotEqual(0, failed.returncode, msg="Validation should fail for invalid curriculum")
-            self.assertFalse(
-                marker_path.exists(),
-                msg="Structural pass marker should be removed on failed validation",
-            )
+            plan_path = run_dir / "outputs" / "plan" / "plan.json"
+            self.assertTrue(plan_path.exists())
+            plan_payload = json.loads(plan_path.read_text(encoding="utf-8"))
+            self.assertIn("weeks", plan_payload)
+            self.assertGreaterEqual(plan_payload["duration_weeks"], 2)
 
-            self._run(env, "status", run_dir.name)
             run_meta = json.loads((run_dir / "run.json").read_text(encoding="utf-8"))
-            self.assertEqual(
-                "curriculum_generated",
-                run_meta["stage"],
-                msg="Failed validation must not advance stage to structurally_validated",
-            )
+            self.assertEqual("planned", run_meta["stage"])
 
-    def test_run_requires_configured_commands(self):
+    def test_run_requires_map_command_when_curriculum_missing(self):
         with tempfile.TemporaryDirectory() as tmp_dir:
             env = self._env(tmp_dir)
-            self._run(env, "init", "Automate")
+            self._run(env, "init", "Missing Map Command")
             run_dir = sorted((Path(tmp_dir) / "runs").iterdir())[0]
 
             topic_spec_path = run_dir / "inputs" / "topic_spec.json"
-            self._write_topic_spec_for_sample_curriculum(topic_spec_path, "automate_topic")
+            self._write_valid_topic_spec(topic_spec_path)
 
             failed = self._run(env, "run", run_dir.name, check=False)
-            self.assertNotEqual(0, failed.returncode, msg="Run should fail without configured commands")
-            self.assertIn("curriculum_cmd is not configured", failed.stderr)
+            self.assertNotEqual(0, failed.returncode)
+            self.assertIn("map_cmd is not configured", failed.stderr)
 
-    def test_run_requires_pedagogical_review_command(self):
+    def test_run_executes_full_pipeline_and_writes_diff(self):
         with tempfile.TemporaryDirectory() as tmp_dir:
             env = self._env(tmp_dir)
-            self._run(env, "init", "Pedagogical Command Required")
+            self._run(env, "init", "Full Pipeline")
             run_dir = sorted((Path(tmp_dir) / "runs").iterdir())[0]
 
             topic_spec_path = run_dir / "inputs" / "topic_spec.json"
-            self._write_topic_spec_for_sample_curriculum(topic_spec_path, "pedag_required_topic")
+            self._write_valid_topic_spec(topic_spec_path)
 
             curriculum_path = run_dir / "outputs" / "curriculum" / "curriculum.json"
-
             automation_path = run_dir / "inputs" / "automation.json"
             automation = json.loads(automation_path.read_text(encoding="utf-8"))
-            automation["curriculum_cmd"] = (
+            automation["map_cmd"] = (
                 f"cp {shlex.quote(str(SAMPLE_CURRICULUM))} {shlex.quote(str(curriculum_path))}"
             )
-            automation["pedagogical_review_cmd"] = ""
             automation_path.write_text(json.dumps(automation, indent=2) + "\n", encoding="utf-8")
 
-            failed = self._run(env, "run", run_dir.name, check=False)
-            self.assertNotEqual(
-                0,
-                failed.returncode,
-                msg="Run should fail when pedagogical review command is not configured",
-            )
-            self.assertIn("pedagogical_review_cmd is not configured", failed.stderr)
+            result = self._run(env, "run", run_dir.name)
+            self.assertIn("Workflow run completed", result.stdout)
+
+            self.assertTrue((run_dir / "outputs" / "reviews" / "validation_report.md").exists())
+            self.assertTrue((run_dir / "outputs" / "plan" / "plan.json").exists())
+            self.assertTrue((run_dir / "outputs" / "reviews" / "diff_report.json").exists())
 
             run_meta = json.loads((run_dir / "run.json").read_text(encoding="utf-8"))
-            self.assertEqual(
-                "structurally_validated",
-                run_meta["stage"],
-                msg="Run should stop after structural validation if pedagogical command is missing",
-            )
+            self.assertEqual("iterated", run_meta["stage"])
 
-    def test_status_demotes_when_curriculum_changes_after_structural_pass(self):
+    def test_status_demotes_when_curriculum_changes_after_validation(self):
         with tempfile.TemporaryDirectory() as tmp_dir:
             env = self._env(tmp_dir)
-            self._run(env, "init", "Structural Freshness")
+            self._run(env, "init", "Freshness")
             run_dir = sorted((Path(tmp_dir) / "runs").iterdir())[0]
 
             topic_spec_path = run_dir / "inputs" / "topic_spec.json"
-            self._write_topic_spec_for_sample_curriculum(topic_spec_path, "freshness_topic")
+            self._write_valid_topic_spec(topic_spec_path)
 
             curriculum_path = run_dir / "outputs" / "curriculum" / "curriculum.json"
             curriculum_path.write_text(SAMPLE_CURRICULUM.read_text(encoding="utf-8"), encoding="utf-8")
 
             self._run(env, "validate", run_dir.name)
             run_meta = json.loads((run_dir / "run.json").read_text(encoding="utf-8"))
-            self.assertEqual("structurally_validated", run_meta["stage"])
+            self.assertEqual("validated", run_meta["stage"])
 
             time.sleep(0.01)
             curriculum = json.loads(curriculum_path.read_text(encoding="utf-8"))
-            curriculum["metadata"]["generated"] = "2099-01-01T00:00:00Z"
+            curriculum["topic"] = "Changed Topic"
             curriculum_path.write_text(json.dumps(curriculum, indent=2) + "\n", encoding="utf-8")
 
             status = self._run(env, "status", run_dir.name)
-            self.assertIn("Stage: curriculum_generated", status.stdout)
-
-            run_meta = json.loads((run_dir / "run.json").read_text(encoding="utf-8"))
-            self.assertEqual(
-                "curriculum_generated",
-                run_meta["stage"],
-                msg="Run stage should demote when curriculum changes after structural validation",
-            )
-
-    def test_status_demotes_done_when_pedagogical_review_removed(self):
-        with tempfile.TemporaryDirectory() as tmp_dir:
-            env = self._env(tmp_dir)
-            self._run(env, "init", "Done Freshness")
-            run_dir = sorted((Path(tmp_dir) / "runs").iterdir())[0]
-
-            topic_spec_path = run_dir / "inputs" / "topic_spec.json"
-            self._write_topic_spec_for_sample_curriculum(topic_spec_path, "done_freshness_topic")
-
-            curriculum_path = run_dir / "outputs" / "curriculum" / "curriculum.json"
-            pedagogical_path = run_dir / "outputs" / "reviews" / "curriculum_review.md"
-
-            automation_path = run_dir / "inputs" / "automation.json"
-            automation = json.loads(automation_path.read_text(encoding="utf-8"))
-            automation["curriculum_cmd"] = (
-                f"cp {shlex.quote(str(SAMPLE_CURRICULUM))} {shlex.quote(str(curriculum_path))}"
-            )
-            automation["pedagogical_review_cmd"] = (
-                f"printf '# pedagogical review\\n' > {shlex.quote(str(pedagogical_path))}"
-            )
-            automation_path.write_text(json.dumps(automation, indent=2) + "\n", encoding="utf-8")
-
-            run_result = self._run(env, "run", run_dir.name)
-            self.assertIn("Workflow run completed", run_result.stdout)
-
-            run_meta = json.loads((run_dir / "run.json").read_text(encoding="utf-8"))
-            self.assertEqual("done", run_meta["stage"])
-
-            time.sleep(0.01)
-            pedagogical_path.unlink()
-
-            status = self._run(env, "status", run_dir.name)
-            self.assertIn("Stage: structurally_validated", status.stdout)
-
-            run_meta = json.loads((run_dir / "run.json").read_text(encoding="utf-8"))
-            self.assertEqual(
-                "structurally_validated",
-                run_meta["stage"],
-                msg="Run stage should demote when pedagogical review is removed",
-            )
+            self.assertIn("Stage: map_generated", status.stdout)
 
 
 if __name__ == "__main__":

@@ -9,45 +9,55 @@
 	workflow-status \
 	workflow-next \
 	workflow-validate \
+	workflow-plan \
+	workflow-iterate \
 	workflow-run \
 	workflow-archive
 
+PYTHON ?= python3.11
+
 setup:
-	@echo "No installation step required. Use Python 3.10+ and run commands via make."
+	@echo "No installation step required. Use Python 3.11 and run commands via make."
 
 dev:
-	python3 -m http.server 4173
+	$(PYTHON) -m http.server 4173
 
 test:
-	python3 -m unittest discover -s tests -p 'test_*.py'
+	$(PYTHON) -m unittest discover -s tests -p 'test_*.py'
 
 validate:
-	python3 scripts/validator.py data/curriculum.json
+	$(PYTHON) scripts/validator.py data/curriculum.json
 
 gate:
 	./scripts/gate.sh
 
 workflow-start:
 	@if [ -n "$(RUN_NAME)" ]; then \
-		python3 scripts/workflow.py init "$(RUN_NAME)"; \
+		$(PYTHON) scripts/workflow.py init "$(RUN_NAME)"; \
 	else \
-		python3 scripts/workflow.py init; \
+		$(PYTHON) scripts/workflow.py init; \
 	fi
 
 workflow-list:
-	@python3 scripts/workflow.py list
+	@$(PYTHON) scripts/workflow.py list
 
 workflow-status:
-	@python3 scripts/workflow.py status "$(RUN_ID)"
+	@$(PYTHON) scripts/workflow.py status "$(RUN_ID)"
 
 workflow-next:
-	@python3 scripts/workflow.py next "$(RUN_ID)"
+	@$(PYTHON) scripts/workflow.py next "$(RUN_ID)"
 
 workflow-validate:
-	@python3 scripts/workflow.py validate "$(RUN_ID)"
+	@$(PYTHON) scripts/workflow.py validate "$(RUN_ID)"
+
+workflow-plan:
+	@$(PYTHON) scripts/workflow.py plan "$(RUN_ID)"
+
+workflow-iterate:
+	@$(PYTHON) scripts/workflow.py iterate "$(RUN_ID)"
 
 workflow-run:
-	@python3 scripts/workflow.py run "$(RUN_ID)"
+	@$(PYTHON) scripts/workflow.py run "$(RUN_ID)"
 
 workflow-archive:
-	@python3 scripts/workflow.py archive "$(RUN_ID)"
+	@$(PYTHON) scripts/workflow.py archive "$(RUN_ID)"

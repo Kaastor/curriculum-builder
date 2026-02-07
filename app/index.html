@@ -14,10 +14,10 @@
     <div class="app-shell">
       <header class="topbar panel">
         <div>
-          <p class="eyebrow">Agentic Reliability</p>
+          <p class="eyebrow">Learning Compiler</p>
           <h1>Curriculum Inspector</h1>
           <p class="subtitle">
-            Inspect graph quality, dependencies, and learning flow for
+            Inspect concept DAG quality and mastery coverage for
             <code>prompts/curriculum_generator.md</code> outputs.
           </p>
         </div>
@@ -34,21 +34,11 @@
 
           <h2>Filters</h2>
           <label for="searchInput">Search</label>
-          <input id="searchInput" type="search" placeholder="Find by id, title, or text" />
+          <input id="searchInput" type="search" placeholder="Find by id, title, or concept text" />
 
           <div class="filter-block">
             <h3>Layer</h3>
             <div id="layerFilters" class="chip-grid"></div>
-          </div>
-
-          <div class="filter-block">
-            <h3>Category</h3>
-            <div id="categoryFilters" class="chip-grid"></div>
-          </div>
-
-          <div class="filter-block">
-            <h3>Exercise Type</h3>
-            <div id="typeFilters" class="chip-grid"></div>
           </div>
         </aside>
 
@@ -85,11 +75,6 @@
           </section>
 
           <section>
-            <h2>Coverage Map</h2>
-            <div id="coverageMap" class="coverage-grid"></div>
-          </section>
-
-          <section>
             <h2>Learning Path</h2>
             <div id="learningPath" class="path-list"></div>
           </section>
@@ -97,6 +82,11 @@
           <section>
             <h2>Milestones</h2>
             <div id="milestones" class="milestone-grid"></div>
+          </section>
+
+          <section>
+            <h2>Open Questions</h2>
+            <div id="openQuestions" class="coverage-grid"></div>
           </section>
         </main>
 

@@ -1,36 +1,13 @@
 const DEFAULT_URL = "../data/curriculum.json";
 
-const REQUIRED_TOP_LEVEL = [
-  "domain",
-  "domain_ref",
-  "scenario",
-  "metadata",
-  "nodes",
-  "edges",
-  "learning_path",
-  "milestones",
-  "coverage_map",
-];
-
-const CATEGORY_COLORS = {
-  foundation: "#007f6d",
-  selection: "#2c6fce",
-  ordering: "#b46a18",
-  arguments: "#8b5cf6",
-  output: "#0077b6",
-  hallucination: "#d1495b",
-  avoidance: "#6a994e",
-  debug: "#3d405b",
-  capstone: "#111827",
-};
+const REQUIRED_TOP_LEVEL = ["topic", "nodes"];
 
 const state = {
   curriculum: null,
+  derived: null,
   selectedNodeId: null,
   searchText: "",
   selectedLayers: new Set(),
-  selectedCategories: new Set(),
-  selectedTypes: new Set(),
   cy: null,
 };
 
@@ -41,13 +18,11 @@ const els = {
   metricCards: document.getElementById("metricCards"),
   layerExplorer: document.getElementById("layerExplorer"),
   nodeTable: document.getElementById("nodeTable"),
-  coverageMap: document.getElementById("coverageMap"),
+  openQuestions: document.getElementById("openQuestions"),
   learningPath: document.getElementById("learningPath"),
   milestones: document.getElementById("milestones"),
   nodeDetails: document.getElementById("nodeDetails"),
   layerFilters: document.getElementById("layerFilters"),
-  categoryFilters: document.getElementById("categoryFilters"),
-  typeFilters: document.getElementById("typeFilters"),
   visibleCount: document.getElementById("visibleCount"),
   graphView: document.getElementById("graphView"),
   graphFitBtn: document.getElementById("graphFitBtn"),
@@ -120,6 +95,8 @@ function setCurriculum(data) {
 
   destroyGraph();
   state.curriculum = data;
+  state.derived = buildDerivedGraph(data.nodes);
+
   if (!data.nodes.find((node) => node.id === state.selectedNodeId)) {
     state.selectedNodeId = data.nodes[0]?.id ?? null;
   }
@@ -130,13 +107,10 @@ function setCurriculum(data) {
 }
 
 function initFilterState() {
-  const layers = new Set(state.curriculum.nodes.map((node) => String(node.layer)));
-  const categories = new Set(state.curriculum.nodes.map((node) => node.category));
-  const types = new Set(state.curriculum.nodes.map((node) => node.exercise_type));
-
+  const layers = new Set(
+    Object.values(state.derived?.nodeLayers || {}).map((layer) => String(layer))
+  );
   state.selectedLayers = layers;
-  state.selectedCategories = categories;
-  state.selectedTypes = types;
 }
 
 function filterNodes() {
@@ -147,24 +121,22 @@ function filterNodes() {
   const query = state.searchText.trim().toLowerCase();
 
   return state.curriculum.nodes.filter((node) => {
-    const matchesLayer = state.selectedLayers.has(String(node.layer));
-    const matchesCategory = state.selectedCategories.has(node.category);
-    const matchesType = state.selectedTypes.has(node.exercise_type);
+    const layer = String(state.derived?.nodeLayers?.[node.id] ?? 0);
+    const matchesLayer = state.selectedLayers.has(layer);
 
     const searchableText = [
       node.id,
       node.title,
-      node.failure_mode,
-      node.teaches,
-      node.exercise,
-      node.category,
+      node.capability,
+      ...(node.core_ideas || []),
+      ...(node.pitfalls || []),
     ]
       .join(" ")
       .toLowerCase();
 
     const matchesSearch = !query || searchableText.includes(query);
 
-    return matchesLayer && matchesCategory && matchesType && matchesSearch;
+    return matchesLayer && matchesSearch;
   });
 }
 
@@ -178,28 +150,168 @@ function destroyGraph() {
   }
 }
 
-function categoryColor(category) {
-  return CATEGORY_COLORS[category] ?? "#51606f";
+function layerColor(layer) {
+  const palette = [
+    "#0f766e",
+    "#1d4ed8",
+    "#b45309",
+    "#7c3aed",
+    "#be123c",
+    "#334155",
+  ];
+  return palette[layer % palette.length];
 }
 
-function getOrderedLayers(nodes) {
-  const numericLayers = nodes
-    .map((node) => Number(node.layer))
-    .filter((layer) => Number.isInteger(layer) && layer >= 0);
+function sumEstimatedHours(nodes) {
+  const totalMinutes = nodes.reduce((acc, node) => {
+    const value = Number(node.estimate_minutes);
+    return Number.isFinite(value) ? acc + value : acc;
+  }, 0);
+  return Math.round((totalMinutes / 60) * 100) / 100;
+}
 
-  const maxLayer = numericLayers.length > 0 ? Math.max(...numericLayers) : 0;
-  return Array.from({ length: maxLayer + 1 }, (_, idx) => idx);
+function buildDerivedGraph(nodes) {
+  const nodeMap = new Map(nodes.map((node) => [node.id, node]));
+  const dependentsById = Object.fromEntries(nodes.map((node) => [node.id, []]));
+  const edges = [];
+  const indegree = Object.fromEntries(nodes.map((node) => [node.id, 0]));
+
+  nodes.forEach((node) => {
+    (node.prerequisites || []).forEach((prereqId) => {
+      if (!nodeMap.has(prereqId)) {
+        return;
+      }
+      edges.push({ from: prereqId, to: node.id });
+      dependentsById[prereqId].push(node.id);
+      indegree[node.id] += 1;
+    });
+  });
+
+  Object.values(dependentsById).forEach((ids) => ids.sort());
+
+  const queue = Object.keys(indegree)
+    .filter((nodeId) => indegree[nodeId] === 0)
+    .sort();
+  const topologicalOrder = [];
+
+  while (queue.length) {
+    const current = queue.shift();
+    topologicalOrder.push(current);
+    (dependentsById[current] || []).forEach((next) => {
+      indegree[next] -= 1;
+      if (indegree[next] === 0) {
+        queue.push(next);
+        queue.sort();
+      }
+    });
+  }
+
+  if (topologicalOrder.length !== nodes.length) {
+    const fallback = [...nodes].sort((a, b) => a.id.localeCompare(b.id)).map((node) => node.id);
+    topologicalOrder.splice(0, topologicalOrder.length, ...fallback);
+  }
+
+  const nodeLayers = {};
+  topologicalOrder.forEach((nodeId) => {
+    const node = nodeMap.get(nodeId);
+    const prereqs = node?.prerequisites || [];
+    if (prereqs.length === 0) {
+      nodeLayers[nodeId] = 0;
+      return;
+    }
+
+    let layer = 0;
+    prereqs.forEach((prereqId) => {
+      const parentLayer = nodeLayers[prereqId] ?? 0;
+      layer = Math.max(layer, parentLayer + 1);
+    });
+    nodeLayers[nodeId] = layer;
+  });
+
+  const durationById = Object.fromEntries(
+    nodes.map((node) => [node.id, Number(node.estimate_minutes) || 0])
+  );
+  const distanceById = {};
+  const previousById = {};
+
+  topologicalOrder.forEach((nodeId) => {
+    const node = nodeMap.get(nodeId);
+    if (!node) {
+      return;
+    }
+
+    const prereqs = (node.prerequisites || []).filter((prereqId) =>
+      Object.prototype.hasOwnProperty.call(durationById, prereqId)
+    );
+    if (prereqs.length === 0) {
+      distanceById[nodeId] = durationById[nodeId];
+      previousById[nodeId] = null;
+      return;
+    }
+
+    let bestPrereq = prereqs[0];
+    let bestDistance = distanceById[bestPrereq] ?? durationById[bestPrereq];
+
+    prereqs.slice(1).forEach((candidate) => {
+      const candidateDistance = distanceById[candidate] ?? durationById[candidate];
+      if (candidateDistance > bestDistance) {
+        bestDistance = candidateDistance;
+        bestPrereq = candidate;
+      }
+    });
+
+    distanceById[nodeId] = bestDistance + durationById[nodeId];
+    previousById[nodeId] = bestPrereq;
+  });
+
+  const terminalId = topologicalOrder.reduce((bestId, nodeId) => {
+    if (!bestId) {
+      return nodeId;
+    }
+    return (distanceById[nodeId] || 0) > (distanceById[bestId] || 0) ? nodeId : bestId;
+  }, null);
+
+  const criticalPath = [];
+  let cursor = terminalId;
+  while (cursor) {
+    criticalPath.unshift(cursor);
+    cursor = previousById[cursor];
+  }
+
+  const maxLayer = Math.max(...Object.values(nodeLayers), 0);
+  const milestones = Array.from({ length: maxLayer + 1 }, (_, layer) => {
+    const layerNodes = nodes
+      .filter((node) => Number(nodeLayers[node.id]) === layer)
+      .map((node) => node.id)
+      .sort();
+
+    return {
+      id: `M${layer + 1}`,
+      name: `Layer ${layer}`,
+      nodes: layerNodes,
+      after_this: `Complete layer ${layer} mastery checks`,
+    };
+  });
+
+  return {
+    nodeLayers,
+    edges,
+    dependentsById,
+    topologicalOrder,
+    criticalPath,
+    milestones,
+    maxLayer,
+    estimatedTotalHours: sumEstimatedHours(nodes),
+  };
 }
 
 function buildGraphElements() {
-  const orderedLayers = getOrderedLayers(state.curriculum.nodes);
-  const nodesByLayer = new Map(orderedLayers.map((layer) => [layer, []]));
+  const nodeLayers = state.derived?.nodeLayers || {};
+  const layers = Array.from(new Set(Object.values(nodeLayers))).sort((a, b) => a - b);
+  const nodesByLayer = new Map(layers.map((layer) => [layer, []]));
 
   state.curriculum.nodes.forEach((node) => {
-    const layer = Number(node.layer);
-    if (!Number.isInteger(layer) || layer < 0) {
-      return;
-    }
+    const layer = Number(nodeLayers[node.id] ?? 0);
     if (!nodesByLayer.has(layer)) {
       nodesByLayer.set(layer, []);
     }
@@ -208,34 +320,34 @@ function buildGraphElements() {
 
   const nodeElements = [];
   const xStep = 220;
-  const yStep = 96;
+  const yStep = 100;
   const xStart = 90;
   const yStart = 70;
 
-  orderedLayers.forEach((layer) => {
-    const layerNodes = nodesByLayer.get(layer) ?? [];
-    layerNodes
-      .sort((a, b) => a.id.localeCompare(b.id))
-      .forEach((node, index) => {
-        nodeElements.push({
-          group: "nodes",
-          data: {
-            id: node.id,
-            label: node.id,
-            title: node.title,
-            layer: String(layer),
-            category: node.category,
-            color: categoryColor(node.category),
-          },
-          position: {
-            x: xStart + layer * xStep,
-            y: yStart + index * yStep,
-          },
+  [...nodesByLayer.keys()]
+    .sort((a, b) => a - b)
+    .forEach((layer) => {
+      (nodesByLayer.get(layer) || [])
+        .sort((a, b) => a.id.localeCompare(b.id))
+        .forEach((node, index) => {
+          nodeElements.push({
+            group: "nodes",
+            data: {
+              id: node.id,
+              label: node.id,
+              title: node.title,
+              layer: String(layer),
+              color: layerColor(layer),
+            },
+            position: {
+              x: xStart + layer * xStep,
+              y: yStart + index * yStep,
+            },
+          });
         });
-      });
-  });
+    });
 
-  const edgeElements = (state.curriculum.edges || []).map((edge) => ({
+  const edgeElements = (state.derived?.edges || []).map((edge) => ({
     group: "edges",
     data: {
       id: `${edge.from}->${edge.to}`,
@@ -363,8 +475,7 @@ function renderGraph(filteredNodes) {
     });
 
     state.cy.edges().forEach((edge) => {
-      const shouldHide =
-        !visibleIds.has(edge.source().id()) || !visibleIds.has(edge.target().id());
+      const shouldHide = !visibleIds.has(edge.source().id()) || !visibleIds.has(edge.target().id());
       edge.toggleClass("is-hidden", shouldHide);
     });
 
@@ -399,44 +510,26 @@ function render() {
   renderGraph(filteredNodes);
   renderLayerExplorer(filteredNodes);
   renderNodeTable(filteredNodes);
-  renderCoverageMap();
   renderLearningPath();
   renderMilestones();
+  renderOpenQuestions();
   renderNodeDetails();
 }
 
 function renderFilters() {
+  const layers = Array.from(new Set(Object.values(state.derived?.nodeLayers || {}))).sort(
+    (a, b) => a - b
+  );
+
   renderChipFilter(
     els.layerFilters,
-    [...new Set(state.curriculum.nodes.map((n) => String(n.layer)))].sort(
-      (a, b) => Number(a) - Number(b)
-    ),
+    layers.map(String),
     state.selectedLayers,
     (value) => {
       toggleSetValue(state.selectedLayers, value);
       render();
     },
     "L"
-  );
-
-  renderChipFilter(
-    els.categoryFilters,
-    [...new Set(state.curriculum.nodes.map((n) => n.category))].sort(),
-    state.selectedCategories,
-    (value) => {
-      toggleSetValue(state.selectedCategories, value);
-      render();
-    }
-  );
-
-  renderChipFilter(
-    els.typeFilters,
-    [...new Set(state.curriculum.nodes.map((n) => n.exercise_type))].sort(),
-    state.selectedTypes,
-    (value) => {
-      toggleSetValue(state.selectedTypes, value);
-      render();
-    }
   );
 }
 
@@ -463,22 +556,25 @@ function toggleSetValue(set, value) {
 }
 
 function renderMetrics() {
-  const { metadata, nodes, edges, milestones, learning_path: learningPath } =
-    state.curriculum;
+  const nodes = state.curriculum.nodes;
+  const derived = state.derived || {
+    edges: [],
+    milestones: [],
+    estimatedTotalHours: 0,
+    maxLayer: 0,
+  };
 
-  const advancedCount = nodes.filter((node) => node.difficulty === "advanced").length;
-  const debugReadCount = nodes.filter((node) =>
-    ["debug", "read"].includes(node.exercise_type)
-  ).length;
+  const openQuestionCount = Array.isArray(state.curriculum.open_questions)
+    ? state.curriculum.open_questions.length
+    : 0;
 
   const cards = [
-    ["Nodes", metadata.node_count ?? nodes.length],
-    ["Edges", metadata.edge_count ?? edges.length],
-    ["Max depth", metadata.max_depth],
-    ["Milestones", milestones.length],
-    ["Debug/Read", debugReadCount],
-    ["Advanced", advancedCount],
-    ["Est. hours", learningPath.estimated_total_hours],
+    ["Nodes", nodes.length],
+    ["Edges", derived.edges.length],
+    ["Max depth", derived.maxLayer],
+    ["Milestones", derived.milestones.length],
+    ["Est. hours", derived.estimatedTotalHours],
+    ["Open questions", openQuestionCount],
   ];
 
   els.metricCards.innerHTML = cards
@@ -494,11 +590,11 @@ function renderMetrics() {
 }
 
 function renderLayerExplorer(filteredNodes) {
-  const orderedLayers = getOrderedLayers(state.curriculum.nodes);
-  const byLayer = new Map(orderedLayers.map((layer) => [layer, []]));
+  const maxLayer = state.derived?.maxLayer || 0;
+  const byLayer = new Map(Array.from({ length: maxLayer + 1 }, (_, layer) => [layer, []]));
 
   filteredNodes.forEach((node) => {
-    const layer = Number(node.layer);
+    const layer = Number(state.derived?.nodeLayers?.[node.id] ?? 0);
     if (Number.isInteger(layer) && byLayer.has(layer)) {
       byLayer.get(layer).push(node);
     }
@@ -506,39 +602,41 @@ function renderLayerExplorer(filteredNodes) {
 
   els.layerExplorer.innerHTML = "";
 
-  orderedLayers.forEach((layer) => {
-    const nodesInLayer = byLayer.get(layer) ?? [];
-    const column = document.createElement("div");
-    column.className = "layer-column";
+  Array.from(byLayer.keys())
+    .sort((a, b) => a - b)
+    .forEach((layer) => {
+      const nodesInLayer = byLayer.get(layer) ?? [];
+      const column = document.createElement("div");
+      column.className = "layer-column";
 
-    const heading = document.createElement("div");
-    heading.className = "layer-title";
-    heading.textContent = `Layer ${layer}`;
-    column.append(heading);
+      const heading = document.createElement("div");
+      heading.className = "layer-title";
+      heading.textContent = `Layer ${layer}`;
+      column.append(heading);
 
-    nodesInLayer
-      .sort((a, b) => a.id.localeCompare(b.id))
-      .forEach((node) => column.append(makeNodeCard(node)));
+      nodesInLayer
+        .sort((a, b) => a.id.localeCompare(b.id))
+        .forEach((node) => column.append(makeNodeCard(node, layer)));
 
-    if (nodesInLayer.length === 0) {
-      const empty = document.createElement("p");
-      empty.className = "muted";
-      empty.textContent = "No nodes";
-      column.append(empty);
-    }
+      if (nodesInLayer.length === 0) {
+        const empty = document.createElement("p");
+        empty.className = "muted";
+        empty.textContent = "No nodes";
+        column.append(empty);
+      }
 
-    els.layerExplorer.append(column);
-  });
+      els.layerExplorer.append(column);
+    });
 }
 
-function makeNodeCard(node) {
+function makeNodeCard(node, layer) {
   const card = document.createElement("button");
   card.type = "button";
   card.className = `node-card ${state.selectedNodeId === node.id ? "selected" : ""}`;
 
   card.innerHTML = `
     <div class="title mono">${node.id} - ${escapeHtml(node.title)}</div>
-    <div class="meta">${node.category} | ${node.exercise_type} | ${node.difficulty}</div>
+    <div class="meta">Layer ${layer} | ${node.estimate_minutes}m</div>
   `;
 
   card.addEventListener("click", () => {
@@ -554,14 +652,15 @@ function renderNodeTable(filteredNodes) {
     .sort((a, b) => a.id.localeCompare(b.id))
     .map((node) => {
       const selectedClass = node.id === state.selectedNodeId ? "active" : "";
+      const layer = state.derived?.nodeLayers?.[node.id] ?? 0;
+      const resourceCount = Array.isArray(node.resources) ? node.resources.length : 0;
       return `
         <tr class="clickable ${selectedClass}" data-node-id="${node.id}">
           <td class="mono">${node.id}</td>
           <td>${escapeHtml(node.title)}</td>
-          <td>${node.layer}</td>
-          <td>${node.category}</td>
-          <td>${node.exercise_type}</td>
-          <td>${node.estimated_time_minutes}m</td>
+          <td>${layer}</td>
+          <td>${node.estimate_minutes}m</td>
+          <td>${resourceCount}</td>
         </tr>
       `;
     })
@@ -575,12 +674,11 @@ function renderNodeTable(filteredNodes) {
             <th>ID</th>
             <th>Title</th>
             <th>Layer</th>
-            <th>Category</th>
-            <th>Type</th>
             <th>Time</th>
+            <th>Resources</th>
           </tr>
         </thead>
-        <tbody>${rows || `<tr><td colspan="6">No nodes match filters.</td></tr>`}</tbody>
+        <tbody>${rows || `<tr><td colspan="5">No nodes match filters.</td></tr>`}</tbody>
       </table>
     </div>
   `;
@@ -593,30 +691,9 @@ function renderNodeTable(filteredNodes) {
   });
 }
 
-function renderCoverageMap() {
-  const coverageEntries = Object.entries(state.curriculum.coverage_map || {});
-
-  els.coverageMap.innerHTML = coverageEntries
-    .map(([key, nodeIds]) => {
-      const chips = nodeIds
-        .map((nodeId) => `<button class="chip-link mono" data-node-link="${nodeId}">${nodeId}</button>`)
-        .join("");
-
-      return `
-        <article class="coverage-item">
-          <div class="coverage-key">${escapeHtml(key)}</div>
-          <div>${chips}</div>
-        </article>
-      `;
-    })
-    .join("");
-
-  bindNodeLinks(els.coverageMap);
-}
-
 function renderLearningPath() {
-  const topological = state.curriculum.learning_path?.topological_order || [];
-  const criticalPath = new Set(state.curriculum.learning_path?.critical_path || []);
+  const topological = state.derived?.topologicalOrder || [];
+  const criticalPath = new Set(state.derived?.criticalPath || []);
 
   els.learningPath.innerHTML = topological
     .map((nodeId, index) => {
@@ -634,7 +711,7 @@ function renderLearningPath() {
 }
 
 function renderMilestones() {
-  els.milestones.innerHTML = (state.curriculum.milestones || [])
+  els.milestones.innerHTML = (state.derived?.milestones || [])
     .map((milestone) => {
       const chips = (milestone.nodes || [])
         .map((nodeId) => `<button class="chip-link mono" data-node-link="${nodeId}">${nodeId}</button>`)
@@ -653,6 +730,34 @@ function renderMilestones() {
   bindNodeLinks(els.milestones);
 }
 
+function renderOpenQuestions() {
+  const openQuestions = Array.isArray(state.curriculum.open_questions)
+    ? state.curriculum.open_questions
+    : [];
+
+  if (openQuestions.length === 0) {
+    els.openQuestions.innerHTML = `<p class="muted">No open questions in this curriculum.</p>`;
+    return;
+  }
+
+  els.openQuestions.innerHTML = openQuestions
+    .map((item) => {
+      const related = (item.related_nodes || [])
+        .map((nodeId) => `<button class="chip-link mono" data-node-link="${nodeId}">${nodeId}</button>`)
+        .join(" ");
+      return `
+        <article class="coverage-item">
+          <div class="coverage-key">${escapeHtml(item.status || "open")}</div>
+          <p>${escapeHtml(item.question || "")}</p>
+          <div>${related}</div>
+        </article>
+      `;
+    })
+    .join("");
+
+  bindNodeLinks(els.openQuestions);
+}
+
 function renderNodeDetails() {
   const node = state.curriculum.nodes.find((item) => item.id === state.selectedNodeId);
   if (!node) {
@@ -660,8 +765,18 @@ function renderNodeDetails() {
     return;
   }
 
+  const layer = state.derived?.nodeLayers?.[node.id] ?? 0;
   const prereqLinks = formatNodeLinks(node.prerequisites || []);
-  const dependentLinks = formatNodeLinks(node.dependents || []);
+  const dependentLinks = formatNodeLinks(state.derived?.dependentsById?.[node.id] || []);
+
+  const resources = (node.resources || [])
+    .map((resource) => {
+      const citation = resource.citation ? ` | citation: ${escapeHtml(resource.citation)}` : "";
+      return `<li><a href="${escapeHtml(resource.url)}" target="_blank" rel="noreferrer">${escapeHtml(
+        resource.title
+      )}</a> (${escapeHtml(resource.kind)}${resource.role ? `, ${escapeHtml(resource.role)}` : ""}${citation})</li>`;
+    })
+    .join("");
 
   els.nodeDetails.innerHTML = `
     <div class="kv">
@@ -670,27 +785,27 @@ function renderNodeDetails() {
     </div>
     <div class="kv">
       <div class="kv-key">Meta</div>
-      <div class="kv-value">Layer ${node.layer} | ${node.category} | ${node.exercise_type} | ${node.difficulty}</div>
+      <div class="kv-value">Layer ${layer} | ${node.estimate_minutes}m</div>
     </div>
     <div class="kv">
-      <div class="kv-key">Failure mode</div>
-      <div class="kv-value">${escapeHtml(node.failure_mode)}</div>
+      <div class="kv-key">Capability</div>
+      <div class="kv-value">${escapeHtml(node.capability)}</div>
     </div>
     <div class="kv">
-      <div class="kv-key">Exercise</div>
-      <div class="kv-value">${escapeHtml(node.exercise)}</div>
+      <div class="kv-key">Core ideas</div>
+      <div class="kv-value">${escapeHtml((node.core_ideas || []).join(", "))}</div>
     </div>
     <div class="kv">
-      <div class="kv-key">Pass condition</div>
-      <div class="kv-value">${escapeHtml(node.pass_condition)}</div>
+      <div class="kv-key">Pitfalls</div>
+      <div class="kv-value">${escapeHtml((node.pitfalls || []).join(", "))}</div>
     </div>
     <div class="kv">
-      <div class="kv-key">Fail condition</div>
-      <div class="kv-value">${escapeHtml(node.fail_condition)}</div>
+      <div class="kv-key">Mastery task</div>
+      <div class="kv-value">${escapeHtml(node.mastery_check?.task || "")}</div>
     </div>
     <div class="kv">
-      <div class="kv-key">Reference hint</div>
-      <div class="kv-value">${escapeHtml(node.reference_hint)}</div>
+      <div class="kv-key">Pass criteria</div>
+      <div class="kv-value">${escapeHtml(node.mastery_check?.pass_criteria || "")}</div>
     </div>
     <div class="kv">
       <div class="kv-key">Prerequisites</div>
@@ -701,20 +816,8 @@ function renderNodeDetails() {
       <div class="kv-value">${dependentLinks || `<span class="muted">None</span>`}</div>
     </div>
     <div class="kv">
-      <div class="kv-key">Teaches</div>
-      <div class="kv-value">${escapeHtml(node.teaches)}</div>
-    </div>
-    <div class="kv">
-      <div class="kv-key">Connects to field map</div>
-      <div class="kv-value">${escapeHtml((node.connects_to_field_map || []).join(", "))}</div>
-    </div>
-    <div class="kv">
-      <div class="kv-key">Tags</div>
-      <div class="kv-value">${escapeHtml((node.tags || []).join(", "))}</div>
-    </div>
-    <div class="kv">
-      <div class="kv-key">Skeleton file</div>
-      <div class="kv-value mono">${escapeHtml(node.skeleton_file)}</div>
+      <div class="kv-key">Resources</div>
+      <div class="kv-value"><ul>${resources}</ul></div>
     </div>
   `;
 
@@ -767,9 +870,5 @@ function setupEvents() {
   });
 }
 
-function initApp() {
-  setupEvents();
-  loadFromUrl(DEFAULT_URL, "default curriculum");
-}
-
-initApp();
+setupEvents();
+loadFromUrl(DEFAULT_URL, "default curriculum");

@@ -1,4 +1,3 @@
 {
-  "curriculum_cmd": "<command that generates outputs/curriculum/curriculum.json>",
-  "pedagogical_review_cmd": "<command that generates outputs/reviews/curriculum_review.md>"
+  "map_cmd": "<command that generates outputs/curriculum/curriculum.json>"
 }
