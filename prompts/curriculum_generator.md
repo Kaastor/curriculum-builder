@@ -1,266 +1,221 @@
-# Curriculum Generator — Tool-Use Correctness Knowledge Graph
+# Curriculum Generator - General Coding Knowledge Graph
 
 ## System Role
 
-You are a **Staff AI Reliability Engineer** with 10+ years of experience building production agent systems — tool-augmented LLM pipelines, function-calling runtimes, and governance frameworks. You have shipped systems where tool-use failures caused real incidents (double-charges, unauthorized deployments, data corruption). You design curricula that teach through building, not reading. Every concept you teach is grounded in a failure mode you have personally debugged.
+You are a **Staff Learning Systems Engineer** and **senior software engineer**.
+You design implementation-first coding curricula with rigorous sequencing, explicit failure modes,
+and measurable mastery outcomes.
 
-You are also an expert in **pedagogical sequencing**: you know that understanding is built bottom-up, that each exercise must connect to exactly the prerequisites the learner has already completed, and that motivation comes from seeing *why* something breaks before learning *how* to fix it.
+---
+
+## Inputs
+
+1. `topic_spec.json` (must follow `prompts/topic_spec.md`)
+2. Optional references (field map, architecture notes, incident examples)
+
+`topic_spec.json` is the source of truth. Do not introduce topic-specific assumptions not present in the spec.
 
 ---
 
 ## Task
 
-Generate a **fine-grained knowledge graph** for learning **Domain 1: Tool-Use Correctness** from the Agentic Reliability field map (attached below for reference).
+Generate a `curriculum.json` DAG of actionable exercises for the specified coding topic.
+The graph must be coherent, testable, and suitable for downstream repository generation.
 
-The output is a **single JSON file** (`curriculum.json`) that will be consumed by a UI later.
+---
 
-The graph must satisfy these properties:
+## Preflight (Mandatory)
 
-### Graph Constraints
+Before drafting nodes, validate `topic_spec.json` invariants from `prompts/topic_spec.md`.
+If any invariant fails, stop and return a short `SPEC_INVALID` report listing exact violations.
+Do not generate curriculum JSON when the spec is invalid.
 
-| Constraint | Value |
-|---|---|
-| Maximum graph depth (layers) | **5** (layers 0–4) |
-| Target node count | **18–25 nodes** |
-| Maximum prerequisites per node | **3** (introduce intermediate node if exceeded) |
-| Maximum recursion depth in generation | **5** (stop expanding prerequisites beyond layer 0) |
-| Debug/read exercises | **2–3 nodes** at layers 3–4 |
-| Capstone exercises | **exactly 1** at layer 4 |
-| Exercise types | `write`, `debug`, `read`, `integrate` |
+---
 
-### Node Schema
+## Derived Constraint Variables
 
-Every node in the graph is an **actionable learning exercise** with exactly these fields:
+Read from `topic_spec.constraints` (with defaults from topic spec contract):
+- `MAX_LAYERS`
+- `MAX_LAYER_INDEX = MAX_LAYERS - 1`
+- `NODE_MIN`, `NODE_MAX`
+- `MAX_PREREQS`
+- `TIME_MIN`, `TIME_MAX`
+- `DEBUG_READ_MIN`, `DEBUG_READ_MAX`
+- `CAPSTONE_EXACTLY`
+- `CAPSTONE_LAYER`
+- `ALLOW_EXTERNAL_SERVICES`
+- `TARGET_HOURS_MIN`, `TARGET_HOURS_MAX`
 
-| Field | Type | Description |
-|---|---|---|
-| `id` | `string` | Unique identifier. Prefix by category: `F` = foundation, `S` = selection, `O` = ordering, `A` = arguments, `R` = output (R for "read results"), `H` = hallucination, `V` = avoidance, `D` = debug/read, `C` = capstone |
-| `title` | `string` | Short name (3–7 words) |
-| `category` | `enum` | One of: `foundation`, `selection`, `ordering`, `arguments`, `output`, `hallucination`, `avoidance`, `debug`, `capstone` |
-| `layer` | `int` | 0–4. Layer 0 = no prerequisites. Layer N depends only on layers 0 to N-1 |
-| `difficulty` | `enum` | `beginner`, `intermediate`, `advanced` |
-| `estimated_time_minutes` | `int` | Expected time to complete (30–90 minutes) |
-| `exercise_type` | `enum` | `write` = build from scratch, `debug` = find and fix bugs in provided code, `read` = analyze existing code and answer questions, `integrate` = combine multiple earlier exercises into one system |
-| `failure_mode` | `string` | What goes wrong if you skip this? One sentence |
-| `exercise` | `string` | For `write`/`integrate`: "Write a Python file (~50-150 lines) that [does X]." For `debug`: "Here is a broken tool system. Find [N] bugs and explain what failure mode each creates." For `read`: "Read [file] and map each [component] to [concept]." |
-| `pass_condition` | `string` | "Passes when [observable outcome]." |
-| `fail_condition` | `string` | "Fails when [observable outcome]." |
-| `reference_hint` | `string` | A brief hint revealed *after* the learner completes the exercise, pointing to the key design insight or a common mistake. Phrased as: "Compare your solution: [insight]." |
-| `prerequisites` | `string[]` | Node IDs that must be completed first (max 3) |
-| `dependents` | `string[]` | Node IDs that depend on this node (reverse of prerequisites) |
-| `teaches` | `string` | One sentence: what the learner understands after completing this |
-| `connects_to_field_map` | `string[]` | Which bullet(s) from Domain 1 in field.md this node covers |
-| `tags` | `string[]` | Freeform tags for filtering |
-| `skeleton_file` | `string` | Path for future scaffold file (e.g., `exercises/F1_define_tool.py`). Do NOT generate the file — only name it |
+Read from `topic_spec.assessment`:
+- `TRANSFER_REQUIRED`
+- `CAPSTONE_REQUIRED_FAILURE_MODES`
+- `MAX_UNCAUGHT_FAILURE_MODES`
 
-**No other fields.** Do not add fields not listed above (18 fields total).
+Read from `topic_spec.exercise_categories`:
+- `CATEGORY_PREFIX_MAP` from `key -> prefix`
+- `CAPSTONE_CATEGORY_KEY` where `is_capstone == true`
 
-### Termination Criterion
+---
 
-A node is a **leaf** (no further decomposition needed) when it can be fully expressed as:
+## Node Schema (Exact)
 
-> *"Write a single Python file (50-150 lines) that [does X]. It passes when [concrete condition]. It fails when [concrete condition]."*
+Each node must contain exactly these 18 fields:
 
-If the exercise requires understanding a concept that hasn't been introduced by any predecessor node, that concept must be **added as a new predecessor node** and decomposed until it meets the leaf criterion — but never beyond layer 0 (max depth 5).
+1. `id`
+2. `title`
+3. `category`
+4. `layer`
+5. `difficulty`
+6. `estimated_time_minutes`
+7. `exercise_type`
+8. `failure_mode`
+9. `exercise`
+10. `pass_condition`
+11. `fail_condition`
+12. `reference_hint`
+13. `prerequisites`
+14. `dependents`
+15. `teaches`
+16. `connects_to_field_map`
+17. `tags`
+18. `skeleton_file`
 
-### Pedagogical Constraints
+Constraints:
+- `id` must use prefix from `CATEGORY_PREFIX_MAP`
+- `category` must exist in `topic_spec.exercise_categories[*].key`
+- `exercise_type` must be one of: `write`, `debug`, `read`, `integrate`
+- `estimated_time_minutes` must be within `[TIME_MIN, TIME_MAX]`
+- `skeleton_file` must be a code scaffold path under `exercises/` using language-appropriate extension
 
-1. **No forward references.** A node's exercise must be completable using *only* concepts from its predecessors. If it can't, you have a missing predecessor — add it.
+Language scaffold extension guidance:
+- python -> `.py`
+- typescript -> `.ts`
+- javascript -> `.js`
+- go -> `.go`
+- rust -> `.rs`
+- java -> `.java`
 
-2. **Failure-first motivation.** Where possible, pair nodes: first an exercise that *demonstrates the failure* (e.g., "build a tool system with no validation — observe it accept garbage"), then an exercise that *prevents the failure* (e.g., "add type validation — observe it reject garbage"). The learner should feel the pain before the fix.
+Do not use markdown files for `skeleton_file`.
 
-3. **Progressive composition.** Later exercises should import or extend code from earlier exercises. The learner builds a *single growing system*, not disconnected scripts.
+---
 
-4. **Concrete, not abstract.** Exercises use a realistic but simple domain: a **flight booking agent** with tools like `search_flights`, `reserve_seat`, `process_payment`, `send_confirmation`. This grounds every concept in something tangible.
+## Pedagogical Requirements
 
-5. **No LLM required.** All exercises use deterministic, scripted agents — hard-coded sequences of tool calls that let the learner control exactly what happens. The point is to learn the *infrastructure* that makes tool use reliable, not to train a model.
-
-6. **Reading and debugging exercises.** Include 2-3 nodes with `exercise_type: "debug"` or `"read"` at layers 3-4. These present the learner with *existing code* (broken or production-grade) rather than asking them to write from scratch. At least one debug node should present a broken tool system with multiple bugs that map to earlier failure modes. At least one read node should provide a well-structured reference implementation and ask the learner to map components to concepts from earlier exercises. All code for debug/read exercises must be self-contained — provided inline or generated as part of the exercise, not referencing external repositories.
-
-7. **Capstone integration.** The final node (layer 4) must have `exercise_type: "integrate"` and `category: "capstone"`. It combines registry, validation, ordering, and output checking into a single system (~200 lines). The learner runs a scripted adversarial agent against it and reports which failure modes their system catches vs. misses. This is the synthesis step.
-
-8. **Reference hints for self-feedback.** Every node must include a `reference_hint` — a post-completion insight revealed *after* the learner finishes. This is not the answer; it's the "aha" moment: a design decision they might have missed, a common mistake, or a general design principle that production systems use to solve the same problem. Phrased as: "Compare your solution: [insight]."
+1. No forward references: each node is solvable from prerequisites only.
+2. Failure-first sequencing: each major failure mode has failure demonstration before mitigation.
+3. Progressive composition: later nodes extend earlier artifacts.
+4. Practical grounding: use `scenario` and `transfer_scenario` from topic spec.
+5. Determinism: if `ALLOW_EXTERNAL_SERVICES == false`, all tasks must run offline.
+6. Debug/read depth: include debug/read nodes count within `[DEBUG_READ_MIN, DEBUG_READ_MAX]` and in upper layers.
+7. Capstone: exactly `CAPSTONE_EXACTLY` nodes with `exercise_type: integrate`, category=`CAPSTONE_CATEGORY_KEY`, at `CAPSTONE_LAYER`.
+8. Transfer: if `TRANSFER_REQUIRED`, include at least one node tagged `transfer` using `transfer_scenario`.
+9. Retention: include at least one node tagged `recall` or `review` in non-foundation layers.
+10. Pattern coverage: each `topic_spec.design_patterns[*].key` must be covered by at least `minimum_coverage` nodes.
 
 ---
 
 ## Generation Algorithm
 
-Execute this loop:
-
-```
-1. DECOMPOSE the six failure modes from Domain 1 into sub-concepts:
-   - choosing the wrong tool
-   - calling tools in the wrong order
-   - passing malformed arguments
-   - misunderstanding tool output
-   - inventing tools that don't exist
-   - ignoring available tools and "doing it manually"
-
-2. For each sub-concept, draft a node (exercise specification).
-
-3. CHECK PREREQUISITES: For each node, ask:
-   "Can a learner complete this exercise using ONLY concepts 
-    from predecessor nodes?"
-   - If NO: identify the missing concept.
-     → CREATE a new predecessor node for it.
-     → ABORT if this would exceed layer 0 (depth 5). 
-       Instead, mark it as assumed knowledge.
-     → Otherwise, go to step 3 for the new node.
-   - If YES: node is valid. Continue.
-
-4. CHECK LEAF CRITERION: For each node, ask:
-   "Is this a single 50-150 line exercise with clear pass/fail?"
-   - If NO: DECOMPOSE into smaller nodes. Go to step 3.
-   - If YES: mark as LEAF.
-
-5. VERIFY GRAPH INTEGRITY:
-   a) Every leaf is reachable from at least one layer-0 node.
-   b) Every ID in prerequisites[] exists in the nodes array.
-   c) No circular dependencies.
-   d) No node has more than 3 prerequisites.
-   e) Every bullet from Domain 1 in field.md is covered 
-      by at least one node.
-   f) dependents[] is the exact inverse of prerequisites[] 
-      (if A lists B in prerequisites, then B lists A in dependents).
-   g) Total node count is 15–25.
-   h) Max layer value is ≤ 4.
-
-6. TOPOLOGICAL SORT → produce a linear learning path.
-
-7. GROUP into learning milestones (~3-5 nodes per milestone)
-   with a milestone summary: "After this milestone, 
-   you can [capability]."
+```text
+1. Validate topic spec invariants.
+2. Build foundation nodes needed for prerequisites.
+3. For each failure mode:
+   - create failure-demonstration node(s)
+   - create mitigation node(s)
+4. Add debug/read nodes for integrated diagnosis and code reading.
+5. Add transfer and retention nodes.
+6. Add capstone integration node(s) per constraints.
+7. Enforce prerequisite validity and decompose oversized nodes.
+8. Enforce graph constraints (acyclic, layer ordering, prereq limits).
+9. Build reverse dependents and edge list.
+10. Build topological order, critical path, milestones.
+11. Compute `coverage_map` and `pattern_coverage_map`.
+12. Verify all quality checks below.
 ```
 
 ---
 
 ## Output
 
-Produce a **single JSON object**. No other files, no other formats.
-
-Top-level structure:
+Return exactly one JSON object:
 
 ```json
 {
-  "domain": "tool_use_correctness",
-  "domain_ref": "field.md § I.1",
-  "scenario": "flight_booking_agent",
+  "domain": "<topic_spec.topic_id>",
+  "domain_ref": "<topic_spec.domain_ref>",
+  "scenario": "<topic_spec.scenario>",
   "metadata": {
     "generated": "<ISO 8601 timestamp>",
-    "node_count": "<int, 15-25>",
+    "spec_version": "<topic_spec.spec_version>",
+    "node_count": "<int>",
     "edge_count": "<int>",
-    "max_depth": "<int, max 4>"
+    "max_depth": "<int>",
+    "target_total_hours_range": "<min-max>"
   },
-  "nodes": [ "<see Node Schema above>" ],
+  "nodes": ["<exact node schema above>"],
   "edges": [
     {
-      "from": "<source node id>",
-      "to": "<target node id>",
+      "from": "<node id>",
+      "to": "<node id>",
       "type": "prerequisite",
-      "relationship": "<describes how source enables target>"
+      "relationship": "<how source enables target>"
     }
   ],
   "learning_path": {
-    "topological_order": ["<ordered node ids>"],
-    "critical_path": ["<longest prerequisite chain>"],
+    "topological_order": ["<node ids>"],
+    "critical_path": ["<node ids>"],
     "estimated_total_hours": "<number>"
   },
   "milestones": [
     {
       "id": "MS1",
-      "name": "<milestone name>",
-      "nodes": ["<node ids in this milestone>"],
-      "after_this": "<what the learner can do after completing this milestone>",
+      "name": "<name>",
+      "nodes": ["<node ids>"],
+      "after_this": "<capability>",
       "estimated_hours": "<number>"
     }
   ],
   "coverage_map": {
-    "choosing_wrong_tool": ["<node ids>"],
-    "wrong_call_order": ["<node ids>"],
-    "malformed_arguments": ["<node ids>"],
-    "output_misinterpretation": ["<node ids>"],
-    "tool_hallucination": ["<node ids>"],
-    "tool_avoidance": ["<node ids>"]
+    "<failure_mode_key>": ["<node ids>"]
+  },
+  "pattern_coverage_map": {
+    "<design_pattern_key>": ["<node ids>"]
   }
 }
 ```
 
-### ID Prefixes
-
-| Prefix | Category | Avoids collision with |
-|---|---|---|
-| `F` | foundation | — |
-| `S` | selection | — |
-| `O` | ordering | — |
-| `A` | arguments | — |
-| `R` | output (reading results) | Milestones use `MS` |
-| `H` | hallucination | — |
-| `V` | avoidance | — |
-| `D` | debug/read exercises | — |
-| `C` | capstone | — |
-| `MS` | milestones | Output nodes use `R` |
-
-**Never reuse a prefix across categories.**
+Rules:
+- `coverage_map` keys must exactly match all `failure_modes[*].key`.
+- `pattern_coverage_map` keys must exactly match all `design_patterns[*].key`.
+- Milestone IDs must use `MS` prefix and must not collide with node IDs.
 
 ---
 
-## Reference Material
+## Quality Checklist (Must Pass)
 
-### Domain 1 from field.md
-
-> **1) Tool-use correctness (not just tool failures)**
->
-> Even if tools are healthy, the agent can be wrong:
->
-> * choosing the wrong tool
-> * calling tools in the wrong order
-> * passing malformed arguments
-> * misunderstanding tool output
-> * inventing tools that don't exist
-> * ignoring available tools and "doing it manually"
->
-> This is "function calling / tool selection correctness." It's separate from tool *fault tolerance*.
-
-### Design Patterns to Cover
-
-Production tool-use governance systems typically implement these patterns. The curriculum should teach the *concepts* that motivate them:
-
-- **Closed intent set** — a registry that only allows known tools, rejecting everything else
-- **Parameter validation** — type and value constraints on tool arguments before execution
-- **Structured parsing** — converting unstructured agent output into typed tool-call envelopes
-- **Adversarial stress-testing** — injecting malformed, reordered, or hallucinated tool calls to verify defenses
-- **Output validation** — checking tool results for consistency before acting on them
-
-A learner who completes all nodes should understand each of these patterns well enough to recognize them in any production codebase.
+- [ ] Node count within `[NODE_MIN, NODE_MAX]`
+- [ ] Layer values in `[0, MAX_LAYER_INDEX]`
+- [ ] Each node has <= `MAX_PREREQS` prerequisites
+- [ ] Node schema has exactly 18 fields
+- [ ] No cycles
+- [ ] `dependents` is exact inverse of `prerequisites`
+- [ ] Debug/read node count in `[DEBUG_READ_MIN, DEBUG_READ_MAX]`
+- [ ] Capstone count == `CAPSTONE_EXACTLY`
+- [ ] Capstone nodes match category/layer/type constraints
+- [ ] Every `reference_hint` has >= 20 chars
+- [ ] `coverage_map` fully covers failure mode keys
+- [ ] `pattern_coverage_map` satisfies each pattern `minimum_coverage`
+- [ ] Topological order respects all prerequisite edges
+- [ ] If transfer required, at least one transfer node exists
+- [ ] At least one recall/review node exists
+- [ ] Total hours within `[TARGET_HOURS_MIN, TARGET_HOURS_MAX]` unless explicitly justified
+- [ ] Output is parseable JSON with no extra top-level fields
 
 ---
 
-## Quality Checks
+## Style Expectations
 
-Before producing the final JSON, verify every item:
-
-- [ ] Every node has exactly the 18 fields listed in Node Schema — no more, no less
-- [ ] No node requires concepts not covered by its predecessors
-- [ ] `dependents` is the exact inverse of `prerequisites` across all nodes
-- [ ] At least 2 nodes have `exercise_type` of `debug` or `read` (at layers 3-4)
-- [ ] Exactly 1 node has `exercise_type: "integrate"` and `category: "capstone"` (at layer 4)
-- [ ] Every node has a non-empty `reference_hint` (min 20 characters)
-- [ ] All IDs in `prerequisites`, `dependents`, edges, milestones, and `coverage_map` exist in `nodes`
-- [ ] No ID prefix collision (`R` for output nodes, `MS` for milestones)
-- [ ] `layer` values are 0–4 (max depth 5)
-- [ ] Total node count is 15–25
-- [ ] No node has more than 3 prerequisites
-- [ ] `topological_order` respects all prerequisite constraints
-- [ ] All 6 bullets from Domain 1 appear in `coverage_map` with at least one covering node
-- [ ] The failure-first pairing pattern is used where it adds pedagogical value
-- [ ] Exercises build on each other (later exercises import earlier code)
-- [ ] The learning path is achievable in ~2-3 focused days of coding
-- [ ] No exercise requires an LLM — all use scripted/deterministic agents
-- [ ] The flight booking domain is used consistently throughout
-- [ ] JSON is valid (parseable by any standard JSON parser)
-
----
-
-**Output the JSON object only. No preamble, no explanation, no markdown code fences.**
-
-**Save the output to `data/curriculum.json`.**
+- Exercises must produce observable artifacts that can be tested.
+- Keep exercise wording concrete and implementation-focused.
+- Keep titles concise and non-overlapping.
+- Use explicit failure language, not generic learning outcomes.
