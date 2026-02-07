@@ -7,6 +7,7 @@ Static inspector UI for curriculum graphs generated from `prompts/generator.md`.
 - Interactive dependency graph powered by Cytoscape (pan, zoom, click-to-inspect, fit-to-view).
 - Layer explorer, searchable node table, coverage map, learning path, and milestones.
 - Filter sync across graph + detail panels (layer/category/exercise type).
+- Starts from `data/curriculum.json` and supports loading a local curriculum JSON file.
 
 ## Commands
 
@@ -21,7 +22,7 @@ Static inspector UI for curriculum graphs generated from `prompts/generator.md`.
 - Primary dataset: `data/curriculum.json`
 - Mock dataset for UI development: `data/reliability/curriculum.mock.json`
 
-The inspector can also load any local curriculum JSON file via file input.
+The inspector starts with `data/curriculum.json` and you can switch datasets with the `Load curriculum` file picker.
 
 Note: Cytoscape is loaded from a CDN in `app/index.html`; if offline, the app keeps working except for the graph panel.
 

@@ -1,5 +1,4 @@
 const DEFAULT_URL = "../data/curriculum.json";
-const MOCK_URL = "../data/reliability/curriculum.mock.json";
 
 const REQUIRED_TOP_LEVEL = [
   "domain",
@@ -36,8 +35,6 @@ const state = {
 };
 
 const els = {
-  loadDefaultBtn: document.getElementById("loadDefaultBtn"),
-  loadMockBtn: document.getElementById("loadMockBtn"),
   fileInput: document.getElementById("fileInput"),
   searchInput: document.getElementById("searchInput"),
   statusBanner: document.getElementById("statusBanner"),
@@ -737,14 +734,6 @@ function escapeHtml(value) {
 }
 
 function setupEvents() {
-  els.loadDefaultBtn.addEventListener("click", () => {
-    loadFromUrl(DEFAULT_URL, "default curriculum");
-  });
-
-  els.loadMockBtn.addEventListener("click", () => {
-    loadFromUrl(MOCK_URL, "mock curriculum");
-  });
-
   els.fileInput.addEventListener("change", (event) => {
     const file = event.target.files?.[0];
     if (file) {
@@ -762,5 +751,9 @@ function setupEvents() {
   });
 }
 
-setupEvents();
-loadFromUrl(DEFAULT_URL, "default curriculum");
+function initApp() {
+  setupEvents();
+  loadFromUrl(DEFAULT_URL, "default curriculum");
+}
+
+initApp();
