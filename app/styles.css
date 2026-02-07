@@ -281,6 +281,27 @@ input[type='search'] {
   font-size: 0.85rem;
 }
 
+.graph-action {
+  padding: 0.36rem 0.65rem;
+  font-size: 0.78rem;
+}
+
+.graph-help {
+  margin-bottom: 0.45rem;
+}
+
+.graph-view {
+  height: 420px;
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background:
+    radial-gradient(circle at 15% 18%, #f8fff9 0, transparent 40%),
+    radial-gradient(circle at 85% 82%, #fff9ee 0, transparent 36%),
+    #ffffff;
+  margin-bottom: 1rem;
+}
+
 .layer-explorer {
   display: grid;
   grid-template-columns: repeat(5, minmax(180px, 1fr));
@@ -471,5 +492,9 @@ tr.active {
 
   .layer-explorer {
     grid-template-columns: repeat(2, minmax(180px, 1fr));
+  }
+
+  .graph-view {
+    height: 340px;
   }
 }

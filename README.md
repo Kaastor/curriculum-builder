@@ -2,6 +2,12 @@
 
 Static inspector UI for curriculum graphs generated from `prompts/generator.md`.
 
+## UI Features
+
+- Interactive dependency graph powered by Cytoscape (pan, zoom, click-to-inspect, fit-to-view).
+- Layer explorer, searchable node table, coverage map, learning path, and milestones.
+- Filter sync across graph + detail panels (layer/category/exercise type).
+
 ## Commands
 
 - `make setup` - local environment note (Python 3.10+).
@@ -16,6 +22,8 @@ Static inspector UI for curriculum graphs generated from `prompts/generator.md`.
 - Mock dataset for UI development: `data/reliability/curriculum.mock.json`
 
 The inspector can also load any local curriculum JSON file via file input.
+
+Note: Cytoscape is loaded from a CDN in `app/index.html`; if offline, the app keeps working except for the graph panel.
 
 ## Agentic Loop
 

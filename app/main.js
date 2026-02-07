@@ -13,6 +13,18 @@ const REQUIRED_TOP_LEVEL = [
   "coverage_map",
 ];
 
+const CATEGORY_COLORS = {
+  foundation: "#007f6d",
+  selection: "#2c6fce",
+  ordering: "#b46a18",
+  arguments: "#8b5cf6",
+  output: "#0077b6",
+  hallucination: "#d1495b",
+  avoidance: "#6a994e",
+  debug: "#3d405b",
+  capstone: "#111827",
+};
+
 const state = {
   curriculum: null,
   selectedNodeId: null,
@@ -20,6 +32,7 @@ const state = {
   selectedLayers: new Set(),
   selectedCategories: new Set(),
   selectedTypes: new Set(),
+  cy: null,
 };
 
 const els = {
@@ -39,6 +52,8 @@ const els = {
   categoryFilters: document.getElementById("categoryFilters"),
   typeFilters: document.getElementById("typeFilters"),
   visibleCount: document.getElementById("visibleCount"),
+  graphView: document.getElementById("graphView"),
+  graphFitBtn: document.getElementById("graphFitBtn"),
 };
 
 function showStatus(message, type = "ok") {
@@ -106,6 +121,7 @@ function setCurriculum(data) {
     return;
   }
 
+  destroyGraph();
   state.curriculum = data;
   if (!data.nodes.find((node) => node.id === state.selectedNodeId)) {
     state.selectedNodeId = data.nodes[0]?.id ?? null;
@@ -155,6 +171,211 @@ function filterNodes() {
   });
 }
 
+function destroyGraph() {
+  if (state.cy) {
+    state.cy.destroy();
+    state.cy = null;
+  }
+  if (els.graphView) {
+    els.graphView.innerHTML = "";
+  }
+}
+
+function categoryColor(category) {
+  return CATEGORY_COLORS[category] ?? "#51606f";
+}
+
+function buildGraphElements() {
+  const nodesByLayer = new Map();
+  for (let i = 0; i <= 4; i += 1) {
+    nodesByLayer.set(i, []);
+  }
+
+  state.curriculum.nodes.forEach((node) => {
+    if (!nodesByLayer.has(node.layer)) {
+      nodesByLayer.set(node.layer, []);
+    }
+    nodesByLayer.get(node.layer).push(node);
+  });
+
+  const nodeElements = [];
+  const xStep = 220;
+  const yStep = 96;
+  const xStart = 90;
+  const yStart = 70;
+
+  nodesByLayer.forEach((nodes, layer) => {
+    nodes
+      .sort((a, b) => a.id.localeCompare(b.id))
+      .forEach((node, index) => {
+        nodeElements.push({
+          group: "nodes",
+          data: {
+            id: node.id,
+            label: node.id,
+            title: node.title,
+            layer: String(layer),
+            category: node.category,
+            color: categoryColor(node.category),
+          },
+          position: {
+            x: xStart + layer * xStep,
+            y: yStart + index * yStep,
+          },
+        });
+      });
+  });
+
+  const edgeElements = (state.curriculum.edges || []).map((edge) => ({
+    group: "edges",
+    data: {
+      id: `${edge.from}->${edge.to}`,
+      source: edge.from,
+      target: edge.to,
+    },
+  }));
+
+  return [...nodeElements, ...edgeElements];
+}
+
+function ensureGraph() {
+  if (state.cy || !state.curriculum) {
+    return;
+  }
+
+  if (typeof window.cytoscape !== "function") {
+    els.graphView.innerHTML =
+      '<p class="muted" style="padding: 0.75rem;">Cytoscape is unavailable. Check network access and reload.</p>';
+    return;
+  }
+
+  state.cy = window.cytoscape({
+    container: els.graphView,
+    elements: buildGraphElements(),
+    layout: {
+      name: "preset",
+      fit: true,
+      padding: 48,
+    },
+    minZoom: 0.35,
+    maxZoom: 2.6,
+    wheelSensitivity: 0.18,
+    style: [
+      {
+        selector: "node",
+        style: {
+          "background-color": "data(color)",
+          label: "data(label)",
+          color: "#f8fafc",
+          "font-size": "11px",
+          "font-weight": 700,
+          "text-outline-width": 2,
+          "text-outline-color": "data(color)",
+          "text-valign": "center",
+          "text-halign": "center",
+          width: 42,
+          height: 42,
+          "border-width": 2,
+          "border-color": "#ffffff",
+        },
+      },
+      {
+        selector: "edge",
+        style: {
+          width: 1.8,
+          "line-color": "#8aa1b5",
+          "target-arrow-color": "#8aa1b5",
+          "target-arrow-shape": "triangle",
+          "curve-style": "bezier",
+          "arrow-scale": 0.9,
+        },
+      },
+      {
+        selector: ".is-context",
+        style: {
+          "border-color": "#ffd166",
+          "border-width": 3,
+        },
+      },
+      {
+        selector: ".is-selected",
+        style: {
+          "overlay-color": "#1f7a8c",
+          "overlay-opacity": 0.18,
+          "overlay-padding": 6,
+          "border-color": "#072f3a",
+          "border-width": 4,
+        },
+      },
+      {
+        selector: ".is-hidden",
+        style: {
+          display: "none",
+        },
+      },
+    ],
+  });
+
+  state.cy.on("tap", "node", (event) => {
+    const nodeId = event.target.id();
+    if (!nodeId || nodeId === state.selectedNodeId) {
+      return;
+    }
+    state.selectedNodeId = nodeId;
+    render();
+  });
+}
+
+function fitVisibleGraph() {
+  if (!state.cy) {
+    return;
+  }
+  const visible = state.cy.elements().not(".is-hidden");
+  if (visible.length === 0) {
+    return;
+  }
+  state.cy.fit(visible, 48);
+}
+
+function renderGraph(filteredNodes) {
+  ensureGraph();
+  if (!state.cy) {
+    return;
+  }
+
+  const visibleIds = new Set(filteredNodes.map((node) => node.id));
+
+  state.cy.batch(() => {
+    state.cy.nodes().forEach((node) => {
+      const shouldHide = !visibleIds.has(node.id());
+      node.toggleClass("is-hidden", shouldHide);
+      node.removeClass("is-selected");
+      node.removeClass("is-context");
+    });
+
+    state.cy.edges().forEach((edge) => {
+      const shouldHide =
+        !visibleIds.has(edge.source().id()) || !visibleIds.has(edge.target().id());
+      edge.toggleClass("is-hidden", shouldHide);
+    });
+
+    const selected = state.selectedNodeId ? state.cy.getElementById(state.selectedNodeId) : null;
+    if (selected && selected.nonempty() && !selected.hasClass("is-hidden")) {
+      selected.addClass("is-selected");
+      selected.incomers("node").forEach((node) => {
+        if (!node.hasClass("is-hidden")) {
+          node.addClass("is-context");
+        }
+      });
+      selected.outgoers("node").forEach((node) => {
+        if (!node.hasClass("is-hidden")) {
+          node.addClass("is-context");
+        }
+      });
+    }
+  });
+}
+
 function render() {
   if (!state.curriculum) {
     return;
@@ -166,6 +387,7 @@ function render() {
   const filteredNodes = filterNodes();
   els.visibleCount.textContent = `${filteredNodes.length}/${state.curriculum.nodes.length} nodes visible`;
 
+  renderGraph(filteredNodes);
   renderLayerExplorer(filteredNodes);
   renderNodeTable(filteredNodes);
   renderCoverageMap();
@@ -533,6 +755,10 @@ function setupEvents() {
   els.searchInput.addEventListener("input", (event) => {
     state.searchText = event.target.value || "";
     render();
+  });
+
+  els.graphFitBtn.addEventListener("click", () => {
+    fitVisibleGraph();
   });
 }
 
