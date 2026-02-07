@@ -9,16 +9,30 @@ Turn a coding topic into:
 2. a pedagogical review,
 3. a runnable learning repository.
 
-## System Inputs
+## Stage -1 - Initialize Run Folder
 
-- `topic_spec.json` (contract in `prompts/topic_spec.md`)
-- optional domain references (notes, docs, incidents, code snippets)
+Create a new isolated run folder:
 
-## System Outputs
+- `make workflow-start RUN_NAME="<topic-slug>"`
+- equivalent: `python3 scripts/workflow.py init "<topic-slug>"`
 
-- `data/curriculum.json`
-- `reviews/curriculum_review.md`
-- `<topic_id>-learning/` (generated learning repository)
+This creates:
+- `workflows/runs/<run_id>/inputs/topic_spec.json`
+- `workflows/runs/<run_id>/references/`
+- `workflows/runs/<run_id>/outputs/{curriculum,reviews,repository}/`
+- `workflows/runs/<run_id>/logs/`
+
+## System Inputs (Per Run)
+
+- `workflows/runs/<run_id>/inputs/topic_spec.json` (contract in `prompts/topic_spec.md`)
+- optional references in `workflows/runs/<run_id>/references/`
+
+## System Outputs (Per Run)
+
+- `workflows/runs/<run_id>/outputs/curriculum/curriculum.json`
+- `workflows/runs/<run_id>/outputs/reviews/structural_validation.md`
+- `workflows/runs/<run_id>/outputs/reviews/curriculum_review.md`
+- `workflows/runs/<run_id>/outputs/repository/<topic_id>-learning/`
 
 ## Stage 0 - Prepare Topic Spec
 
@@ -33,11 +47,11 @@ Checklist:
 ## Stage 1 - Generate Curriculum
 
 Use `prompts/curriculum_generator.md` with:
-- `topic_spec.json`
+- `workflows/runs/<run_id>/inputs/topic_spec.json`
 - optional reference material
 
 Output:
-- `data/curriculum.json`
+- `workflows/runs/<run_id>/outputs/curriculum/curriculum.json`
 
 Required properties:
 - valid DAG
@@ -50,11 +64,11 @@ Required properties:
 ### 2A. Structural validation
 
 Use `prompts/structural_validator.md` with:
-- `topic_spec.json`
-- `data/curriculum.json`
+- `workflows/runs/<run_id>/inputs/topic_spec.json`
+- `workflows/runs/<run_id>/outputs/curriculum/curriculum.json`
 
 Output:
-- `reviews/structural_validation.md`
+- `workflows/runs/<run_id>/outputs/reviews/structural_validation.md`
 
 Optional local quick check:
 - `make validate` (useful for local baseline fixture compatibility)
@@ -62,11 +76,11 @@ Optional local quick check:
 ### 2B. Pedagogical validation
 
 Use `prompts/curriculum_validator.md` with:
-- `topic_spec.json`
-- `data/curriculum.json`
+- `workflows/runs/<run_id>/inputs/topic_spec.json`
+- `workflows/runs/<run_id>/outputs/curriculum/curriculum.json`
 
 Output:
-- `reviews/curriculum_review.md`
+- `workflows/runs/<run_id>/outputs/reviews/curriculum_review.md`
 
 Rule:
 - Resolve all `FAIL` and all high-impact `WEAK` findings before moving to Stage 3.
@@ -85,11 +99,11 @@ Use `prompts/repo_generator.md` with `generation_mode` in this order:
 - generate complete implementation, solutions, docs, and pass quality checks
 
 Output:
-- `<topic_id>-learning/`
+- `workflows/runs/<run_id>/outputs/repository/<topic_id>-learning/`
 
 ## Stage 4 - Final Quality Gate
 
-Inside generated repository:
+Inside `workflows/runs/<run_id>/outputs/repository/<topic_id>-learning/`:
 - run `make gate`
 - run progress/check scripts
 - verify capstone and transfer tasks are runnable
@@ -103,8 +117,11 @@ Inside generated repository:
 
 ## Fast Path (for experienced users)
 
-1. Fill `topic_spec.json`
-2. Run curriculum generation
-3. Run structural + pedagogical validation
-4. Run repo generation (`plan` -> `scaffold` -> `full`)
-5. Run final gate
+1. Create a run with `make workflow-start RUN_NAME="<topic-slug>"`
+2. Fill `workflows/runs/<run_id>/inputs/topic_spec.json`
+3. Run curriculum generation
+4. Run structural validation with `make workflow-validate RUN_ID="<run_id>"`
+5. Run pedagogical validation
+6. Run repo generation (`plan` -> `scaffold` -> `full`)
+7. Optionally automate full run with `make workflow-run RUN_ID="<run_id>"` once commands are configured
+8. Run final gate

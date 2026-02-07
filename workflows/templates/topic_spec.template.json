@@ -1,0 +1,82 @@
+{
+  "spec_version": "1.0",
+  "topic_id": "replace_with_topic_id",
+  "topic_name": "Replace With Topic Name",
+  "domain_ref": "internal-map-or-source",
+  "target_role": "e.g. backend_developer",
+  "language": "python",
+  "project_type": "library",
+  "scenario": "Primary scenario",
+  "transfer_scenario": "Different but related scenario",
+  "prerequisites": [
+    "Prerequisite 1",
+    "Prerequisite 2"
+  ],
+  "outcome": "What learner can do after completing this curriculum.",
+  "failure_modes": [
+    {
+      "key": "example_failure_mode",
+      "label": "Example Failure Mode",
+      "description": "What goes wrong.",
+      "production_impact": "Why this matters in production.",
+      "example": "Concrete example.",
+      "must_cover_in_capstone": true
+    }
+  ],
+  "design_patterns": [
+    {
+      "key": "example_pattern",
+      "name": "Example Pattern",
+      "problem": "Problem solved by this pattern.",
+      "minimum_coverage": 1
+    }
+  ],
+  "exercise_categories": [
+    {
+      "key": "foundation",
+      "prefix": "F",
+      "description": "Core concepts",
+      "supports_exercise_types": [
+        "write"
+      ],
+      "is_capstone": false
+    },
+    {
+      "key": "capstone",
+      "prefix": "C",
+      "description": "Integration",
+      "supports_exercise_types": [
+        "integrate"
+      ],
+      "is_capstone": true
+    }
+  ],
+  "constraints": {
+    "max_layers": 5,
+    "node_count_min": 18,
+    "node_count_max": 25,
+    "max_prerequisites_per_node": 3,
+    "exercise_time_min_minutes": 30,
+    "exercise_time_max_minutes": 90,
+    "debug_read_min": 2,
+    "debug_read_max": 3,
+    "capstone_exactly": 1,
+    "capstone_layer": 4,
+    "allow_external_services": false,
+    "target_total_hours_min": 12,
+    "target_total_hours_max": 24
+  },
+  "assessment": {
+    "capstone_required_failure_modes": [
+      "example_failure_mode"
+    ],
+    "mastery_threshold": "Define objective mastery criteria.",
+    "transfer_task_required": true,
+    "max_uncaught_failure_modes": 1
+  },
+  "repo_preferences": {
+    "repo_name": "optional-repo-name",
+    "package_name": "optional_package_name",
+    "use_makefile": true
+  }
+}

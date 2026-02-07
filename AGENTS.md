@@ -14,6 +14,10 @@
 - Do not edit `.env` / secrets files.
 - Do not run destructive git operations unless explicitly requested.
 
+## PoC Priority
+- This repository is a PoC; prioritize validating core logic and workflow correctness over polish.
+- Optimize for fast, reliable feedback on behavior (tests/validation), and defer non-essential refinements.
+
 ## Definition Of Done
 - Feature behavior works as requested.
 - If behavior changed, update `README.md` and related docs.
@@ -29,7 +33,9 @@
 - `app/`: Static curriculum inspector UI (`index.html`, `styles.css`, `main.js`).
 - `data/`: Curriculum JSON used by validator and UI (`data/curriculum.json`).
 - `prompts/`: Prompt specifications for curriculum generation and review.
+- `workflows/`: Run-oriented workspace for topic specs, generated artifacts, and logs.
 - `scripts/validator.py`: Structural validator for curriculum JSON.
+- `scripts/workflow.py`: Workflow CLI (`init|status|next|validate|run|archive|list`).
 - `scripts/gate.sh`: Canonical local quality gate.
 - `tests/`: Regression checks for data and tooling.
 

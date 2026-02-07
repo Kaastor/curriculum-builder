@@ -182,17 +182,28 @@ function categoryColor(category) {
   return CATEGORY_COLORS[category] ?? "#51606f";
 }
 
+function getOrderedLayers(nodes) {
+  const numericLayers = nodes
+    .map((node) => Number(node.layer))
+    .filter((layer) => Number.isInteger(layer) && layer >= 0);
+
+  const maxLayer = numericLayers.length > 0 ? Math.max(...numericLayers) : 0;
+  return Array.from({ length: maxLayer + 1 }, (_, idx) => idx);
+}
+
 function buildGraphElements() {
-  const nodesByLayer = new Map();
-  for (let i = 0; i <= 4; i += 1) {
-    nodesByLayer.set(i, []);
-  }
+  const orderedLayers = getOrderedLayers(state.curriculum.nodes);
+  const nodesByLayer = new Map(orderedLayers.map((layer) => [layer, []]));
 
   state.curriculum.nodes.forEach((node) => {
-    if (!nodesByLayer.has(node.layer)) {
-      nodesByLayer.set(node.layer, []);
+    const layer = Number(node.layer);
+    if (!Number.isInteger(layer) || layer < 0) {
+      return;
     }
-    nodesByLayer.get(node.layer).push(node);
+    if (!nodesByLayer.has(layer)) {
+      nodesByLayer.set(layer, []);
+    }
+    nodesByLayer.get(layer).push(node);
   });
 
   const nodeElements = [];
@@ -201,8 +212,9 @@ function buildGraphElements() {
   const xStart = 90;
   const yStart = 70;
 
-  nodesByLayer.forEach((nodes, layer) => {
-    nodes
+  orderedLayers.forEach((layer) => {
+    const layerNodes = nodesByLayer.get(layer) ?? [];
+    layerNodes
       .sort((a, b) => a.id.localeCompare(b.id))
       .forEach((node, index) => {
         nodeElements.push({
@@ -396,7 +408,9 @@ function render() {
 function renderFilters() {
   renderChipFilter(
     els.layerFilters,
-    [...new Set(state.curriculum.nodes.map((n) => String(n.layer)))].sort(),
+    [...new Set(state.curriculum.nodes.map((n) => String(n.layer)))].sort(
+      (a, b) => Number(a) - Number(b)
+    ),
     state.selectedLayers,
     (value) => {
       toggleSetValue(state.selectedLayers, value);
@@ -480,18 +494,20 @@ function renderMetrics() {
 }
 
 function renderLayerExplorer(filteredNodes) {
-  const byLayer = new Map();
-  for (let i = 0; i <= 4; i += 1) {
-    byLayer.set(i, []);
-  }
+  const orderedLayers = getOrderedLayers(state.curriculum.nodes);
+  const byLayer = new Map(orderedLayers.map((layer) => [layer, []]));
 
   filteredNodes.forEach((node) => {
-    byLayer.get(node.layer)?.push(node);
+    const layer = Number(node.layer);
+    if (Number.isInteger(layer) && byLayer.has(layer)) {
+      byLayer.get(layer).push(node);
+    }
   });
 
   els.layerExplorer.innerHTML = "";
 
-  byLayer.forEach((nodesInLayer, layer) => {
+  orderedLayers.forEach((layer) => {
+    const nodesInLayer = byLayer.get(layer) ?? [];
     const column = document.createElement("div");
     column.className = "layer-column";
 
