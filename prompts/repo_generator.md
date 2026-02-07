@@ -56,7 +56,7 @@ tool-use-correctness/
 │       ├── hallucination.py           # HallucinationDetector, unknown-tool rejection
 │       └── runner.py                  # Exercise runner: execute agent against tool system, report results
 ├── exercises/
-│   ├── README.md                      # How exercises work, conventions, tips
+│   ├── README.md                      # How exercises work, conventions, tips, troubleshooting FAQ
 │   ├── F1_define_tool.py              # Skeleton files — one per curriculum node
 │   ├── F2_tool_registry.py
 │   ├── ...                            # Named after skeleton_file in curriculum.json
@@ -125,13 +125,33 @@ For `exercise_type: "debug"`:
 
 For `exercise_type: "read"`:
 - Place the reference implementation in `exercises_reference/`.
-- The scaffold in `exercises/` should contain questions the learner must answer by reading the reference code.
-- Questions should map components to concepts: "Which class enforces [concept from node X]?"
+- The scaffold in `exercises/` must require the learner to produce a **concrete, testable artifact** — not just answer questions mentally. For example: "Create a dictionary that maps each class in the reference implementation to the failure mode it prevents" or "Write a function that returns the execution order of the 5 components." The tests verify this artifact is correct.
+- Questions should map components to concepts: "Which class enforces [concept from node X]?" — but the learner must encode their answer *in code* (a dict, a list, a function return value) so the test can check it.
 
 For `exercise_type: "integrate"` (capstone):
-- The scaffold should import from multiple earlier exercises.
+- The scaffold should import from `src/tool_correctness/` for shared infrastructure AND from the learner's own earlier exercise files. This is the one exercise where cascading dependencies are intentional — it's the synthesis test.
 - Include a `run_adversarial_suite()` function stub that the learner must implement.
 - The adversarial suite should include a scripted agent that attempts all 6 failure modes.
+
+#### `exercises/README.md` — Conventions and Troubleshooting
+
+This file must include:
+
+- **How exercises work**: file naming, how to run tests, how to check progress.
+- **Conventions**: import patterns, where to put helper functions, how exercises build on each other.
+- **Troubleshooting FAQ**: For each exercise category (foundation, selection, ordering, arguments, output, hallucination, avoidance), list 2–3 common mistakes with symptoms and fixes. Example:
+
+```markdown
+### Common Mistakes — Registry Exercises (F, S)
+- **Symptom:** `test_registry_rejects_unknown_tool` fails.
+  **Likely cause:** You're comparing tool names as raw strings instead of
+  checking membership in the registered set. Use `in` on the registry,
+  not string equality.
+
+- **Symptom:** `test_registry_is_immutable` fails.
+  **Likely cause:** You're using a regular `dict` instead of a frozen structure.
+  Consider `frozenset` or a `@dataclass(frozen=True)` wrapper.
+```
 
 ### 3. Tests (`tests/`)
 
@@ -143,8 +163,31 @@ For each exercise node:
 - Use descriptive test names: `test_registry_rejects_unknown_tool`, not `test_1`.
 - Include both positive tests (the thing works) and negative tests (the thing correctly rejects bad input).
 - For debug exercises: tests should pass only when all bugs are fixed.
-- For read exercises: tests can verify the learner's answers (e.g., fill-in-the-blank assertions).
+- For read exercises: tests verify the learner's concrete artifact (dict, list, or function return value).
 - Tests should import from the learner's exercise file, not from solutions.
+
+**Graded sub-tests (mandatory).** Each test file must contain **3–5 test functions ordered from simplest to hardest**. The learner gets incremental green checkmarks as they build their solution, rather than a single all-or-nothing verdict. Example for a registry exercise:
+
+```python
+# test_F2_tool_registry.py — ordered simplest → hardest
+def test_registry_exists_and_is_importable(): ...
+def test_registry_accepts_known_tool(): ...
+def test_registry_rejects_unknown_tool(): ...
+def test_registry_lists_all_registered_tools(): ...
+def test_registry_is_immutable_after_creation(): ...
+```
+
+**Diagnostic assertion messages (mandatory).** Every `assert` statement must include a human-readable message that names the failure mode being tested and explains what went wrong. The learner should never see a bare `AssertionError` — they should see *why* it failed and *which concept* they missed. Example:
+
+```python
+assert result.ok is False, (
+    "Registry accepted 'cancel_flight' but it's not in the allowed set — "
+    "this is the 'tool hallucination' failure mode (Domain 1, bullet 5). "
+    "Your registry should reject any tool not explicitly registered."
+)
+```
+
+**Exercise isolation (mandatory).** Tests for exercise N must be passable using *only* the `src/tool_correctness/` library and the learner's code for exercise N. Tests must **never** import from the learner's earlier exercise files. If exercise N conceptually builds on exercise M, the test should import the needed foundation from `src/tool_correctness/` (which provides stable, working shared infrastructure), not from `exercises/M.py`. This ensures a bug in exercise M doesn't cascade into false failures for exercise N.
 
 ### 4. Solutions (`solutions/`)
 
@@ -158,12 +201,16 @@ For each exercise:
 
 ### 5. Library Modules (`src/tool_correctness/`)
 
-These are the **shared types and utilities** that exercises build on:
+These are the **stable, working shared infrastructure** that all exercises import from. They must be fully functional from the start — the learner never edits these files. This ensures that a bug in exercise M never cascades into exercise N.
 
 - `types.py` — All enums and base types used across the repo. This is the first thing the learner reads.
 - `tools.py` — The flight booking tool definitions. Four tools: `search_flights`, `reserve_seat`, `process_payment`, `send_confirmation`. Each tool is a frozen dataclass with name, parameter schema, effect type, and a deterministic `execute()` method.
 - `agent.py` — `ScriptedAgent` base class that replays a hard-coded sequence of tool calls. Include 3-4 example agents: one correct, one that calls tools in wrong order, one that hallucinates a tool, one that ignores tools.
-- Other modules (`registry.py`, `contracts.py`, etc.) start as **minimal stubs** that the learner progressively fills in through exercises. They should have the class/function signatures and docstrings but raise `NotImplementedError` for the bodies.
+- `registry.py`, `contracts.py`, `envelope.py`, `ordering.py`, `output.py`, `hallucination.py` — **Complete, working reference implementations** of each pattern. These serve as the stable foundation that tests import when verifying the learner's exercise code in isolation.
+
+**Key design principle:** Exercises ask the learner to *build their own version* of a pattern (e.g., their own registry in `exercises/F2_tool_registry.py`). Tests verify the learner's version directly. Later exercises that *depend* on a registry import the working one from `src/tool_correctness/registry.py`, not from the learner's earlier exercise. This way each exercise is independently testable.
+
+**The learner's progressive composition happens in the capstone, not in `src/`.** The capstone exercise is where the learner wires together their *own* implementations into a complete system — that's the synthesis test.
 
 ### 6. Documentation (`docs/`)
 
@@ -179,6 +226,19 @@ These are the **shared types and utilities** that exercises build on:
 - For each milestone: name, description (`after_this`), estimated time, and the exercises in order.
 - For each exercise: title, exercise type badge (`🔨 write`, `🐛 debug`, `📖 read`, `🧩 integrate`), estimated time, and a one-line teaser.
 - Include a progress checklist: `- [ ] F1 — Define a Tool` (learner checks off as they go).
+
+**Recall questions (mandatory).** Before each milestone (starting from Milestone 2), include a **"Before you continue"** box with 3–4 retrieval-practice questions covering concepts from *previous* milestones. The learner should answer from memory before proceeding. Example:
+
+```markdown
+> **Before you continue — Recall Check (Milestone 3)**
+> Answer these from memory before starting the next exercises:
+> 1. What are the 3 things a ParamRule validates? (type, presence, and what else?)
+> 2. Why does a closed registry matter for irreversible tools specifically?
+> 3. What's the difference between a tool *failing* and a tool being *called incorrectly*?
+> 4. Name the two categories of tool output errors.
+```
+
+These cost nothing to add but address the biggest retention gap: forgetting earlier material before it's needed again.
 
 #### `02_failure_modes.md` — The Six Failure Modes
 
@@ -260,15 +320,15 @@ typecheck:
 
 #### `scripts/gate.sh`
 
-Run format + lint + typecheck + full test suite. Exit non-zero on any failure.
+Run format + lint + typecheck + full test suite **against `src/` and `solutions/` only**. This is the "does the repo itself work?" check. Exit non-zero on any failure. The gate intentionally excludes `exercises/` scaffolds because they contain incomplete code with `# TODO:` stubs that would fail type checks.
 
 #### `scripts/check_exercise.sh`
 
-Takes an exercise ID (e.g., `F1`), runs only the matching test file. Prints clear PASS/FAIL.
+Takes an exercise ID (e.g., `F1`), runs **only pytest** for the matching test file. No mypy, no lint — just behavioral correctness. Prints clear PASS/FAIL with the count of passing/failing sub-tests (e.g., `3/5 tests passing`). This is the learner's primary feedback tool.
 
 #### `scripts/progress.sh`
 
-Runs all test files, reports a summary: which exercises pass ✅, which fail ❌, percentage complete.
+Runs all test files, reports a summary: which exercises pass ✅, which partially pass 🟡, which fail ❌, percentage complete. Shows sub-test granularity: `F2: 3/5 tests passing`.
 
 ### 8. AGENTS.md
 
@@ -306,7 +366,7 @@ For each node `N` in `curriculum.json`:
 | `N.pass_condition` | Assertions in `tests/test_{N.id}.py` |
 | `N.fail_condition` | Negative test cases |
 | `N.reference_hint` | "After completing" section in scaffold docstring |
-| `N.prerequisites` | Import statements from earlier exercises |
+| `N.prerequisites` | Import statements from `src/tool_correctness/` (for test isolation); from earlier exercises only in capstone |
 | `N.teaches` | Learning objective in `docs/01_learning_path.md` |
 | `N.connects_to_field_map` | Cross-references in `docs/02_failure_modes.md` |
 | `N.exercise_type` | Determines which folder (`exercises/`, `exercises_broken/`, `exercises_reference/`) |
@@ -334,7 +394,7 @@ Before producing the final output, verify:
 - [ ] Every node in `curriculum.json` has a corresponding scaffold, test file, and solution
 - [ ] All test files are independently runnable
 - [ ] `pyproject.toml` has no runtime dependencies
-- [ ] `mypy --strict` passes on all `src/` and `solutions/` code
+- [ ] `mypy --strict` passes on all `src/` and `solutions/` code (NOT on `exercises/` scaffolds — those intentionally have incomplete stubs)
 - [ ] `ruff check` and `ruff format --check` pass on all generated code
 - [ ] Documentation cross-references match actual file paths
 - [ ] The learning path in `docs/01_learning_path.md` matches `curriculum.json`'s topological order
@@ -345,6 +405,12 @@ Before producing the final output, verify:
 - [ ] Reference implementations (for read exercises) are clean, well-commented, and demonstrate the target concepts
 - [ ] The capstone test exercises all 6 failure modes
 - [ ] `scripts/progress.sh` correctly reports 0% when no exercises are done and 100% when all solutions are in place
+- [ ] Every test file has 3–5 graded test functions ordered from simplest to hardest
+- [ ] Every `assert` includes a diagnostic message naming the relevant failure mode
+- [ ] Tests for exercise N never import from the learner's earlier exercise files (only from `src/tool_correctness/`)
+- [ ] `docs/01_learning_path.md` has recall questions before every milestone (starting from Milestone 2)
+- [ ] Read-exercise tests verify a concrete artifact (dict, list, or function return), not just mental answers
+- [ ] `exercises/README.md` includes a troubleshooting FAQ with common mistakes per exercise category
 
 ---
 
