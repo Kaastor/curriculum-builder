@@ -16,11 +16,11 @@ from learning_compiler.agent.repair_executor import LLMRepairExecutor
 from learning_compiler.agent.repair_planner import RepairPlanner
 from learning_compiler.agent.research import ResourceResolver, default_resource_resolver
 from learning_compiler.agent.spec import build_generation_spec
+from learning_compiler.agent.trace import OptimizationTrace
 from learning_compiler.errors import ErrorCode, LearningCompilerError
 
 
-def _controller(policy_model: ModelPolicy | None = None) -> LoopController:
-    policy = policy_model or default_model_policy()
+def _controller(policy: ModelPolicy) -> LoopController:
     client = build_llm_client(policy)
     return LoopController(
         proposer=LLMProposer(client=client),
@@ -31,16 +31,24 @@ def _controller(policy_model: ModelPolicy | None = None) -> LoopController:
     )
 
 
+def _optimize_curriculum(
+    topic_spec: dict[str, Any],
+    resolver: ResourceResolver | None = None,
+) -> tuple[dict[str, Any], OptimizationTrace]:
+    spec = build_generation_spec(topic_spec)
+    active_resolver = resolver or default_resource_resolver(spec.topic_spec)
+    policy = default_model_policy()
+    result = _controller(policy).optimize(spec, active_resolver, policy)
+    return result.curriculum, result.trace
+
+
 def generate_curriculum(
     topic_spec: dict[str, Any],
     resolver: ResourceResolver | None = None,
 ) -> dict[str, Any]:
     """Generate curriculum from topic spec using the provided resource resolver."""
-    spec = build_generation_spec(topic_spec)
-    active_resolver = resolver or default_resource_resolver(spec.topic_spec)
-    policy = default_model_policy()
-    result = _controller(policy).optimize(spec, active_resolver, policy)
-    return result.curriculum
+    curriculum, _ = _optimize_curriculum(topic_spec, resolver=resolver)
+    return curriculum
 
 
 def _trace_path(curriculum_path: Path) -> Path | None:
@@ -65,11 +73,7 @@ def generate_curriculum_file(
             {"path": str(topic_spec_path)},
         )
 
-    spec = build_generation_spec(topic_spec)
-    active_resolver = resolver or default_resource_resolver(spec.topic_spec)
-    policy = default_model_policy()
-    result = _controller(policy).optimize(spec, active_resolver, policy)
-    curriculum = result.curriculum
+    curriculum, trace = _optimize_curriculum(topic_spec, resolver=resolver)
     curriculum_path.parent.mkdir(parents=True, exist_ok=True)
     curriculum_path.write_text(json.dumps(curriculum, indent=2) + "\n", encoding="utf-8")
 
@@ -77,7 +81,7 @@ def generate_curriculum_file(
     if trace_path is not None:
         trace_path.parent.mkdir(parents=True, exist_ok=True)
         trace_path.write_text(
-            json.dumps(result.trace.to_dict(), indent=2) + "\n",
+            json.dumps(trace.to_dict(), indent=2) + "\n",
             encoding="utf-8",
         )
     return curriculum

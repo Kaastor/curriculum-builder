@@ -11,7 +11,6 @@ from learning_compiler.config import load_config
 
 class ModelProvider(str, Enum):
     INTERNAL = "internal"
-    LLM_API = "llm_api"
     CODING_AGENT = "coding_agent"
 
 
@@ -53,8 +52,6 @@ def _parse_provider(raw: str) -> ModelProvider:
     value = raw.strip().lower()
     if value == ModelProvider.CODING_AGENT.value:
         return ModelProvider.CODING_AGENT
-    if value == ModelProvider.LLM_API.value:
-        return ModelProvider.LLM_API
     return ModelProvider.INTERNAL
 
 

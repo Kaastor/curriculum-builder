@@ -6,7 +6,6 @@ import re
 from dataclasses import dataclass
 from typing import Any
 
-from learning_compiler.agent.llm_client import InternalLLMClient, LLMClient, LLMRequest
 from learning_compiler.agent.model_policy import ModelPolicy
 from learning_compiler.domain import TopicSpec
 
@@ -72,10 +71,7 @@ def _max_prereq_estimate(node: dict[str, Any], node_index: dict[str, dict[str, A
 
 
 class LLMCritic:
-    """Deterministic critic with LLM-like stage interface."""
-
-    def __init__(self, client: LLMClient | None = None) -> None:
-        self._client = client or InternalLLMClient()
+    """Deterministic critic for learner-path and pedagogy diagnostics."""
 
     def critique(
         self,
@@ -150,19 +146,7 @@ class LLMCritic:
                         )
                     )
 
-        # Track a synthetic client call for policy + trace completeness.
-        self._client.run_json(
-            LLMRequest(
-                stage="pedagogy_critic",
-                schema_name="pedagogy_critique_v1",
-                payload={
-                    "goal": topic_spec.goal,
-                    "node_count": len(nodes),
-                    "diagnostic_count": len(diagnostics),
-                },
-            ),
-            policy,
-        )
+        _ = topic_spec, policy
 
         high = len([item for item in diagnostics if item.severity in {"high", "critical"}])
         medium = len([item for item in diagnostics if item.severity == "medium"])
