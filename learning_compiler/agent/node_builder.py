@@ -55,13 +55,11 @@ def node_prerequisites(index: int, total: int, max_prereq: int) -> tuple[str, ..
 def node_capability(title: str, stage: NodeStage) -> str:
     cleaned = re.sub(r"\s+", " ", title).strip().lower()
     if stage == NodeStage.FOUNDATION:
-        return f"Define and operationalize {cleaned} using precise concepts and assumptions."
+        return f"Define {cleaned} with precise concepts and assumptions."
     if stage == NodeStage.APPLICATION:
-        return f"Implement {cleaned} in a runnable workflow and justify key design choices."
+        return f"Implement {cleaned} in a runnable workflow."
     if stage == NodeStage.INTEGRATION:
-        return (
-            f"Integrate {cleaned} with prior components and evaluate interface trade-offs."
-        )
+        return f"Integrate {cleaned} with prior components."
     return f"Validate {cleaned} end-to-end with explicit quality criteria and evidence."
 
 
@@ -125,8 +123,8 @@ def node_mastery(
             "that states assumptions and one counterexample."
         )
         criteria = (
-            "Definitions are precise, assumptions are explicit, and the counterexample "
-            "shows a real boundary condition."
+            "Pass criteria: must include precise definitions, explicit assumptions, "
+            "and one counterexample that demonstrates a real boundary condition."
         )
     elif stage == NodeStage.APPLICATION:
         task = (
@@ -134,8 +132,8 @@ def node_mastery(
             "and document one failure mode with mitigation."
         )
         criteria = (
-            "Implementation runs successfully, output is interpretable, and mitigation "
-            "addresses the stated failure mode."
+            "Pass criteria: implementation must run successfully, include interpretable "
+            "output, and document mitigation for the stated failure mode."
         )
     elif stage == NodeStage.INTEGRATION:
         task = (
@@ -143,8 +141,8 @@ def node_mastery(
             "write an interface decision record covering trade-offs."
         )
         criteria = (
-            "Integration is functional, dependencies are explicit, and trade-offs are "
-            "defended with concrete evidence."
+            "Pass criteria: integration must be functional, dependencies must be explicit, "
+            "and trade-offs must include concrete evidence."
         )
     else:
         task = (
@@ -152,8 +150,8 @@ def node_mastery(
             "checklist, and a short risk memo with next actions."
         )
         criteria = (
-            "Tests/checks pass or failures are explained, acceptance criteria are clear, "
-            "and next actions are prioritized."
+            "Pass criteria: include tests/checks, explicit acceptance criteria, and a risk memo. "
+            "Failures must be explained and next actions prioritized."
         )
 
     return MasteryCheck(task=task, pass_criteria=criteria)
@@ -163,6 +161,7 @@ def build_node(
     index: int,
     spec: GenerationSpec,
     resolver: ResourceResolver,
+    used_resource_urls: tuple[str, ...] = (),
 ) -> CurriculumNode:
     node_id = f"N{index + 1}"
     title = spec.titles[index]
@@ -177,6 +176,7 @@ def build_node(
             node_title=title,
             prerequisites=prerequisites,
             evidence_mode=spec.evidence_mode,
+            used_resource_urls=used_resource_urls,
         )
     )
     resources = tuple(

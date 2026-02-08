@@ -26,6 +26,7 @@ class ResourceRequest:
     node_title: str
     prerequisites: tuple[str, ...]
     evidence_mode: str
+    used_resource_urls: tuple[str, ...] = ()
 
 
 class ResourceResolver(Protocol):
@@ -80,6 +81,27 @@ GENERAL_RESOURCES = (
     ),
 )
 
+AGENTIC_SYSTEM_RESOURCES = (
+    ResourceSpec(
+        title="Designing LLM Agentic Workflows",
+        url="https://www.anthropic.com/engineering/building-effective-agents",
+        kind="doc",
+        citation="Workflow patterns section",
+    ),
+    ResourceSpec(
+        title="OpenAI Cookbook: Structured Outputs",
+        url="https://cookbook.openai.com/",
+        kind="doc",
+        citation="JSON schema generation examples",
+    ),
+    ResourceSpec(
+        title="Google SRE Workbook",
+        url="https://sre.google/workbook/table-of-contents/",
+        kind="book",
+        citation="SLO and incident response chapters",
+    ),
+)
+
 
 def _contains_any(text: str, terms: tuple[str, ...]) -> bool:
     return any(term in text for term in terms)
@@ -112,6 +134,8 @@ def _resource_pool(request: ResourceRequest) -> tuple[ResourceSpec, ...]:
         return QUANTUM_RESOURCES
     if _contains_any(corpus, ("neural", "machine learning", "optimization", "model")):
         return ML_RESOURCES
+    if _contains_any(corpus, ("agent", "orchestration", "reliability", "validator", "dag")):
+        return AGENTIC_SYSTEM_RESOURCES
     return GENERAL_RESOURCES
 
 
@@ -120,18 +144,49 @@ class DeterministicResourceResolver:
 
     def resolve(self, request: ResourceRequest) -> list[dict[str, str]]:
         pool = _resource_pool(request)
+        used = set(request.used_resource_urls)
+        start = request.node_index % max(1, len(pool))
+        ordered = [pool[(start + offset) % len(pool)] for offset in range(len(pool))]
+        preferred = [item for item in ordered if item.url not in used]
+        fallback = [item for item in ordered if item.url in used]
+        target = _required_resource_count(request.evidence_mode)
+
         resources: list[dict[str, str]] = []
-        for index in range(_required_resource_count(request.evidence_mode)):
-            selected = pool[min(index, len(pool) - 1)]
+        for selected in (*preferred, *fallback):
             resource: dict[str, str] = {
                 "title": selected.title,
                 "url": selected.url,
                 "kind": selected.kind,
-                "role": "definition" if index == 0 else "example",
+                "role": "definition" if not resources else "example",
             }
             if request.evidence_mode == "strict":
                 resource["citation"] = selected.citation
             resources.append(resource)
+            if len(resources) >= target:
+                break
+
+        if not resources:
+            fallback = pool[0]
+            resources.append(
+                {
+                    "title": fallback.title,
+                    "url": fallback.url,
+                    "kind": fallback.kind,
+                    "role": "definition",
+                    **({"citation": fallback.citation} if request.evidence_mode == "strict" else {}),
+                }
+            )
+        if len(resources) == 1 and target > 1:
+            second = ordered[min(1, len(ordered) - 1)]
+            resources.append(
+                {
+                    "title": second.title,
+                    "url": second.url,
+                    "kind": second.kind,
+                    "role": "example",
+                    **({"citation": second.citation} if request.evidence_mode == "strict" else {}),
+                }
+            )
         return resources
 
 
@@ -170,11 +225,19 @@ class RepoLocalResolver:
         if not candidates:
             return []
 
+        used_urls = set(request.used_resource_urls)
         ranked = sorted(
-            ((self._score_path(path, request), path) for path in candidates),
-            key=lambda item: (-item[0], item[1].as_posix()),
+            (
+                (
+                    self._score_path(path, request),
+                    0 if f"local://{path.relative_to(self._repo_root).as_posix()}" not in used_urls else -100,
+                    path,
+                )
+                for path in candidates
+            ),
+            key=lambda item: (-item[0], -item[1], item[2].as_posix()),
         )
-        selected = [path for _, path in ranked[: _required_resource_count(request.evidence_mode)]]
+        selected = [path for _, _, path in ranked[: _required_resource_count(request.evidence_mode)]]
 
         resources: list[dict[str, str]] = []
         for index, path in enumerate(selected):

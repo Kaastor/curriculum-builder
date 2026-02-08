@@ -41,6 +41,18 @@
 - `scripts/validator.py`: Validator CLI entrypoint.
 - `scripts/orchestration.py`: Orchestration CLI entrypoint (`init|status|next|validate|plan|iterate|run|archive|list`).
 - `learning_compiler/agent/generator.py`: Agent-owned curriculum generation from `topic_spec.json`.
+- `learning_compiler/agent/optimizer.py`: Iterative loop controller (`propose -> critique -> judge -> repair`).
+- `learning_compiler/agent/proposer.py`: Draft curriculum proposer stage.
+- `learning_compiler/agent/pedagogy_critic.py`: Pedagogical/learner-path critic diagnostics.
+- `learning_compiler/agent/quality_model.py`: Deterministic acceptance judge and score aggregation.
+- `learning_compiler/agent/quality_rules.py`: Graph-oriented deterministic quality rules.
+- `learning_compiler/agent/quality_content_rules.py`: Content/actionability/relevance quality rules.
+- `learning_compiler/agent/repair_actions.py`: Typed repair action contracts.
+- `learning_compiler/agent/repair_planner.py`: Diagnostics-to-actions planner.
+- `learning_compiler/agent/repair_executor.py`: Deterministic repair action executor.
+- `learning_compiler/agent/model_policy.py`: Model/runtime policy controls for optimizer.
+- `learning_compiler/agent/llm_client.py`: Structured LLM client contract + internal deterministic mode.
+- `learning_compiler/agent/trace.py`: Optimization trace schema and serializer.
 - `learning_compiler/agent/spec.py`: Topic-spec normalization and deterministic generation inputs.
 - `learning_compiler/agent/node_builder.py`: Node-level curriculum content construction.
 - `learning_compiler/agent/research.py`: Resource resolver interface + deterministic resolver implementation.

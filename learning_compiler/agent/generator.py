@@ -6,31 +6,25 @@ import json
 from pathlib import Path
 from typing import Any
 
-from learning_compiler.agent.node_builder import build_node
+from learning_compiler.agent.model_policy import default_model_policy
+from learning_compiler.agent.optimizer import LLMProposer, LLMRepairExecutor, LoopController
+from learning_compiler.agent.pedagogy_critic import LLMCritic
+from learning_compiler.agent.quality_model import DeterministicQualityJudge
+from learning_compiler.agent.repair_planner import RepairPlanner
 from learning_compiler.agent.research import ResourceResolver, default_resource_resolver
-from learning_compiler.agent.spec import GenerationSpec, build_generation_spec
-from learning_compiler.domain import Curriculum, OpenQuestion
+from learning_compiler.agent.spec import build_generation_spec
 from learning_compiler.errors import ErrorCode, LearningCompilerError
 
 
-def _build_curriculum(spec: GenerationSpec, resolver: ResourceResolver) -> Curriculum:
-    nodes = tuple(build_node(index, spec, resolver) for index in range(spec.target_nodes))
-
-    open_questions: tuple[OpenQuestion, ...] = ()
-    if spec.strict_mode:
-        tail = (f"N{max(1, spec.target_nodes - 1)}", f"N{spec.target_nodes}")
-        open_questions = (
-            OpenQuestion(
-                question=(
-                    "Which claims remain weakly evidenced or contradictory for "
-                    "this topic under current references?"
-                ),
-                related_nodes=tail,
-                status="open",
-            ),
-        )
-
-    return Curriculum(topic=spec.topic_label, nodes=nodes, open_questions=open_questions)
+def _controller() -> LoopController:
+    policy = default_model_policy()
+    return LoopController(
+        proposer=LLMProposer(),
+        critic=LLMCritic(),
+        judge=DeterministicQualityJudge(),
+        planner=RepairPlanner(max_actions_per_iteration=policy.max_actions_per_iteration),
+        repair=LLMRepairExecutor(),
+    )
 
 
 def generate_curriculum(
@@ -40,8 +34,18 @@ def generate_curriculum(
     """Generate curriculum from topic spec using the provided resource resolver."""
     spec = build_generation_spec(topic_spec)
     active_resolver = resolver or default_resource_resolver(spec.topic_spec)
-    curriculum = _build_curriculum(spec, active_resolver)
-    return curriculum.to_dict()
+    policy = default_model_policy()
+    result = _controller().optimize(spec, active_resolver, policy)
+    return result.curriculum
+
+
+def _trace_path(curriculum_path: Path) -> Path | None:
+    if curriculum_path.parent.name != "curriculum":
+        return None
+    outputs_dir = curriculum_path.parent.parent
+    if outputs_dir.name != "outputs":
+        return None
+    return outputs_dir / "reviews" / "optimization_trace.json"
 
 
 def generate_curriculum_file(
@@ -57,7 +61,19 @@ def generate_curriculum_file(
             {"path": str(topic_spec_path)},
         )
 
-    curriculum = generate_curriculum(topic_spec, resolver=resolver)
+    spec = build_generation_spec(topic_spec)
+    active_resolver = resolver or default_resource_resolver(spec.topic_spec)
+    policy = default_model_policy()
+    result = _controller().optimize(spec, active_resolver, policy)
+    curriculum = result.curriculum
     curriculum_path.parent.mkdir(parents=True, exist_ok=True)
     curriculum_path.write_text(json.dumps(curriculum, indent=2) + "\n", encoding="utf-8")
+
+    trace_path = _trace_path(curriculum_path)
+    if trace_path is not None:
+        trace_path.parent.mkdir(parents=True, exist_ok=True)
+        trace_path.write_text(
+            json.dumps(result.trace.to_dict(), indent=2) + "\n",
+            encoding="utf-8",
+        )
     return curriculum

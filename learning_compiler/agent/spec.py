@@ -66,8 +66,8 @@ def seed_titles(topic_spec: TopicSpec, target_nodes: int) -> tuple[str, ...]:
 
     seeds.extend(
         [
-            "Integration and interface trade-offs",
-            "Verification, reliability checks, and iteration plan",
+            "Interface integration strategy",
+            "Verification checklist design",
         ]
     )
 

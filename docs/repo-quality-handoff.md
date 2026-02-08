@@ -11,6 +11,9 @@ Implemented in code:
 5. Replaced flat minute distribution with deterministic weighted estimate allocation.
 6. Extended quality validator with actionability, repetition, and resource-relevance checks.
 7. Added regression tests for context-pack validation, local resolver behavior, deterministic output, and mastery actionability checks.
+8. Implemented iterative LLM-first optimizer architecture (`propose -> critique -> judge -> repair`) with deterministic acceptance.
+9. Added optimization trace artifact emission: `outputs/reviews/optimization_trace.json`.
+10. Added deterministic learner-path coherence check to validator quality stage.
 
 Verification:
 

@@ -44,7 +44,7 @@ graph LR
 
 ### Module responsibilities
 
-- `learning_compiler/agent/`: generation engine, topic-spec normalization, node construction, context-aware resource resolver contracts.
+- `learning_compiler/agent/`: LLM-first iterative generation engine (`propose -> critique -> judge -> repair`), topic-spec normalization, node construction, context-aware resource resolver contracts, and optimization trace emission.
 - `learning_compiler/validator/`: deterministic quality gate for schema, graph, evidence, and node-quality checks.
 - `learning_compiler/orchestration/`: run lifecycle, stage sync, reports, artifact persistence, planning, diffing.
 - `learning_compiler/domain/`: typed domain models (`TopicSpec`, `Curriculum`, `CurriculumNode`, etc.).
@@ -108,6 +108,7 @@ stateDiagram-v2
 
 - Compiler pipeline pattern: strict staged transformation and validation.
 - Proposer/Judge split: agent proposes, validator decides acceptance.
+- Iterative optimization loop: draft DAG is critiqued and repaired until deterministic acceptance threshold is met.
 - Orchestrator pattern: orchestration coordinates work without owning generation intelligence.
 - Functional core / imperative shell: deterministic core logic wrapped by thin CLI/process shell.
 - Strategy/DI pattern: generation and resource resolution are interface-driven and injectable.
@@ -130,6 +131,7 @@ Per run (`runs/<run_id>/`):
 - `inputs/topic_spec.json`
 - `outputs/curriculum/curriculum.json`
 - `outputs/reviews/validation_report.md`
+- `outputs/reviews/optimization_trace.json`
 - `outputs/plan/plan.json`
 - `outputs/reviews/diff_report.json`
 - `logs/events.jsonl`

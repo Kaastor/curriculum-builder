@@ -45,6 +45,7 @@ def required_paths(run_dir: Path) -> RunPaths:
         previous_curriculum=run_dir / "outputs" / "curriculum" / "previous_curriculum.json",
         event_log=run_dir / "logs" / "events.jsonl",
         validation_report=run_dir / "outputs" / "reviews" / "validation_report.md",
+        optimization_trace=run_dir / "outputs" / "reviews" / "optimization_trace.json",
         validation_pass_marker=run_dir / "logs" / "validation.ok",
         plan=run_dir / "outputs" / "plan" / "plan.json",
         diff_report=run_dir / "outputs" / "reviews" / "diff_report.json",

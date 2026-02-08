@@ -251,3 +251,47 @@ def check_resource_relevance(
         result.warn(
             f"{len(weak_nodes) - 3} additional node(s) also have weak keyword overlap in resources"
         )
+
+
+def check_learner_path_coherence(nodes: list[dict[str, Any]], result: ValidationResult) -> None:
+    if len(nodes) < 2:
+        return
+
+    node_map = {str(node.get("id")): node for node in nodes if isinstance(node, dict)}
+    hidden_prereq_count = 0
+    workload_jump_count = 0
+
+    for node in nodes:
+        node_id = str(node.get("id", ""))
+        capability = str(node.get("capability", "")).lower()
+        prerequisites = [str(item) for item in node.get("prerequisites", [])]
+
+        if not prerequisites and any(token in capability for token in ("integrate", "validate")):
+            result.warn(
+                f"Node {node_id}: advanced capability without prerequisites may confuse novice learners"
+            )
+            hidden_prereq_count += 1
+
+        if prerequisites:
+            parent_minutes = [
+                int(parent.get("estimate_minutes"))
+                for prereq in prerequisites
+                if (parent := node_map.get(prereq)) is not None
+                and is_number(parent.get("estimate_minutes"))
+            ]
+            current = node.get("estimate_minutes")
+            if parent_minutes and is_number(current):
+                baseline = max(parent_minutes)
+                if float(current) > baseline * 2.2:
+                    workload_jump_count += 1
+
+    if hidden_prereq_count > 0:
+        result.fail(
+            f"Detected {hidden_prereq_count} possible hidden-prerequisite node(s); learning path coherence is weak"
+        )
+    elif workload_jump_count > 0:
+        result.warn(
+            f"Detected {workload_jump_count} abrupt workload jump(s) versus prerequisites"
+        )
+    else:
+        result.ok("Learner path coherence checks passed")

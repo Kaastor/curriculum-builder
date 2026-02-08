@@ -34,6 +34,7 @@ class RunPaths:
     previous_curriculum: Path
     event_log: Path
     validation_report: Path
+    optimization_trace: Path
     validation_pass_marker: Path
     plan: Path
     diff_report: Path

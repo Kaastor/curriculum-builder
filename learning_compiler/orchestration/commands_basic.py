@@ -95,6 +95,7 @@ def cmd_status(args: argparse.Namespace) -> int:
     print(f"Stage: {stage.value}")
     print(f"Topic spec: {'ok' if looks_ready_spec(paths.topic_spec) else 'missing/incomplete'}")
     print(f"Curriculum: {'ok' if paths.curriculum.exists() else 'missing'}")
+    print(f"Optimization trace: {'ok' if paths.optimization_trace.exists() else 'missing'}")
     print(f"Validation report: {'ok' if paths.validation_report.exists() else 'missing'}")
     print(f"Plan: {'ok' if paths.plan.exists() else 'missing'}")
     print(f"Diff report: {'ok' if paths.diff_report.exists() else 'missing'}")

@@ -63,7 +63,7 @@ class AgentGenerationTests(unittest.TestCase):
 
         self.assertIn("nodes", curriculum)
         nodes = curriculum["nodes"]
-        self.assertEqual(len(nodes), len(resolver.requests))
+        self.assertGreaterEqual(len(resolver.requests), len(nodes))
         self.assertEqual("Stub Definition", nodes[0]["resources"][0]["title"])
         self.assertEqual("standard", resolver.requests[0].evidence_mode)
         self.assertEqual("N1", resolver.requests[0].node_id)
@@ -107,6 +107,22 @@ class AgentGenerationTests(unittest.TestCase):
             all("etc/hosts" not in str(resource["url"]) for resource in first_resources),
             "resolver must ignore local_paths outside the repository root",
         )
+
+    def test_generate_curriculum_file_writes_optimization_trace_for_run_layout(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            run_dir = Path(tmp_dir) / "runs" / "20260208-000000-sample"
+            topic_path = run_dir / "inputs" / "topic_spec.json"
+            curriculum_path = run_dir / "outputs" / "curriculum" / "curriculum.json"
+            topic_path.parent.mkdir(parents=True, exist_ok=True)
+            topic_path.write_text(json.dumps(base_topic_spec()), encoding="utf-8")
+
+            generate_curriculum_file(topic_path, curriculum_path)
+
+            trace_path = run_dir / "outputs" / "reviews" / "optimization_trace.json"
+            self.assertTrue(trace_path.exists())
+            trace = json.loads(trace_path.read_text(encoding="utf-8"))
+            self.assertIn("iterations", trace)
+            self.assertIn("stop_reason", trace)
 
 
 if __name__ == "__main__":

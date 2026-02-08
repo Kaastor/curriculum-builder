@@ -258,6 +258,35 @@ Trace format:
 5. learner-path coherence diagnostics
 6. selected actions
 7. post-score summary
+
+## 12) Implementation Status (2026-02-08)
+
+Implemented now:
+
+1. LLM-first loop controller:
+- `learning_compiler/agent/optimizer.py`
+- `learning_compiler/agent/proposer.py`
+- `learning_compiler/agent/repair_executor.py`
+
+2. Reliability contracts:
+- `learning_compiler/agent/model_policy.py`
+- `learning_compiler/agent/llm_client.py`
+- `learning_compiler/agent/repair_actions.py`
+- `learning_compiler/agent/trace.py`
+
+3. Evaluation stack:
+- `learning_compiler/agent/pedagogy_critic.py`
+- `learning_compiler/agent/quality_model.py`
+- `learning_compiler/agent/quality_rules.py`
+- `learning_compiler/agent/quality_content_rules.py`
+- `learning_compiler/agent/quality_types.py`
+
+4. Generator integration:
+- `learning_compiler/agent/generator.py` runs optimizer by default.
+- writes `optimization_trace.json` for orchestration run layout paths.
+
+5. Validator alignment:
+- added learner-path coherence check in `learning_compiler/validator/curriculum_quality.py`.
 8. stop reason
 
 This gives explainability and learning value without migrations.
