@@ -41,6 +41,7 @@ def topic_spec_template() -> Path:
 def required_paths(run_dir: Path) -> RunPaths:
     return RunPaths(
         topic_spec=run_dir / "inputs" / "topic_spec.json",
+        scope_document=run_dir / "inputs" / "scope.md",
         curriculum=run_dir / "outputs" / "curriculum" / "curriculum.json",
         previous_curriculum=run_dir / "outputs" / "curriculum" / "previous_curriculum.json",
         event_log=run_dir / "logs" / "events.jsonl",
@@ -49,6 +50,8 @@ def required_paths(run_dir: Path) -> RunPaths:
         validation_pass_marker=run_dir / "logs" / "validation.ok",
         plan=run_dir / "outputs" / "plan" / "plan.json",
         diff_report=run_dir / "outputs" / "reviews" / "diff_report.json",
+        scope_concepts=run_dir / "scope_concepts.json",
+        scope_dag=run_dir / "scope_dag.json",
         run_meta=run_dir / "run.json",
     )
 

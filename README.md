@@ -8,13 +8,22 @@ Core loop:
 Evidence strictness is a dial, not a fork:
 `minimal | standard | strict`
 
+Scope-first entry path:
+`Scope Markdown -> Extract Concepts -> Infer DAG -> Synthesize topic_spec -> Generate -> Validate -> Plan -> Iterate`
+
 ## Quickstart
 
 - `make setup`
 - `make orchestration-start RUN_NAME="quantum-neural-networks"`
-- fill `runs/<run_id>/inputs/topic_spec.json`
+- either fill `runs/<run_id>/inputs/topic_spec.json` or provide `runs/<run_id>/inputs/scope.md`
 - `make orchestration-run RUN_ID="<run_id>"`
 - inspect `runs/<run_id>/outputs/curriculum/curriculum.json`
+
+Scope-first quickstart:
+
+```bash
+python3.11 scripts/orchestration.py run <run_id> --scope-file runs/<run_id>/inputs/scope.md
+```
 
 ## Architecture
 
@@ -45,6 +54,9 @@ graph LR
 ### Module responsibilities
 
 - `learning_compiler/agent/`: LLM-first iterative generation engine (`propose -> critique -> judge -> repair`), topic-spec normalization, node construction, context-aware resource resolver contracts, and optimization trace emission.
+- `learning_compiler/agent/scope_extractor.py`: deterministic markdown scope parsing + concept candidate extraction.
+- `learning_compiler/agent/concept_dag_builder.py`: deterministic hard/soft relation inference and phase ordering.
+- `learning_compiler/agent/scope_pipeline.py`: scope document to `topic_spec.json` synthesis.
 - `learning_compiler/validator/`: deterministic quality gate for schema, graph, evidence, and node-quality checks.
 - `learning_compiler/orchestration/`: run lifecycle, stage sync, reports, artifact persistence, planning, diffing.
 - `learning_compiler/domain/`: typed domain models (`TopicSpec`, `Curriculum`, `CurriculumNode`, etc.).
@@ -154,11 +166,14 @@ stateDiagram-v2
 
 Per run (`runs/<run_id>/`):
 - `inputs/topic_spec.json`
+- `inputs/scope.md` (optional scope-first input template)
 - `outputs/curriculum/curriculum.json`
 - `outputs/reviews/validation_report.md`
 - `outputs/reviews/optimization_trace.json`
 - `outputs/plan/plan.json`
 - `outputs/reviews/diff_report.json`
+- `scope_concepts.json` (scope extraction diagnostics, when scope-first mode is used)
+- `scope_dag.json` (inferred hard/soft concept relations, when scope-first mode is used)
 - `logs/events.jsonl`
 - `run.json`
 
@@ -189,6 +204,8 @@ Orchestration:
 Direct CLI:
 - `python3.11 scripts/orchestration.py init "<topic-slug>"`
 - `python3.11 scripts/orchestration.py run <run_id>`
+- `python3.11 scripts/orchestration.py run <run_id> --scope-file <path/to/scope.md>`
+- `python3.11 scripts/orchestration.py run <run_id> --scope-file docs/agentic-engineering-atlas.md --scope-mode section --scope-section "Part I"` (`section` mode requires one or more `--scope-section`)
 - `python3.11 scripts/orchestration.py validate <run_id>`
 - `python3.11 scripts/orchestration.py plan <run_id>`
 - `python3.11 scripts/orchestration.py iterate <run_id>`
@@ -280,3 +297,4 @@ Supporting docs:
 - `docs/agentic-engineering-map.md`
 - `docs/agentic-engineering-atlas.md`
 - `docs/effective-learning-process.md`
+- `docs/scope-first-input.md`

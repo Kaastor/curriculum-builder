@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from collections import deque
 from typing import Any
 
+from learning_compiler.dag import is_acyclic, node_map, reachable_from_roots
 from learning_compiler.validator.helpers import is_number
 from learning_compiler.validator.types import ValidationConfig, ValidationResult
 
@@ -51,41 +51,17 @@ def check_prerequisite_integrity(
 
 
 def check_no_cycles(nodes: list[dict[str, Any]], result: ValidationResult) -> None:
-    adjacency: dict[str, list[str]] = {
-        str(node.get("id")): [str(prereq) for prereq in node.get("prerequisites", [])]
-        for node in nodes
-        if isinstance(node, dict)
-    }
-
-    visited: set[str] = set()
-    stack: set[str] = set()
-
-    def dfs(node_id: str) -> bool:
-        if node_id in stack:
-            return True
-        if node_id in visited:
-            return False
-
-        visited.add(node_id)
-        stack.add(node_id)
-        for prereq in adjacency.get(node_id, []):
-            if prereq in adjacency and dfs(prereq):
-                return True
-        stack.remove(node_id)
-        return False
-
-    has_cycle = any(dfs(node_id) for node_id in adjacency)
-    if has_cycle:
+    if not is_acyclic(nodes):
         result.fail("Circular dependency detected")
     else:
         result.ok("No cycles detected (valid DAG)")
 
 
 def check_reachability(nodes: list[dict[str, Any]], result: ValidationResult) -> None:
-    node_map = {str(node.get("id")): node for node in nodes if isinstance(node, dict)}
+    nodes_by_id = node_map(nodes)
     roots = [
         node_id
-        for node_id, node in node_map.items()
+        for node_id, node in nodes_by_id.items()
         if len(node.get("prerequisites", [])) == 0
     ]
 
@@ -93,25 +69,8 @@ def check_reachability(nodes: list[dict[str, Any]], result: ValidationResult) ->
         result.fail("No root nodes found (every node has prerequisites)")
         return
 
-    dependents: dict[str, list[str]] = {node_id: [] for node_id in node_map}
-    for node_id, node in node_map.items():
-        for prereq in node.get("prerequisites", []):
-            prereq_id = str(prereq)
-            if prereq_id in dependents:
-                dependents[prereq_id].append(node_id)
-
-    visited: set[str] = set()
-    queue: deque[str] = deque(roots)
-    while queue:
-        current = queue.popleft()
-        if current in visited:
-            continue
-        visited.add(current)
-        for next_node in dependents.get(current, []):
-            if next_node not in visited:
-                queue.append(next_node)
-
-    unreachable = sorted(set(node_map.keys()) - visited)
+    visited = reachable_from_roots(nodes)
+    unreachable = sorted(set(nodes_by_id.keys()) - visited)
     if unreachable:
         result.fail(f"Unreachable nodes from graph roots: {unreachable}")
     else:

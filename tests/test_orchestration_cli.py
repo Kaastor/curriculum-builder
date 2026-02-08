@@ -56,6 +56,20 @@ class OrchestrationCliTests(unittest.TestCase):
         topic_spec["misconceptions"] = ["mean alone is enough for a decision"]
         topic_spec_path.write_text(json.dumps(topic_spec, indent=2) + "\n", encoding="utf-8")
 
+    def _init_run(self, env: dict[str, str], name: str) -> Path:
+        self._run(env, "init", name)
+        return sorted(Path(env["ORCHESTRATION_BASE_DIR"]).iterdir())[0]
+
+    def _prepare_valid_spec(self, run_dir: Path) -> Path:
+        topic_spec_path = run_dir / "inputs" / "topic_spec.json"
+        self._write_valid_topic_spec(topic_spec_path)
+        return topic_spec_path
+
+    def _write_sample_curriculum(self, run_dir: Path) -> Path:
+        curriculum_path = run_dir / "outputs" / "curriculum" / "curriculum.json"
+        curriculum_path.write_text(SAMPLE_CURRICULUM.read_text(encoding="utf-8"), encoding="utf-8")
+        return curriculum_path
+
     def test_init_creates_expected_structure(self):
         with tempfile.TemporaryDirectory() as tmp_dir:
             env = self._env(tmp_dir)
@@ -77,11 +91,8 @@ class OrchestrationCliTests(unittest.TestCase):
     def test_validate_requires_ready_topic_spec(self):
         with tempfile.TemporaryDirectory() as tmp_dir:
             env = self._env(tmp_dir)
-            self._run(env, "init", "Needs Spec")
-            run_dir = sorted((Path(tmp_dir) / "runs").iterdir())[0]
-
-            curriculum_path = run_dir / "outputs" / "curriculum" / "curriculum.json"
-            curriculum_path.write_text(SAMPLE_CURRICULUM.read_text(encoding="utf-8"), encoding="utf-8")
+            run_dir = self._init_run(env, "Needs Spec")
+            self._write_sample_curriculum(run_dir)
 
             failed = self._run(env, "validate", run_dir.name, check=False)
             self.assertNotEqual(0, failed.returncode)
@@ -147,14 +158,9 @@ class OrchestrationCliTests(unittest.TestCase):
     def test_validate_updates_stage_and_writes_report(self):
         with tempfile.TemporaryDirectory() as tmp_dir:
             env = self._env(tmp_dir)
-            self._run(env, "init", "Validation")
-            run_dir = sorted((Path(tmp_dir) / "runs").iterdir())[0]
-
-            topic_spec_path = run_dir / "inputs" / "topic_spec.json"
-            self._write_valid_topic_spec(topic_spec_path)
-
-            curriculum_path = run_dir / "outputs" / "curriculum" / "curriculum.json"
-            curriculum_path.write_text(SAMPLE_CURRICULUM.read_text(encoding="utf-8"), encoding="utf-8")
+            run_dir = self._init_run(env, "Validation")
+            self._prepare_valid_spec(run_dir)
+            self._write_sample_curriculum(run_dir)
 
             result = self._run(env, "validate", run_dir.name)
             self.assertIn("CURRICULUM VALIDATION REPORT", result.stdout)
@@ -168,14 +174,9 @@ class OrchestrationCliTests(unittest.TestCase):
     def test_plan_command_generates_plan(self):
         with tempfile.TemporaryDirectory() as tmp_dir:
             env = self._env(tmp_dir)
-            self._run(env, "init", "Planner")
-            run_dir = sorted((Path(tmp_dir) / "runs").iterdir())[0]
-
-            topic_spec_path = run_dir / "inputs" / "topic_spec.json"
-            self._write_valid_topic_spec(topic_spec_path)
-
-            curriculum_path = run_dir / "outputs" / "curriculum" / "curriculum.json"
-            curriculum_path.write_text(SAMPLE_CURRICULUM.read_text(encoding="utf-8"), encoding="utf-8")
+            run_dir = self._init_run(env, "Planner")
+            self._prepare_valid_spec(run_dir)
+            self._write_sample_curriculum(run_dir)
 
             result = self._run(env, "plan", run_dir.name)
             self.assertIn("Saved plan", result.stdout)
@@ -192,14 +193,9 @@ class OrchestrationCliTests(unittest.TestCase):
     def test_iterate_bootstraps_validation_and_plan_before_diff(self):
         with tempfile.TemporaryDirectory() as tmp_dir:
             env = self._env(tmp_dir)
-            self._run(env, "init", "Iterate Bootstrap")
-            run_dir = sorted((Path(tmp_dir) / "runs").iterdir())[0]
-
-            topic_spec_path = run_dir / "inputs" / "topic_spec.json"
-            self._write_valid_topic_spec(topic_spec_path)
-
-            curriculum_path = run_dir / "outputs" / "curriculum" / "curriculum.json"
-            curriculum_path.write_text(SAMPLE_CURRICULUM.read_text(encoding="utf-8"), encoding="utf-8")
+            run_dir = self._init_run(env, "Iterate Bootstrap")
+            self._prepare_valid_spec(run_dir)
+            self._write_sample_curriculum(run_dir)
 
             result = self._run(env, "iterate", run_dir.name)
             self.assertIn("Saved diff report", result.stdout)
@@ -217,13 +213,9 @@ class OrchestrationCliTests(unittest.TestCase):
     def test_iterate_invalid_curriculum_fails_without_traceback(self):
         with tempfile.TemporaryDirectory() as tmp_dir:
             env = self._env(tmp_dir)
-            self._run(env, "init", "Iterate Invalid")
-            run_dir = sorted((Path(tmp_dir) / "runs").iterdir())[0]
-
-            topic_spec_path = run_dir / "inputs" / "topic_spec.json"
-            self._write_valid_topic_spec(topic_spec_path)
-
-            curriculum_path = run_dir / "outputs" / "curriculum" / "curriculum.json"
+            run_dir = self._init_run(env, "Iterate Invalid")
+            self._prepare_valid_spec(run_dir)
+            curriculum_path = self._write_sample_curriculum(run_dir)
             curriculum = json.loads(SAMPLE_CURRICULUM.read_text(encoding="utf-8"))
             curriculum["nodes"][0]["estimate_minutes"] = "oops"
             curriculum_path.write_text(json.dumps(curriculum, indent=2) + "\n", encoding="utf-8")
@@ -239,25 +231,75 @@ class OrchestrationCliTests(unittest.TestCase):
     def test_run_generates_curriculum_with_agent(self):
         with tempfile.TemporaryDirectory() as tmp_dir:
             env = self._env(tmp_dir)
-            self._run(env, "init", "Agent Generation")
-            run_dir = sorted((Path(tmp_dir) / "runs").iterdir())[0]
-
-            topic_spec_path = run_dir / "inputs" / "topic_spec.json"
-            self._write_valid_topic_spec(topic_spec_path)
+            run_dir = self._init_run(env, "Agent Generation")
+            self._prepare_valid_spec(run_dir)
 
             result = self._run(env, "run", run_dir.name)
             self.assertIn("Generated curriculum with agent", result.stdout)
             self.assertIn("Orchestration run completed", result.stdout)
             self.assertTrue((run_dir / "outputs" / "curriculum" / "curriculum.json").exists())
 
+    def test_run_with_scope_file_synthesizes_topic_spec(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            env = self._env(tmp_dir)
+            run_dir = self._init_run(env, "Scope First")
+
+            scope_path = run_dir / "inputs" / "scope.md"
+            scope_path.write_text(
+                (
+                    "# Learning Scope\n"
+                    "- deterministic orchestration loops\n"
+                    "- curriculum DAG validation\n"
+                    "- planning and diff workflows\n"
+                    "- reliability and error handling\n"
+                ),
+                encoding="utf-8",
+            )
+
+            result = self._run(
+                env,
+                "run",
+                run_dir.name,
+                "--scope-file",
+                str(scope_path),
+                "--scope-mode",
+                "seed-list",
+            )
+            self.assertIn("Synthesized topic spec from scope file", result.stdout)
+            self.assertIn("Orchestration run completed", result.stdout)
+            self.assertTrue((run_dir / "scope_concepts.json").exists())
+            self.assertTrue((run_dir / "scope_dag.json").exists())
+
+            topic_spec = json.loads((run_dir / "inputs" / "topic_spec.json").read_text(encoding="utf-8"))
+            self.assertNotEqual("replace_with_learning_goal", topic_spec["goal"])
+            self.assertGreater(len(topic_spec["scope_in"]), 2)
+
+    def test_run_rejects_section_mode_without_sections(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            env = self._env(tmp_dir)
+            run_dir = self._init_run(env, "Scope Section Validation")
+
+            scope_path = run_dir / "inputs" / "scope.md"
+            scope_path.write_text("# Scope\n- topic one\n", encoding="utf-8")
+
+            failed = self._run(
+                env,
+                "run",
+                run_dir.name,
+                "--scope-file",
+                str(scope_path),
+                "--scope-mode",
+                "section",
+                check=False,
+            )
+            self.assertNotEqual(0, failed.returncode)
+            self.assertIn("--scope-mode section requires at least one --scope-section", failed.stderr)
+
     def test_run_executes_full_pipeline_and_writes_diff(self):
         with tempfile.TemporaryDirectory() as tmp_dir:
             env = self._env(tmp_dir)
-            self._run(env, "init", "Full Pipeline")
-            run_dir = sorted((Path(tmp_dir) / "runs").iterdir())[0]
-
-            topic_spec_path = run_dir / "inputs" / "topic_spec.json"
-            self._write_valid_topic_spec(topic_spec_path)
+            run_dir = self._init_run(env, "Full Pipeline")
+            self._prepare_valid_spec(run_dir)
 
             result = self._run(env, "run", run_dir.name)
             self.assertIn("Orchestration run completed", result.stdout)
@@ -272,14 +314,9 @@ class OrchestrationCliTests(unittest.TestCase):
     def test_status_demotes_when_curriculum_changes_after_validation(self):
         with tempfile.TemporaryDirectory() as tmp_dir:
             env = self._env(tmp_dir)
-            self._run(env, "init", "Freshness")
-            run_dir = sorted((Path(tmp_dir) / "runs").iterdir())[0]
-
-            topic_spec_path = run_dir / "inputs" / "topic_spec.json"
-            self._write_valid_topic_spec(topic_spec_path)
-
-            curriculum_path = run_dir / "outputs" / "curriculum" / "curriculum.json"
-            curriculum_path.write_text(SAMPLE_CURRICULUM.read_text(encoding="utf-8"), encoding="utf-8")
+            run_dir = self._init_run(env, "Freshness")
+            self._prepare_valid_spec(run_dir)
+            curriculum_path = self._write_sample_curriculum(run_dir)
 
             self._run(env, "validate", run_dir.name)
             run_meta = json.loads((run_dir / "run.json").read_text(encoding="utf-8"))

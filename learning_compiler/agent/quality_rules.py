@@ -2,56 +2,18 @@
 
 from __future__ import annotations
 
-from collections import deque
 from typing import Any
 
+from learning_compiler.dag import is_acyclic, max_depth as dag_max_depth
 from learning_compiler.agent.quality_types import QualityDiagnostic
 
 
 def max_depth(nodes: list[dict[str, Any]]) -> int:
-    node_ids = {str(node.get("id")) for node in nodes if isinstance(node.get("id"), str)}
-    indegree = {node_id: 0 for node_id in node_ids}
-    edges: dict[str, list[str]] = {node_id: [] for node_id in node_ids}
-    for node in nodes:
-        current = str(node.get("id", ""))
-        for prereq in node.get("prerequisites", []):
-            prereq_id = str(prereq)
-            if prereq_id not in node_ids or current not in node_ids:
-                continue
-            indegree[current] += 1
-            edges[prereq_id].append(current)
-    queue = deque([node_id for node_id, degree in indegree.items() if degree == 0])
-    depth = {node_id: 0 for node_id in queue}
-    while queue:
-        current = queue.popleft()
-        for child in edges.get(current, []):
-            depth[child] = max(depth.get(child, 0), depth[current] + 1)
-            indegree[child] -= 1
-            if indegree[child] == 0:
-                queue.append(child)
-    return max(depth.values()) if depth else 0
+    return dag_max_depth(nodes)
 
 
 def contains_cycle(nodes: list[dict[str, Any]]) -> bool:
-    node_map = {str(node.get("id")): node for node in nodes if isinstance(node.get("id"), str)}
-    visiting: set[str] = set()
-    visited: set[str] = set()
-
-    def dfs(node_id: str) -> bool:
-        if node_id in visited:
-            return False
-        if node_id in visiting:
-            return True
-        visiting.add(node_id)
-        for prereq in node_map[node_id].get("prerequisites", []):
-            prereq_id = str(prereq)
-            if prereq_id in node_map and dfs(prereq_id):
-                return True
-        visiting.remove(node_id)
-        visited.add(node_id)
-        return False
-
-    return any(dfs(node_id) for node_id in sorted(node_map))
+    return not is_acyclic(nodes)
 
 
 def weighted_total(dimensions: dict[str, int]) -> int:

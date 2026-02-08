@@ -14,6 +14,14 @@ from learning_compiler.orchestration.exec import run_validator, write_validation
 from learning_compiler.orchestration.fs import load_run, read_json, required_paths, write_json
 from learning_compiler.orchestration.meta import RunMeta
 from learning_compiler.orchestration.planning import build_plan, compute_diff
+from learning_compiler.orchestration.scope import (
+    resolve_scope_path,
+    scope_file_from_args,
+    scope_mode_from_args,
+    scope_sections_from_args,
+    synthesize_topic_spec_from_scope,
+    validate_scope_selection,
+)
 from learning_compiler.orchestration.stage import (
     ensure_stage,
     plan_is_current,
@@ -160,7 +168,32 @@ def cmd_run(args: argparse.Namespace) -> int:
     run_id = run_id_from_args(args)
     run_dir, meta, paths = _load_synced_run(run_id)
 
-    if meta.stage == Stage.INITIALIZED:
+    scope_file = scope_file_from_args(args)
+    if scope_file is not None:
+        scope_path = resolve_scope_path(run_dir, scope_file)
+        scope_mode = scope_mode_from_args(args)
+        scope_sections = scope_sections_from_args(args)
+        validate_scope_selection(scope_mode, scope_sections)
+        synthesize_topic_spec_from_scope(
+            paths,
+            scope_path=scope_path,
+            mode=scope_mode,
+            section_filters=scope_sections,
+        )
+        if ensure_stage(
+            meta,
+            Stage.SPEC_READY,
+            "topic spec synthesized from scope document",
+            run_dir=run_dir,
+            metadata={
+                "scope_file": str(scope_path),
+                "scope_mode": scope_mode.value,
+                "scope_sections": list(scope_sections),
+            },
+        ):
+            write_json(run_dir / "run.json", meta.to_dict())
+        print(f"Synthesized topic spec from scope file: {scope_path}")
+    elif meta.stage == Stage.INITIALIZED:
         raise StageConflictError(
             f"Topic spec not ready: {paths.topic_spec}",
             {"run_id": run_id, "stage": meta.stage.value},

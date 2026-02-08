@@ -32,6 +32,14 @@ from learning_compiler.orchestration.stage import (
 from learning_compiler.orchestration.types import Stage
 
 
+DEFAULT_SCOPE_TEMPLATE = """# Learning Scope
+
+- Add unordered topics you want to learn.
+- Mixed granularity is fine (broad + specific).
+- The system will infer ordering and prerequisites.
+"""
+
+
 def cmd_init(args: argparse.Namespace) -> int:
     base_dir = orchestration_base_dir()
     base_dir.mkdir(parents=True, exist_ok=True)
@@ -58,6 +66,7 @@ def cmd_init(args: argparse.Namespace) -> int:
     (run_dir / "logs").mkdir(parents=True)
 
     shutil.copy2(spec_template, run_dir / "inputs" / "topic_spec.json")
+    required_paths(run_dir).scope_document.write_text(DEFAULT_SCOPE_TEMPLATE, encoding="utf-8")
 
     now = utc_now()
     meta = RunMeta(
@@ -81,6 +90,7 @@ def cmd_init(args: argparse.Namespace) -> int:
     print("Initialized orchestration run.")
     print(f"Run directory: {run_dir}")
     print(f"Topic spec: {run_dir / 'inputs' / 'topic_spec.json'}")
+    print(f"Scope document (optional): {run_dir / 'inputs' / 'scope.md'}")
     return 0
 
 
@@ -111,7 +121,7 @@ def cmd_next(args: argparse.Namespace) -> int:
 
     print(f"Current stage: {stage.value}")
     if stage == Stage.INITIALIZED:
-        print(f"Next: fill {paths.topic_spec}")
+        print(f"Next: fill {paths.topic_spec} or run with --scope-file <path/to/scope.md>")
     elif stage == Stage.SPEC_READY:
         print(f"Next: run generation -> python scripts/orchestration.py run {run_id}")
     elif stage == Stage.GENERATED:

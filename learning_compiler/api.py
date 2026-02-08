@@ -6,7 +6,13 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from learning_compiler.agent import generate_curriculum, generate_curriculum_file
+from learning_compiler.agent import (
+    ScopeCompilationResult,
+    ScopeIngestMode,
+    compile_scope_document,
+    generate_curriculum,
+    generate_curriculum_file,
+)
 from learning_compiler.domain import TopicSpec
 from learning_compiler.orchestration.cli import main as orchestration_main
 from learning_compiler.validator.core import validate
@@ -25,6 +31,19 @@ class AgentAPI:
 
     def generate_to_file(self, topic_spec_path: Path, curriculum_path: Path) -> dict[str, Any]:
         return generate_curriculum_file(topic_spec_path, curriculum_path)
+
+    def compile_scope(
+        self,
+        scope_path: Path,
+        *,
+        mode: ScopeIngestMode = ScopeIngestMode.FULL,
+        section_filters: tuple[str, ...] = (),
+    ) -> ScopeCompilationResult:
+        return compile_scope_document(
+            scope_path,
+            mode=mode,
+            section_filters=section_filters,
+        )
 
 
 @dataclass(slots=True)

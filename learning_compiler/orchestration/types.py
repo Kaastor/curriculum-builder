@@ -30,6 +30,7 @@ STAGE_INDEX = {stage: idx for idx, stage in enumerate(STAGE_ORDER)}
 @dataclass(slots=True, frozen=True)
 class RunPaths:
     topic_spec: Path
+    scope_document: Path
     curriculum: Path
     previous_curriculum: Path
     event_log: Path
@@ -38,4 +39,6 @@ class RunPaths:
     validation_pass_marker: Path
     plan: Path
     diff_report: Path
+    scope_concepts: Path
+    scope_dag: Path
     run_meta: Path

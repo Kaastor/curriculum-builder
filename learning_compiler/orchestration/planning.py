@@ -3,46 +3,13 @@
 from __future__ import annotations
 
 import math
-from collections import deque
 from typing import Any
 
+from learning_compiler.dag import topological_order as dag_topological_order
 
 def topological_order(nodes: list[dict[str, Any]]) -> list[str]:
     """Return deterministic topological order for node dictionaries."""
-    indegree: dict[str, int] = {}
-    dependents: dict[str, list[str]] = {}
-    node_ids: list[str] = []
-
-    for node in nodes:
-        node_id = str(node.get("id"))
-        node_ids.append(node_id)
-        indegree[node_id] = 0
-        dependents[node_id] = []
-
-    for node in nodes:
-        node_id = str(node.get("id"))
-        for prereq in node.get("prerequisites", []):
-            prereq_id = str(prereq)
-            if prereq_id not in indegree:
-                continue
-            indegree[node_id] += 1
-            dependents[prereq_id].append(node_id)
-
-    queue = deque(sorted([node_id for node_id, value in indegree.items() if value == 0]))
-    ordered: list[str] = []
-
-    while queue:
-        current = queue.popleft()
-        ordered.append(current)
-        for dependent in sorted(dependents.get(current, [])):
-            indegree[dependent] -= 1
-            if indegree[dependent] == 0:
-                queue.append(dependent)
-
-    if len(ordered) != len(nodes):
-        return sorted(node_ids)
-
-    return ordered
+    return dag_topological_order(nodes)
 
 
 def compute_critical_path(nodes: list[dict[str, Any]]) -> list[str]:

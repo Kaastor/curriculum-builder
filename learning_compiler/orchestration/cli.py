@@ -50,6 +50,22 @@ def build_parser() -> argparse.ArgumentParser:
 
     p_run = sub.add_parser("run", help="Execute generate -> validate -> plan -> iterate")
     p_run.add_argument("run_id")
+    p_run.add_argument(
+        "--scope-file",
+        help="Optional markdown scope source to synthesize topic_spec.json before generation.",
+    )
+    p_run.add_argument(
+        "--scope-section",
+        action="append",
+        default=[],
+        help="Optional heading filter (repeatable) when extracting concepts from --scope-file.",
+    )
+    p_run.add_argument(
+        "--scope-mode",
+        default="full",
+        choices=["full", "section", "seed-list"],
+        help="Scope extraction mode (default: full).",
+    )
     p_run.set_defaults(func=cmd_run)
 
     p_archive = sub.add_parser("archive", help="Archive run folder")
