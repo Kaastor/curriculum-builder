@@ -1,7 +1,7 @@
 ---
 title: "Agentic Engineering Atlas: A Systems Map from Field to Implementation"
 subtitle: "Field-breadth reference with repo-oriented examples (all granularity levels)"
-version: "0.3"
+version: "0.4"
 date: "2026-02-08"
 ---
 
@@ -744,6 +744,190 @@ For this constrained scope, staff-level capability means:
 
 ---
 
+## 19. Cross-Cutting Fundamentals: Execution Governance and Conformance
+
+### 19.1 Purpose and boundary
+
+This section captures **field-level fundamentals** that cut across runtime, safety, evaluation, operations, and governance. These are not tied to one loop pattern or one model family. They are baseline engineering concepts for any tool-augmented agent that can cause side effects.
+
+### 19.2 Engineering invariants
+
+- **Trust is explicit**: trusted and untrusted components are named, with assumptions recorded.
+- **Effects are explicit**: actions are classified by side-effect severity before execution.
+- **Mediation is explicit**: high-impact actions pass through an enforceable governance boundary.
+- **Failure semantics are explicit**: violations are typed and recovery is deterministic and bounded.
+- **Degradation is explicit**: uncertainty tightens admissible behavior, not loosens it.
+- **Autonomy is bounded**: steps, tool calls, time, and cost are capped with deterministic accounting.
+- **Evidence is replayable**: runs can be reconstructed from structured traces.
+- **Evaluation is comparable**: methods are compared under equal budgets and paired conditions.
+- **Human control is protocolized**: approvals are state transitions with artifacts, not ad-hoc prompts.
+- **Conformance is reportable**: hard invariants and utility tradeoffs are emitted as executable artifacts.
+
+### 19.3 Foundational concept map (L1–L4)
+
+| Foundational concept | L2 technique/pattern | L3 implementation primitives | L4 concrete artifacts (recommended) |
+| --- | --- | --- | --- |
+| Trust boundary and assumptions | Assumption ledger + threat model | `TrustBoundary`, `AssumptionSet`, boundary ownership model | `docs/trust-boundary.md`, assumption manifest, negative-path tests |
+| Tool effect taxonomy | Effect typing | `EffectClass` enum (`READ`, `REVERSIBLE`, `IRREVERSIBLE`, `HIGH_IMPACT`) | effect classifier module + tests for each intent/tool |
+| Execution governance boundary | PDP/PEP mediation | `PolicyInput`, `PolicyDecision`, `PolicyRule`, mediation adapter | `policy/engine.py`, boundary enforcement tests |
+| Runtime contract semantics | Contract-as-code | versioned contract schema, pre/postconditions, context predicates | `contracts/*.yaml` (or JSON), contract validator + compatibility tests |
+| Violation taxonomy + recovery matrix | Typed fault handling | `ViolationType`, `RecoveryAction`, precedence and dispatch tables | recovery dispatch module + determinism tests |
+| Safe degradation profiles | Profile tightening | `Profile` enum, admissibility evaluator, transition rules | profile policy module + monotonicity checker |
+| Bounded autonomy model | Budgeted loop control | `LoopBudget`, `StopPolicy`, accounting ledger | budget enforcement tests, termination reason reports |
+| Reproducibility and replay semantics | Deterministic replay | seed policy, canonical event schema, trace identity | replay runner + replay equivalence tests |
+| Evaluation protocol fundamentals | Scenario harness + causal ablation | `Scenario`, `FaultPlan`, `EvalRunner`, `Comparator` | versioned scenario packs, baseline runner, diff reports |
+| Human oversight protocol | Approval state machine | `ApprovalRequest`, `ApprovalDecision`, approval status transitions | approval artifacts + CLI/API approve/deny commands |
+| Tool-boundary security fundamentals | Capability + schema hardening | capability model, scope checks, idempotency keys, secret boundaries | capability registry, policy checks, security regression tests |
+| Conformance reporting pattern | Executable scorecard/card | invariant checks, utility metrics, reproducibility metadata schema | per-method conformance report artifact + gate checks |
+
+### 19.4 Trust boundaries and explicit assumptions
+
+A runtime claim is only meaningful when its trust boundary is explicit. At minimum:
+
+- Name trusted components (runtime/policy engine/harness) and untrusted components (proposer/tool outputs/user payloads).
+- State mediation assumptions (which path all tool calls must use).
+- Separate architecture-scoped guarantees from deployment-wide guarantees.
+
+Minimum implementation expectation:
+
+- Boundary diagram in docs.
+- Machine-readable assumption manifest in the repo.
+- Tests that fail if an alternate execution path bypasses mediation in the evaluated architecture.
+
+### 19.5 Tool effect taxonomy and commitment semantics
+
+Side effects are not binary. A minimum taxonomy should include:
+
+- `READ`: no external state change.
+- `REVERSIBLE`: state changes with a compensating path.
+- `IRREVERSIBLE`: state change cannot be safely undone.
+- `HIGH_IMPACT`: irreversible or policy-sensitive actions requiring additional controls.
+
+Engineering consequence: policy gates, approval requirements, idempotency, and audit depth should depend on effect class, not on tool name string matching alone.
+
+### 19.6 Execution governance boundary (policy decision + enforcement)
+
+A robust boundary separates:
+
+- **Decision**: evaluate rules from structured inputs (`allow`/`deny`/`requires_approval`).
+- **Enforcement**: mediate execution so denied actions do not execute.
+
+Fundamental requirements:
+
+- Always invoked for governed actions.
+- Deterministic behavior for the same input and policy bundle.
+- Explainable outcomes (rule IDs, reason codes, remediation hints).
+
+### 19.7 Runtime contract semantics
+
+Tool and action contracts should define:
+
+- input schema and finite domains where applicable,
+- preconditions on runtime context,
+- effect classification rules,
+- output/observation validation semantics,
+- version identifiers for reproducibility and compatibility checks.
+
+Contract changes should be treated as first-class artifact changes with diffable versions and regression coverage.
+
+### 19.8 Violation taxonomy and deterministic recovery matrix
+
+A baseline taxonomy should distinguish at least:
+
+- validation/proposal faults,
+- authorization/policy faults,
+- availability faults,
+- integrity faults.
+
+Recovery must be bounded and deterministic:
+
+- define precedence when multiple violations are possible,
+- map `(violation_type, profile)` to permitted recovery actions,
+- prohibit unsafe or unbounded fallback loops.
+
+This is what turns “retry logic” into enforceable runtime semantics.
+
+### 19.9 Safe degradation profiles and monotonic tightening
+
+Under growing uncertainty, systems should degrade by **tightening admissibility**:
+
+- `NORMAL`: full admissible action set under policy.
+- `RESTRICTED`: reduced action set, stricter preconditions.
+- `SAFE_HOLD`: no autonomous high-impact execution.
+
+Fundamental property: admissible actions should be monotone by profile strictness. Where domains are finite, this should be mechanically checked.
+
+### 19.10 Bounded autonomy and accounting
+
+Autonomy limits should be explicit and enforced:
+
+- step budget,
+- tool-call budget,
+- deadline/time budget,
+- optional cost budget.
+
+Accounting rules must count retries and recovery actions, and termination reasons must distinguish success, safe hold, budget exhaustion, and controlled failure.
+
+### 19.11 Reproducibility and replay semantics
+
+Agentic runtime behavior must be auditable and replayable:
+
+- fixed seed policy for deterministic modes,
+- canonical event schema,
+- replay engine that re-evaluates traces under recorded config,
+- stable run identity and trace identity.
+
+Replayability is a foundational requirement for debugging, incident review, and scientific comparison.
+
+### 19.12 Evaluation protocol fundamentals (causal and comparable)
+
+A field-grade eval protocol requires:
+
+- versioned scenario suites with explicit objectives and termination labels,
+- paired-seed comparisons under equal budgets,
+- locked baseline definitions,
+- ablations targeting causal mechanisms (not only aggregate wins),
+- fault injection along named axes (availability, integrity, and proposer errors when relevant),
+- metamorphic tests that validate harness behavior itself.
+
+Without this, runtime claims are difficult to falsify and hard to compare across methods.
+
+### 19.13 Human oversight protocol (not prompt convention)
+
+Approval should be an explicit protocol:
+
+- request artifact with action, risk summary, and policy references,
+- explicit operator decision (`approve`/`deny`/`amend`) with reason,
+- persisted state transition and audit trail,
+- deterministic runtime behavior while awaiting decision.
+
+This avoids ambiguous “human in the loop” claims that are not enforceable in code.
+
+### 19.14 Tool-boundary security fundamentals
+
+At minimum, tool boundaries need:
+
+- capability scoping and least privilege per tool/action,
+- strict schema validation for tool inputs/outputs,
+- idempotency controls for side effects,
+- secret isolation (no secret leakage into prompts or logs),
+- prompt/tool-injection defensive checks at the boundary.
+
+Security and governance are coupled to runtime semantics; they are not add-on infrastructure tasks.
+
+### 19.15 Conformance reporting pattern
+
+A conformance artifact should summarize:
+
+- hard invariants (pass/fail safety and boundedness checks),
+- utility and degradation metrics under declared conditions,
+- reproducibility metadata (versions, seeds, budgets, policy bundle),
+- diagnostic counters for blocked actions, violation types, and recovery actions.
+
+This pattern turns governance from narrative claims into executable evidence.
+
+---
+
 # Appendix — Practical checklists (L3/L4 emphasis)
 
 ## A.1 Implementation checklist by granularity level
@@ -809,3 +993,4 @@ Use the following template for any new L2 pattern implemented:
 
 - **0.2 (2026-02-08)**: Rewritten as an academic-style chapter; expanded field taxonomy; added governance/security field; strengthened L3/L4 guidance and roadmap.
 - **0.3 (2026-02-08)**: Added focused single-agent staff path (no multi-agent/scale yet) with prioritized capability additions and acceptance criteria.
+- **0.4 (2026-02-08)**: Added cross-cutting execution-governance and conformance fundamentals (trust boundaries, effect typing, mediation semantics, recovery matrices, monotone profiles, bounded autonomy, replay semantics, eval protocol, oversight protocol, and conformance reporting pattern).
