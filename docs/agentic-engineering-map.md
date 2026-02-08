@@ -1,195 +1,295 @@
-# Agentic Engineering Field Map
+# Agentic Engineering Map (All Granularity Levels)
 
-## Why this document
+## Purpose
 
-This guide maps the major fields of agentic AI engineering to this repository so you can build the curriculum system and deliberately level up as an engineer at the same time.
+This repository is a PoC and a learning environment.  
+This document maps agentic engineering from big-picture fields down to concrete implementation tactics so you can see:
 
-## Core fields of agentic engineering
+- what to learn
+- what to build
+- what is already covered in this repo
+- what is still missing
 
-| Field | What it is | What it solves | Typical problems |
-| --- | --- | --- | --- |
-| Strategy and Planning (Proposer/Brain) | Task decomposition, plan generation, next-action selection, and policy for what to do first. | Turns user intent into executable steps instead of single-shot outputs. | Hallucinated plans, brittle decomposition, weak prioritization under constraints, poor long-horizon coherence. |
-| State and Memory | Modeling and persistence of run state, artifacts, progress, and reusable context across iterations. | Enables multi-step work, resumability, and historical continuity. | Context drift, stale memory, schema drift, replay mismatch, hidden coupling between state and logic. |
-| Tooling and Execution Runtime | Tool interfaces, command dispatch, orchestration flow, retries, idempotency, and stage transitions. | Converts plans into real side effects safely and repeatably. | Partial failures, double-apply bugs, non-idempotent operations, race/order issues, weak failure recovery. |
-| Reliability and Safety | Input/output contracts, validation, guardrails, typed errors, fallback behavior, and policy boundaries. | Prevents silent corruption and unsafe or low-trust outputs. | False positives/negatives in validation, over-restrictive guardrails, uncaught edge cases, unclear failure semantics. |
-| Evaluation and Quality Engineering | Regression tests, fixture-based evaluation, deterministic checks, and quality gates. | Detects quality regressions before release and supports safe iteration speed. | Goodhart metrics, flaky tests, low coverage of real failure modes, tests that miss behavior regressions. |
-| Observability and Operations | Structured events, run metadata, traces, timing, cost/latency visibility, and operational workflows. | Makes failures diagnosable and operations predictable. | Missing telemetry, noisy logs, hard-to-reconstruct incidents, inability to measure performance tradeoffs. |
-| Human Interface and Product Control | CLI/UI affordances, explainability of next steps, confidence cues, and human override paths. | Keeps humans in control and improves trust and adoption. | Opaque behavior, poor UX for interventions, low discoverability of system state and rationale. |
+## Granularity model
 
-## Mental map: where each field lives in this repo
+| Level | Name | Question answered |
+| --- | --- | --- |
+| L0 | Field | Which engineering domain are we in? |
+| L1 | Method family | What class of approaches exists in this field? |
+| L2 | Technique / named pattern | Which concrete pattern can I study and apply? |
+| L3 | Implementation primitives | What components/contracts are needed in code? |
+| L4 | Concrete implementation | What exact code/tests/artifacts should I add here? |
 
-## 1) Strategy and Planning
+## Big-picture map
 
-- Primary code:
-  - `learning_compiler/agent/generator.py`
-  - `learning_compiler/agent/spec.py`
-  - `learning_compiler/agent/node_builder.py`
-  - `learning_compiler/orchestration/planning.py`
-  - `prompts/curriculum_generator.md`
-  - `prompts/orchestration.md`
-- What you should practice here:
-  - Improve deterministic plan quality under constrained topic specs.
-  - Make planning explainable (why this node/order now).
-  - Keep decomposition robust to sparse or noisy spec inputs.
-- Real engineering depth you will hit:
-  - Tradeoffs between plan optimality, determinism, and simplicity.
-  - Controlling strategy behavior without overfitting to single fixtures.
+```mermaid
+flowchart TB
+    A[Goal / User Intent] --> B[Strategy and Planning]
+    B --> C[Execution Runtime]
+    C --> D[Tool Calls / Side Effects]
+    D --> E[State and Memory]
+    E --> C
 
-## 2) State and Memory
+    C --> F[Reliability and Safety]
+    F --> C
 
-- Primary code:
-  - `learning_compiler/orchestration/fs.py`
-  - `learning_compiler/orchestration/types.py`
-  - `learning_compiler/orchestration/meta.py`
-  - `runs/` artifacts and `run.json` lifecycle
-- What you should practice here:
-  - Keeping run metadata contracts explicit and strict.
-  - Keeping state transitions explicit and auditable.
-  - Recovering quickly by re-initializing incompatible local runs.
-- Real engineering depth you will hit:
-  - Preventing hidden state drift and stale artifact coupling.
-  - Designing contracts that are simple enough to evolve safely in PoC mode.
+    C --> G[Evaluation and Quality]
+    G --> B
+    G --> C
 
-## 3) Tooling and Execution Runtime
+    C --> H[Observability and Operations]
+    H --> G
+    H --> C
 
-- Primary code:
-  - `learning_compiler/orchestration/cli.py`
-  - `learning_compiler/orchestration/commands_basic.py`
-  - `learning_compiler/orchestration/commands_pipeline.py`
-  - `learning_compiler/orchestration/exec.py`
-  - `learning_compiler/orchestration/stage.py`
-  - `scripts/orchestration.py`
-- What you should practice here:
-  - Strong command contracts (`init|status|next|validate|plan|iterate|run|archive|list`).
-  - Idempotent command behavior and resilient retries.
-  - Clean separation between CLI parsing and business logic.
-- Real engineering depth you will hit:
-  - Partial pipeline failure handling and recovery semantics.
-  - Stage synchronization and correctness under repeated invocations.
+    I[Human Control and UX] --> A
+    I --> C
+    I --> H
+```
 
-## 4) Reliability and Safety
+## Coverage legend
 
-- Primary code:
-  - `learning_compiler/validator/core.py`
-  - `learning_compiler/validator/topic_spec.py`
-  - `learning_compiler/validator/curriculum_schema.py`
-  - `learning_compiler/validator/curriculum_graph.py`
-  - `learning_compiler/validator/curriculum_evidence.py`
-  - `learning_compiler/validator/curriculum_quality.py`
-  - `learning_compiler/errors.py`
-  - `prompts/structural_validator.md`
-- What you should practice here:
-  - Turning expectations into explicit contracts and typed failures.
-  - Ensuring validators catch real defects, not cosmetic variance.
-  - Defining clear fail/continue behavior in orchestration.
-- Real engineering depth you will hit:
-  - Balancing strictness with usefulness in PoC iterations.
-  - Designing error taxonomies that stay stable as scope grows.
+- `Strong`: implemented + exercised by tests/gate.
+- `Partial`: present but limited depth or hardening.
+- `Missing`: not implemented yet.
 
-## 5) Evaluation and Quality Engineering
+## L0 Field Map
 
-- Primary code:
-  - `tests/` (especially determinism, orchestration, validator, fixture tests)
-  - `tests/fixtures/curriculum.json`
-  - `scripts/gate.sh`
-  - `scripts/static_checks.py`
-  - `scripts/coverage_check.py`
-  - `docs/determinism.md`
-- What you should practice here:
-  - Add tests for each failure mode found in real runs.
-  - Keep deterministic checks strong when expanding capabilities.
-  - Treat `make gate` as release criteria, not optional hygiene.
-- Real engineering depth you will hit:
-  - Building evaluation signal that predicts production behavior.
-  - Preventing regressions in non-deterministic-seeming workflows.
+| L0 Field | Coverage in this repo |
+| --- | --- |
+| Strategy and Planning | Strong |
+| State and Memory | Strong |
+| Tooling and Execution Runtime | Strong |
+| Reliability and Safety | Strong |
+| Evaluation and Quality Engineering | Strong |
+| Observability and Operations | Partial |
+| Human Interface and Product Control | Partial |
 
-## 6) Observability and Operations
+## 1) L0: Strategy and Planning
 
-- Primary code:
-  - `learning_compiler/orchestration/events.py`
-  - `learning_compiler/orchestration/meta.py`
-  - `learning_compiler/orchestration/exec.py`
-  - `learning_compiler/config.py`
-  - `runs/*/logs/` and run history
-- What you should practice here:
-  - Emit structured, useful events for each critical transition.
-  - Make incident reconstruction possible from artifacts alone.
-  - Track operational baselines (latency, retries, validation failure rates).
-- Real engineering depth you will hit:
-  - Detecting weak points early via telemetry, not intuition.
-  - Designing logs/events that remain useful as workflow complexity grows.
+### L1-L4 breakdown
 
-## 7) Human Interface and Product Control
+| L1 Method family | L2 Technique/pattern | L3 Implementation primitives | L4 Concrete implementation in this repo | Status | Search terms |
+| --- | --- | --- | --- | --- | --- |
+| Deterministic curriculum decomposition | Constraint-aware planning | Constraint model, deterministic node target calculator, title seeding | `learning_compiler/agent/spec.py` (`target_nodes`, `target_minutes`, `seed_titles`) | Strong | `constraint-aware planning deterministic` |
+| Dependency-aware sequencing | DAG topological ordering | Node map, indegree tracking, stable ordering rules | `learning_compiler/orchestration/planning.py` (`topological_order`) | Strong | `topological sort planning dag` |
+| Schedule estimation | Critical path analysis | Duration model, longest-path reconstruction | `learning_compiler/orchestration/planning.py` (`compute_critical_path`) | Strong | `critical path method dag` |
+| Agent loop control | ReAct | Thought/action/observation loop state, tool selection policy, stop criteria | Not implemented (current flow is staged pipeline, not live loop) | Missing | `ReAct prompting`, `reason act observe loop` |
+| Agent loop control | Plan-and-Execute | Separate planner and executor modules, plan artifact, execution cursor | Partially represented by `generate -> validate -> plan -> iterate` pipeline | Partial | `plan and execute agents` |
+| Self-correction | Reflexion / critic loop | Critique prompt, repair pass, stopping rule | Not implemented | Missing | `Reflexion agent`, `self critique llm` |
 
-- Primary code:
-  - `app/index.html`
-  - `app/main.js`
-  - `app/styles.css`
-  - `README.md` and command UX in CLI modules
-- What you should practice here:
-  - Explain run state and next actions clearly for human operators.
-  - Design override points where humans can intervene safely.
-  - Keep UX aligned with deterministic and validation guarantees.
-- Real engineering depth you will hit:
-  - Translating internal complexity into actionable operator experience.
-  - Avoiding interface drift from underlying runtime semantics.
+### What you know now
 
-## Progression plan (staff-level trajectory while building this system)
+- deterministic planning under constraints
+- DAG planning and critical-path reasoning
+- planner output as stable artifact (`plan.json`)
 
-## Phase 1 (Weeks 1-2): Foundations and baselines
+### What to learn next
 
-- Goals:
-  - Internalize current architecture boundaries.
-  - Establish deterministic and validation baselines.
-- Deliverables:
-  - Run `make gate` cleanly and understand each check purpose.
-  - Document at least 5 real failure modes observed during usage.
-  - Add at least 2 targeted regression tests for existing weak spots.
-- Staff-level signal:
-  - You can explain why each validator/test exists and what incident it prevents.
+- dynamic loop strategies (`ReAct`, reflection loops)
+- explicit rationale traces for planning decisions
 
-## Phase 2 (Weeks 3-4): Strategy plus runtime hardening
+## 2) L0: State and Memory
 
-- Goals:
-  - Improve planning quality and make execution behavior safer.
-- Deliverables:
-  - Implement one planning quality improvement in `planning.py` or agent generation flow.
-  - Add idempotency/retry-safe behavior for one orchestration command path.
-  - Add tests proving no behavior regression on current fixtures.
-- Staff-level signal:
-  - You can defend strategy changes with deterministic evidence, not intuition.
+### L1-L4 breakdown
 
-## Phase 3 (Weeks 5-6): Reliability and contract resilience
+| L1 Method family | L2 Technique/pattern | L3 Implementation primitives | L4 Concrete implementation in this repo | Status | Search terms |
+| --- | --- | --- | --- | --- | --- |
+| Workflow state control | Explicit state machine | Stage enum, stage order, stage sync rules | `learning_compiler/orchestration/types.py`, `learning_compiler/orchestration/stage.py` | Strong | `state machine workflow orchestration` |
+| Artifact consistency | Freshness/marker checks | Marker files, dependency mtime checks | `validation_is_current`, `plan_is_current`, `diff_is_current` in `learning_compiler/orchestration/stage.py` | Strong | `artifact freshness check` |
+| Metadata contracts | Strict typed run metadata | Typed model, schema validation, fail-fast parse | `learning_compiler/orchestration/meta.py`, `learning_compiler/orchestration/fs.py` | Strong | `typed metadata schema validation` |
+| Persistence strategy | Fresh-run contract | Re-init policy for incompatible local artifacts | Documented in `AGENTS.md` + strict run metadata load errors | Strong | `poc fresh-run contract` |
+| Long-term semantic memory | Retrieval memory | Embeddings/index, retrieval policy, memory write/read API | Not implemented | Missing | `agent long term memory retrieval` |
+| Checkpointing/rollback | Execution checkpoint model | Snapshot protocol, resume cursor, rollback procedure | Not implemented | Missing | `workflow checkpoint rollback` |
 
-- Goals:
-  - Strengthen failure semantics and run metadata contracts.
-- Deliverables:
-  - Extend validator or error taxonomy for a real defect class.
-  - Tighten run metadata validation and document reset/re-init rules.
-  - Capture failure handling decisions in docs for future contributors.
-- Staff-level signal:
-  - You can evolve contracts while keeping failure modes explicit and recoverable.
+### What you know now
 
-## Phase 4 (Weeks 7-8): Operability and human control
+- robust local run state lifecycle
+- strict metadata boundaries and stage inference
 
-- Goals:
-  - Make system behavior diagnosable and operator-friendly.
-- Deliverables:
-  - Improve structured event coverage for critical stage transitions.
-  - Add or refine one operator-facing UX flow (CLI/app) for clarity.
-  - Define and track 3 operational metrics (for example: validation pass rate, retry rate, median command latency).
-- Staff-level signal:
-  - You can reconstruct failures quickly and propose concrete operational fixes.
+### What to learn next
 
-## Ongoing weekly loop (repeat indefinitely)
+- memory beyond artifact state (retrieval/episodic memory)
+- checkpoint/rollback reliability patterns
 
-1. Pick one field focus for the week (strategy, reliability, runtime, etc.).
-2. Implement one meaningful change in that field.
-3. Add or update tests and run `make gate`.
-4. Write a short engineering note:
-   - What changed.
-   - What failed first.
-   - How validation/evals caught it.
-   - What you would redesign next.
+## 3) L0: Tooling and Execution Runtime
 
-This loop is what forces deep understanding: you repeatedly close the gap between capability, correctness, and operability on real code paths.
+### L1-L4 breakdown
+
+| L1 Method family | L2 Technique/pattern | L3 Implementation primitives | L4 Concrete implementation in this repo | Status | Search terms |
+| --- | --- | --- | --- | --- | --- |
+| Command orchestration | Thin CLI / rich core | Parser dispatch + module handlers | `learning_compiler/orchestration/cli.py`, `commands_basic.py`, `commands_pipeline.py` | Strong | `thin cli rich core` |
+| Tool abstraction | Dependency injection via protocol | Generator contract interface | `learning_compiler/agent/contracts.py` + orchestration usage | Strong | `python protocol dependency injection` |
+| Safe command inputs | Input contract hardening | `run_id` regex + path containment checks | `learning_compiler/orchestration/command_utils.py`, `learning_compiler/orchestration/fs.py` | Strong | `path traversal prevention pathlib` |
+| Idempotent progression | Repeat-safe command behavior | Stage sync + marker validation before actions | `sync_stage` + pipeline command flow | Partial | `idempotent orchestration commands` |
+| Failure semantics | Typed error propagation | Domain error taxonomy + stable exit codes | `learning_compiler/errors.py` | Strong | `typed error taxonomy cli` |
+| Resilience controls | Retry/backoff | Retry policy, attempt budget, transient classifier | Not implemented | Missing | `exponential backoff retry policy` |
+| Runtime isolation | Circuit breaker / bulkhead | Failure counters, open/half-open states | Not implemented | Missing | `circuit breaker pattern` |
+
+### What you know now
+
+- clean command orchestration boundaries
+- typed runtime failures
+- hardened filesystem boundaries
+
+### What to learn next
+
+- transient failure recovery (`retry`, `backoff`, `timeout`)
+- resilience patterns (`circuit breaker`, `bulkhead`)
+
+## 4) L0: Reliability and Safety
+
+### L1-L4 breakdown
+
+| L1 Method family | L2 Technique/pattern | L3 Implementation primitives | L4 Concrete implementation in this repo | Status | Search terms |
+| --- | --- | --- | --- | --- | --- |
+| Contract-first validation | Layered validator architecture | Separate schema/graph/evidence/quality modules | `learning_compiler/validator/*` split by responsibility | Strong | `layered validation architecture` |
+| Structural safety | Schema and DAG guards | Required keys, ID checks, cycle/reachability checks | `curriculum_schema.py`, `curriculum_graph.py` | Strong | `dag validation cycle detection` |
+| Evidence safety | Evidence strictness profiles | Mode-driven evidence requirements | `curriculum_evidence.py` + `EvidenceMode` | Strong | `evidence mode validation` |
+| Failure taxonomy | Stable typed errors | Error enum + exit mapping + details | `learning_compiler/errors.py` | Strong | `domain errors exit codes` |
+| Runtime hardening | Fail-safe orchestration | Catch conversion/type failures and return typed errors | `learning_compiler/orchestration/commands_pipeline.py` | Strong | `fail safe orchestration` |
+| Policy enforcement | Policy engine | Declarative risk rules, policy DSL/config | Not implemented | Missing | `policy engine guardrails` |
+| Adversarial hardening | Fuzzing / hostile input tests | Randomized malformed inputs and assertions | Not implemented | Missing | `property based testing fuzzing python` |
+
+### What you know now
+
+- explicit guardrails with deterministic validation layers
+- reliable fail-fast behavior for invalid artifacts
+
+### What to learn next
+
+- policy-as-code safety systems
+- adversarial testing methodology
+
+## 5) L0: Evaluation and Quality Engineering
+
+### L1-L4 breakdown
+
+| L1 Method family | L2 Technique/pattern | L3 Implementation primitives | L4 Concrete implementation in this repo | Status | Search terms |
+| --- | --- | --- | --- | --- | --- |
+| Regression quality | Fixture-based tests | Canonical sample artifacts | `tests/fixtures/curriculum.json`, `tests/test_curriculum_fixture.py` | Strong | `golden file testing` |
+| Reproducibility assurance | Determinism tests | Repeat generation equality checks | `tests/test_agent_determinism.py`, `docs/determinism.md` | Strong | `deterministic test strategy` |
+| Architectural quality | Static boundary checks | Import graph constraints | `scripts/static_checks.py`, `tests/test_architecture_boundaries.py` | Strong | `architecture boundary tests` |
+| Gate automation | Quality gate script | syntax + static + validate + tests + coverage | `scripts/gate.sh`, `make gate` | Strong | `quality gate ci pipeline` |
+| Incident-to-test loop | Regression capture | Tests added for discovered runtime bugs | `tests/test_orchestration_cli.py` additions | Strong | `bug regression test workflow` |
+| Evals at scale | Scenario benchmark suite | versioned eval datasets + score tracking | Not implemented | Missing | `llm eval harness regression` |
+| Fault injection | Chaos/adversarial tests | synthetic failures in runtime paths | Not implemented | Missing | `chaos testing workflow engine` |
+
+### What you know now
+
+- quality gate discipline
+- determinism and regression testing workflow
+
+### What to learn next
+
+- broader eval harnesses and benchmark tracking
+- fault-injection-based reliability testing
+
+## 6) L0: Observability and Operations
+
+### L1-L4 breakdown
+
+| L1 Method family | L2 Technique/pattern | L3 Implementation primitives | L4 Concrete implementation in this repo | Status | Search terms |
+| --- | --- | --- | --- | --- | --- |
+| Transition logging | Structured run events | Standard event schema with metadata | `learning_compiler/orchestration/events.py`, `stage.py` | Strong | `structured event logging` |
+| Run audit trail | Append-only history | Persisted run history in `run.json` and logs | `learning_compiler/orchestration/meta.py`, `runs/*/logs/events.jsonl` | Strong | `append only audit log` |
+| Diagnostics | Error details payloads | contextual details in typed errors | `learning_compiler/errors.py`, orchestration errors | Partial | `context rich error handling` |
+| Operational metrics | Reliability/cost/latency metrics | metric collector + summary artifact | Not implemented | Missing | `sli slo metrics pipeline` |
+| Tracing | Distributed spans | trace IDs, span boundaries | Not implemented | Missing | `opentelemetry python tracing` |
+| Incident workflow | Runbooks/postmortems | failure taxonomy + standard response docs | Not implemented | Missing | `incident runbook postmortem` |
+
+### What you know now
+
+- structured state transition visibility
+- artifact and history-level debugging
+
+### What to learn next
+
+- quantitative operations (metrics/SLOs)
+- tracing and incident response discipline
+
+## 7) L0: Human Interface and Product Control
+
+### L1-L4 breakdown
+
+| L1 Method family | L2 Technique/pattern | L3 Implementation primitives | L4 Concrete implementation in this repo | Status | Search terms |
+| --- | --- | --- | --- | --- | --- |
+| Operator guidance | Next-action hints | stage->action mapping | `cmd_next` in `learning_compiler/orchestration/commands_basic.py` | Strong | `operator guidance workflow cli` |
+| State transparency | Status dashboard command | stage + artifact summary output | `cmd_status` in `learning_compiler/orchestration/commands_basic.py` | Strong | `status command design` |
+| Visual inspection | DAG explorer UI | graph render, node details, filters | `app/index.html`, `app/main.js`, `app/styles.css` | Strong | `curriculum dag inspector` |
+| Safe rendering | HTML escaping for loaded JSON | escape untrusted fields before `innerHTML` | `escapeHtml` usage in `app/main.js` | Strong | `xss escaping innerhtml` |
+| Human approval loops | Approval checkpoints | explicit confirm-before-transition gates | Not implemented | Missing | `human in the loop approval workflow` |
+| Guided remediation | Failure playbook UX | actionable remediation flows in CLI/UI | Not implemented | Missing | `error remediation ux` |
+
+### What you know now
+
+- operator-friendly status and next-step interfaces
+- practical local inspection UX for generated artifacts
+
+### What to learn next
+
+- explicit approval/override controls
+- guided remediation UX for failure cases
+
+## Canonical loop patterns (L2 focus)
+
+This section answers: "Which named agent loop patterns exist, and do we use them here?"
+
+| Pattern | Core idea | Present in this repo |
+| --- | --- | --- |
+| ReAct | iterative reason-act-observe loop with tool calls | Missing |
+| Plan-and-Execute | create plan first, then execute steps | Partial (staged pipeline) |
+| Reflexion | self-critique and correction loop | Missing |
+| Proposer/Judge | generation separated from validation | Strong |
+| Tree/Graph of Thought | branching reasoning exploration | Missing |
+| Multi-agent debate | multiple agents cross-criticize outputs | Missing |
+
+## Implementation checklist by level
+
+## L0-L1 (field and method understanding)
+
+- Be able to explain each field and why it matters.
+- Map each method family to the correct field.
+
+## L2 (technique/pattern competency)
+
+- Implement at least one new named technique per quarter.
+- Add tests that prove behavior change and failure handling.
+
+## L3 (implementation primitives)
+
+- Define typed contracts before adding new behavior.
+- Add explicit error semantics for each new primitive.
+
+## L4 (concrete shipping behavior)
+
+- Update code, tests, and docs together.
+- Run `make gate` before handoff.
+
+## Gap map: what you know vs what you do not know yet
+
+| Domain | You know now (from this repo) | You should learn next |
+| --- | --- | --- |
+| Planning | deterministic DAG and schedule planning | dynamic action loops (`ReAct`, reflection) |
+| Runtime | command orchestration and typed failures | retries/backoff/timeouts/circuit breakers |
+| State | strict run metadata and stage sync | checkpoints, rollback, semantic memory |
+| Reliability | layered validators and fail-fast contracts | policy engines, fuzz/adversarial validation |
+| Quality | tests + gate + determinism checks | eval harnesses, fault-injection testing |
+| Ops | structured run events/history | metrics, tracing, SLOs, incident runbooks |
+| Human control | status/next + visual inspector | approval gates and guided remediation |
+
+## Suggested learning sequence
+
+1. Deepen runtime resilience first:
+   - retries/backoff/timeouts, then circuit breaker.
+2. Add one dynamic loop pattern:
+   - start with `ReAct` in a bounded sub-workflow.
+3. Add observability maturity:
+   - metrics artifact per run, then basic dashboards.
+4. Add human-control maturity:
+   - approval checkpoint before high-impact transitions.
+
+Each step should include:
+- implementation
+- regression tests
+- update to this map
+- `make gate`
