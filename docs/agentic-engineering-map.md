@@ -10,6 +10,8 @@ This document maps agentic engineering from big-picture fields down to concrete 
 - what is already covered in this repo
 - what is still missing
 
+For a field-breadth reference beyond this repo slice, use `docs/agentic-engineering-atlas.md`.
+
 ## Granularity model
 
 | Level | Name | Question answered |

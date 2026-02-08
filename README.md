@@ -278,3 +278,5 @@ Gate includes:
 Supporting docs:
 - `docs/determinism.md`
 - `docs/agentic-engineering-map.md`
+- `docs/agentic-engineering-atlas.md`
+- `docs/effective-learning-process.md`
