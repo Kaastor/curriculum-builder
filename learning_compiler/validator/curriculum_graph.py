@@ -62,7 +62,7 @@ def check_reachability(nodes: list[dict[str, Any]], result: ValidationResult) ->
     roots = [
         node_id
         for node_id, node in nodes_by_id.items()
-        if len(node.get("prerequisites", [])) == 0
+        if not isinstance(node.get("prerequisites"), list) or len(node.get("prerequisites", [])) == 0
     ]
 
     if not roots:

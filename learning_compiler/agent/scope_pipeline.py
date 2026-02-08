@@ -122,7 +122,7 @@ def _topic_spec_from_scope(
         "scope_in": scope_in,
         "scope_out": ["Topics not represented in the provided scope document."],
         "constraints": {
-            "hours_per_week": 6.0,
+            "hours_per_week": float(policy.hours_per_week),
             "total_hours_min": total_hours_min,
             "total_hours_max": total_hours_max,
             "depth": "practical",

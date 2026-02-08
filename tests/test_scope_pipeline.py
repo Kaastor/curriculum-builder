@@ -126,6 +126,43 @@ class ScopePipelineTests(unittest.TestCase):
                     expected_type=ScopeArtifactType.DAG,
                 )
 
+    def test_section_filter_matches_punctuation_in_heading(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            scope_path = Path(tmp_dir) / "scope.md"
+            scope_path.write_text(
+                (
+                    "# Scope\n"
+                    "## AI/ML Systems\n"
+                    "- model serving\n"
+                    "## Ops\n"
+                    "- backups\n"
+                ),
+                encoding="utf-8",
+            )
+
+            extracted = extract_scope(
+                scope_path,
+                mode=ScopeIngestMode.SECTION,
+                section_filters=("AI/ML",),
+            )
+            texts = {item.text for item in extracted.items}
+            self.assertIn("AI/ML Systems", texts)
+            self.assertIn("Model serving", {concept.title for concept in extracted.concepts})
+
+    def test_scope_profile_hours_per_week_is_applied(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            scope_path = Path(tmp_dir) / "scope.md"
+            scope_path.write_text(SCOPE_MARKDOWN, encoding="utf-8")
+
+            fast_policy = scope_policy_for_profile(ScopeProfile.FAST)
+            deep_policy = scope_policy_for_profile(ScopeProfile.DEEP)
+
+            fast = compile_scope_document(scope_path, policy=fast_policy)
+            deep = compile_scope_document(scope_path, policy=deep_policy)
+
+            self.assertEqual(fast_policy.hours_per_week, fast.topic_spec["constraints"]["hours_per_week"])
+            self.assertEqual(deep_policy.hours_per_week, deep.topic_spec["constraints"]["hours_per_week"])
+
 
 if __name__ == "__main__":
     unittest.main()

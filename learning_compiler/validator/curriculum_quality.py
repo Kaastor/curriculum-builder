@@ -50,7 +50,11 @@ def check_graph_progression(nodes: list[dict[str, Any]], result: ValidationResul
     if not nodes:
         return
 
-    roots = [node for node in nodes if len(node.get("prerequisites", [])) == 0]
+    roots = [
+        node
+        for node in nodes
+        if not isinstance(node.get("prerequisites"), list) or len(node.get("prerequisites", [])) == 0
+    ]
     node_count = len(nodes)
     root_count = len(roots)
 
@@ -241,7 +245,12 @@ def check_learner_path_coherence(nodes: list[dict[str, Any]], result: Validation
     for node in nodes:
         node_id = str(node.get("id", ""))
         capability = str(node.get("capability", "")).lower()
-        prerequisites = [str(item) for item in node.get("prerequisites", [])]
+        raw_prerequisites = node.get("prerequisites", [])
+        prerequisites = (
+            [str(item) for item in raw_prerequisites]
+            if isinstance(raw_prerequisites, list)
+            else []
+        )
 
         if not prerequisites and any(token in capability for token in ("integrate", "validate")):
             result.warn(
@@ -251,7 +260,7 @@ def check_learner_path_coherence(nodes: list[dict[str, Any]], result: Validation
 
         if prerequisites:
             parent_minutes = [
-                int(parent.get("estimate_minutes"))
+                float(parent.get("estimate_minutes"))
                 for prereq in prerequisites
                 if (parent := node_map.get(prereq)) is not None
                 and is_number(parent.get("estimate_minutes"))

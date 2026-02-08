@@ -8,6 +8,7 @@ from typing import Any
 
 from learning_compiler.agent.model_policy import ModelPolicy
 from learning_compiler.domain import TopicSpec
+from learning_compiler.validator.helpers import is_number
 
 
 @dataclass(slots=True, frozen=True)
@@ -58,16 +59,16 @@ def _node_map(nodes: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
     }
 
 
-def _max_prereq_estimate(node: dict[str, Any], node_index: dict[str, dict[str, Any]]) -> int:
-    values: list[int] = []
+def _max_prereq_estimate(node: dict[str, Any], node_index: dict[str, dict[str, Any]]) -> float:
+    values: list[float] = []
     for prereq in node.get("prerequisites", []):
         entry = node_index.get(str(prereq))
         if not isinstance(entry, dict):
             continue
         estimate = entry.get("estimate_minutes")
-        if isinstance(estimate, int):
-            values.append(estimate)
-    return max(values) if values else 0
+        if is_number(estimate):
+            values.append(float(estimate))
+    return max(values) if values else 0.0
 
 
 class LLMCritic:
@@ -134,9 +135,10 @@ class LLMCritic:
                     )
 
             estimate = node.get("estimate_minutes")
-            if isinstance(estimate, int):
+            if is_number(estimate):
+                estimate_value = float(estimate)
                 prereq_peak = _max_prereq_estimate(node, index)
-                if prereq_peak > 0 and estimate > int(prereq_peak * 2.2):
+                if prereq_peak > 0 and estimate_value > prereq_peak * 2.2:
                     diagnostics.append(
                         CriticDiagnostic(
                             rule_id="learner.workload_jump",

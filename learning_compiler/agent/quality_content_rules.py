@@ -9,6 +9,7 @@ from typing import Any
 from learning_compiler.agent.pedagogy_critic import PedagogyCritique
 from learning_compiler.agent.quality_types import QualityDiagnostic
 from learning_compiler.domain import TopicSpec
+from learning_compiler.validator.helpers import is_number
 
 ACTION_VERBS = (
     "analyze",
@@ -139,7 +140,7 @@ def score_mastery_actionability(nodes: list[dict[str, Any]], diagnostics: list[Q
 
 def score_effort_coherence(nodes: list[dict[str, Any]], diagnostics: list[QualityDiagnostic]) -> int:
     score = 100
-    estimates = [node.get("estimate_minutes") for node in nodes if isinstance(node.get("estimate_minutes"), int)]
+    estimates = [float(node.get("estimate_minutes")) for node in nodes if is_number(node.get("estimate_minutes"))]
     if not estimates:
         return 0
     unique = set(estimates)

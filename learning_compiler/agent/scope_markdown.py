@@ -46,8 +46,12 @@ def build_id(prefix: str, *parts: str) -> str:
 def matches_section(heading_path: tuple[str, ...], section_filters: tuple[str, ...]) -> bool:
     if not section_filters:
         return True
-    lowered_path = " / ".join(heading_path).lower()
-    return any(filter_text in lowered_path for filter_text in section_filters)
+    normalized_path = " / ".join(
+        fragment
+        for fragment in (canonical_key(heading) for heading in heading_path)
+        if fragment
+    )
+    return any(filter_text in normalized_path for filter_text in section_filters)
 
 
 def is_meta_line(text: str) -> bool:
