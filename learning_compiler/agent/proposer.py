@@ -56,7 +56,7 @@ class LLMProposer:
                 ).to_dict()
             ]
 
-        if policy.provider != ModelProvider.CODING_AGENT:
+        if policy.provider == ModelProvider.INTERNAL:
             return payload
 
         scope_document_payload: dict[str, str] | None = None
@@ -87,6 +87,6 @@ class LLMProposer:
         if not isinstance(candidate, dict):
             raise LearningCompilerError(
                 ErrorCode.INTERNAL_ERROR,
-                "coding_agent proposer returned invalid curriculum payload.",
+                "llm proposer returned invalid curriculum payload.",
             )
         return candidate

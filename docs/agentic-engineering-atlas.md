@@ -276,7 +276,7 @@ The runtime is the “operating system” of the agent: it determines how plans 
 | --- | --- | --- | --- |
 | Command orchestration | Thin CLI / rich core | Parser dispatch + module handlers | `thin cli rich core` |
 | Tool abstraction | Dependency injection via protocol | Generator contract interface | `python protocol dependency injection` |
-| Provider runtime modes | Strategy selection (`internal`, `coding_agent`) | Policy model, provider selection, structured client factory | `model provider strategy pattern` |
+| Provider runtime modes | Strategy selection (`internal`, `remote_llm`, `codex_exec`) | Policy model, provider selection, structured client factory | `model provider strategy pattern` |
 | Safe command inputs | Input contract hardening | `run_id` regex + path containment checks | `path traversal prevention pathlib` |
 | Idempotent progression | Repeat-safe command behavior | Stage sync + marker validation before actions | `idempotent orchestration commands` |
 | Failure semantics | Typed error propagation | Domain error taxonomy + stable exit codes | `typed error taxonomy cli` |

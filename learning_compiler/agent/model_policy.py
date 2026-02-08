@@ -11,7 +11,8 @@ from learning_compiler.config import load_config
 
 class ModelProvider(str, Enum):
     INTERNAL = "internal"
-    CODING_AGENT = "coding_agent"
+    REMOTE_LLM = "remote_llm"
+    CODEX_EXEC = "codex_exec"
 
 
 @dataclass(slots=True, frozen=True)
@@ -50,15 +51,25 @@ def _env_int(raw: str, default: int) -> int:
 
 def _parse_provider(raw: str) -> ModelProvider:
     value = raw.strip().lower()
-    if value == ModelProvider.CODING_AGENT.value:
-        return ModelProvider.CODING_AGENT
+    if value == ModelProvider.REMOTE_LLM.value:
+        return ModelProvider.REMOTE_LLM
+    if value in {ModelProvider.CODEX_EXEC.value, "coding_agent"}:
+        return ModelProvider.CODEX_EXEC
     return ModelProvider.INTERNAL
 
 
 def default_model_policy() -> ModelPolicy:
     config = load_config()
     provider = _parse_provider(config.agent_provider)
-    model_id = config.agent_model.strip() or "internal-heuristic-v1"
+    configured_model = config.agent_model.strip()
+    if configured_model:
+        model_id = configured_model
+    elif provider == ModelProvider.REMOTE_LLM:
+        model_id = "gpt-4.1-mini"
+    elif provider == ModelProvider.CODEX_EXEC:
+        model_id = "codex"
+    else:
+        model_id = "internal-heuristic-v1"
 
     return ModelPolicy(
         provider=provider,

@@ -111,25 +111,35 @@ sequenceDiagram
 ### Agent provider modes
 
 Generation provider is configurable:
-- `AGENT_PROVIDER=internal`: deterministic in-process proposer/repair logic.
-- `AGENT_PROVIDER=coding_agent` (default): use Codex CLI (`codex exec`) for proposer + repair JSON outputs, while deterministic judge remains final acceptance gate.
+- `AGENT_PROVIDER=remote_llm`: call OpenAI Responses API directly for structured proposer/repair outputs.
+- `AGENT_PROVIDER=codex_exec` (default): use Codex CLI (`codex exec`) for proposer + repair JSON outputs.
+- `AGENT_PROVIDER=internal`: deterministic in-process proposer/repair logic (useful for deterministic tests).
 
 Related env vars:
 - `AGENT_PROVIDER`
-- `AGENT_MODEL` (for coding agent mode, for example `codex`)
+- `AGENT_MODEL` (for example `gpt-4.1-mini` in `remote_llm`, or `codex` in `codex_exec`)
 - `CODING_AGENT_CMD` (defaults to `codex`)
+- `OPENAI_API_KEY` (required for `remote_llm`)
+- `OPENAI_BASE_URL` (optional, defaults to `https://api.openai.com/v1`)
 - `AGENT_MAX_ITERATIONS`
 - `AGENT_MAX_ACTIONS_PER_ITERATION`
 - `AGENT_TARGET_SCORE`
 - `AGENT_TIMEOUT_SECONDS`
 - `AGENT_RETRY_BUDGET`
 
-Example:
+Examples:
 
 ```bash
-AGENT_PROVIDER=coding_agent \
+AGENT_PROVIDER=codex_exec \
 AGENT_MODEL=codex \
 CODING_AGENT_CMD=codex \
+python3.11 scripts/orchestration.py run <run_id>
+```
+
+```bash
+AGENT_PROVIDER=remote_llm \
+AGENT_MODEL=gpt-4.1-mini \
+OPENAI_API_KEY=<your_key> \
 python3.11 scripts/orchestration.py run <run_id>
 ```
 

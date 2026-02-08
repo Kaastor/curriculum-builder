@@ -120,7 +120,7 @@ class LLMRepairExecutor:
             _replace_node(nodes, node_id, node)
 
         patched["nodes"] = nodes
-        if policy.provider != ModelProvider.CODING_AGENT:
+        if policy.provider == ModelProvider.INTERNAL:
             return patched
 
         scope_document_payload: dict[str, str] | None = None
@@ -147,7 +147,7 @@ class LLMRepairExecutor:
         if not isinstance(candidate, dict):
             raise LearningCompilerError(
                 ErrorCode.INTERNAL_ERROR,
-                "coding_agent repair returned invalid curriculum payload.",
+                "llm repair returned invalid curriculum payload.",
             )
         return candidate
 

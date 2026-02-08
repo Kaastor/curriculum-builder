@@ -123,7 +123,7 @@ flowchart TB
 | --- | --- | --- | --- | --- | --- |
 | Command orchestration | Thin CLI / rich core | Parser dispatch + module handlers | `learning_compiler/orchestration/cli.py`, `commands_basic.py`, `commands_pipeline.py` | Strong | `thin cli rich core` |
 | Tool abstraction | Dependency injection via protocol | Generator contract interface | `learning_compiler/agent/contracts.py` + orchestration usage | Strong | `python protocol dependency injection` |
-| Provider runtime modes | Strategy selection (`internal`, `coding_agent`) | Policy model, provider selection, client factory | `learning_compiler/agent/model_policy.py`, `learning_compiler/agent/llm_client.py`, `learning_compiler/config.py` | Strong | `model provider strategy pattern` |
+| Provider runtime modes | Strategy selection (`internal`, `remote_llm`, `codex_exec`) | Policy model, provider selection, client factory | `learning_compiler/agent/model_policy.py`, `learning_compiler/agent/llm_client.py`, `learning_compiler/config.py` | Strong | `model provider strategy pattern` |
 | Context-aware retrieval | Resolver composition | Context pack contract, repo-local resolver, fallback chain | `learning_compiler/agent/research.py` (`RepoLocalResolver`, `CompositeResourceResolver`, `default_resource_resolver`) | Strong | `resolver composition fallback` |
 | Safe command inputs | Input contract hardening | `run_id` regex + path containment checks | `learning_compiler/orchestration/command_utils.py`, `learning_compiler/orchestration/fs.py` | Strong | `path traversal prevention pathlib` |
 | Idempotent progression | Repeat-safe command behavior | Stage sync + marker validation before actions | `sync_stage` + pipeline command flow | Partial | `idempotent orchestration commands` |
@@ -136,7 +136,7 @@ flowchart TB
 - clean command orchestration boundaries
 - typed runtime failures
 - hardened filesystem boundaries
-- provider-mode orchestration (`internal` vs `coding_agent`) with strict JSON contract IO
+- provider-mode orchestration (`internal` vs `remote_llm` vs `codex_exec`) with strict JSON contract IO
 
 ### What to learn next
 
@@ -282,7 +282,7 @@ This section answers: "Which named agent loop patterns exist, and do we use them
 | Domain | You know now (from this repo) | You should learn next |
 | --- | --- | --- |
 | Planning | deterministic DAG planning plus iterative critique/repair loop | dynamic live tool-reasoning loops (`ReAct`) |
-| Runtime | command orchestration, typed failures, provider modes (`internal`, `coding_agent`) | retries/backoff/circuit breakers + richer provider adapters |
+| Runtime | command orchestration, typed failures, provider modes (`internal`, `remote_llm`, `codex_exec`) | retries/backoff/circuit breakers + richer provider adapters |
 | State | strict run metadata and stage sync | checkpoints, rollback, semantic memory |
 | Reliability | layered validators, strict JSON-output contracts, fail-fast behavior | policy engines, fuzz/adversarial validation |
 | Quality | tests + gate + determinism + weighted quality judge + repair planner | eval harnesses, fault-injection testing |
