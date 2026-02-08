@@ -1,198 +1,187 @@
-# Phase One: Learning Compiler (Execution Spec)
+# Phase One: Agent-First Learning Compiler
 
-## Goal
+## End Goal
 
-Build a reusable pipeline that maps any topic into a coherent mastery path.
+Build a reusable **curriculum generation agent** that takes `topic_spec.json` and produces a validated, evidence-backed curriculum DAG plus an executable plan.
 
-Pipeline spine:
-`Spec -> Map -> Validate -> Plan -> Iterate`
+Primary contract:
+`Topic Spec -> Agent Generate -> Validate -> Plan -> Iterate`
 
-Evidence strictness is a dial:
-`minimal | standard | strict`
+Design rule:
+- Agent owns generation quality and evidence selection.
+- Orchestration is only tooling (run storage, logs, reports, diff, replay).
 
-No exercises in phase one.
-
-## Phase Scope
+## Product Boundaries
 
 In scope:
-- topic spec contract
-- canonical concept DAG generation
-- structural and evidence validation
-- 2-4 week execution plan generation
-- rerun + diff loop
+- topic spec contract (`topic_spec.json`)
+- agent-owned curriculum generation (concept DAG + mastery checks + resources)
+- evidence strictness dial (`minimal | standard | strict`)
+- deterministic validators (schema/graph/evidence)
+- deterministic planner (2-4 week plan)
+- rerun/diff tooling
+- UI rendering of generated curriculum
 
 Out of scope:
 - exercise generation
-- adaptive personalization
-- external integrations beyond resource URLs/citations
-- major UI redesign
+- adaptive tutoring
+- external integrations beyond web resources/citations
+- major UI framework migration
 
-## Stage Contracts
+## Architecture Target
 
-| Stage | Input | Output | Primary owner | Blocking failures |
-|---|---|---|---|---|
-| Spec | `topic_spec.json` | `topic_spec.validated.json` (optional normalized copy) | Code validator | schema errors, placeholders, invalid bounds |
-| Map | validated topic spec | `curriculum.json` (canonical DAG only) | LLM proposer + code guardrails | missing required node fields, invalid prereqs |
-| Validate | topic spec + curriculum | `validation_report.json` + markdown summary | Code validators | any `ERROR` |
-| Plan | validated curriculum + constraints | `plan.json` | Code | time budget overflow, unschedulable DAG |
-| Iterate | previous run artifacts + changed spec/map | `diff_report.json` + updated artifacts | Code | diff cannot be computed, artifact mismatch |
+### 1) Agent Layer (primary)
+Location: `learning_compiler/agent/`
 
-## Artifact Schemas (v1)
+Responsibilities:
+- parse and normalize `topic_spec.json`
+- decompose topic into concept DAG
+- assign prerequisites/capabilities/pitfalls/mastery checks
+- retrieve and attach resources/citations per evidence mode
+- emit canonical `curriculum.json`
 
-### `topic_spec.json` (required fields)
-- `spec_version`: string (`"1.0"`)
-- `goal`: string
-- `audience`: string
-- `prerequisites`: string[]
-- `scope_in`: string[]
-- `scope_out`: string[]
-- `constraints`: object
-- `constraints.hours_per_week`: number
-- `constraints.total_hours_min`: number
-- `constraints.total_hours_max`: number
-- `constraints.depth`: enum (`survey`, `practical`, `mastery`)
-- `domain_mode`: enum (`mature`, `frontier`)
-- `evidence_mode`: enum (`minimal`, `standard`, `strict`)
-- `misconceptions`: string[] (optional)
+Public API (phase one):
+- `generate_curriculum(topic_spec_path: Path, output_path: Path) -> None`
 
-### `curriculum.json` (canonical only)
-- `topic`: string
-- `nodes`: array of:
-- `id`: string
-- `title`: string
-- `capability`: string
-- `prerequisites`: string[]
-- `core_ideas`: string[]
-- `pitfalls`: string[]
-- `mastery_check.task`: string
-- `mastery_check.pass_criteria`: string
-- `estimate_minutes`: number
-- `estimate_confidence`: number in `[0,1]` (optional)
-- `resources`: array of:
-- `title`: string
-- `url`: string
-- `kind`: enum (`doc`, `paper`, `video`, `book`, `spec`, `other`)
-- `citation`: string (required in strict mode for claim-bearing resources)
+### 2) Validator Layer (judge)
+Location: `learning_compiler/validator/`
 
-Derived only (never persisted as source of truth):
-- topo order
-- layers/phases
-- milestones
+Responsibilities:
+- enforce schema and graph constraints
+- enforce evidence-mode rules
+- fail loudly on invalid artifacts
+
+### 3) Planner Layer (deterministic)
+Location: `learning_compiler/orchestration/planning.py` (or `learning_compiler/planning/` if split)
+
+Responsibilities:
+- build 2-4 week schedule from validated DAG + constraints
+- output per-node deliverables from mastery checks
+
+### 4) Orchestration Tooling (secondary)
+Location: `learning_compiler/orchestration/`
+
+Responsibilities:
+- run folders, metadata, status, logs
+- replayable command wrappers (`init/status/run/validate/plan/iterate/archive`)
+- diff reports between runs
+
+Non-responsibility:
+- orchestration does not decide curriculum content quality
+
+## Canonical Artifacts
+
+### `topic_spec.json`
+Source of truth for generation intent and constraints.
+
+### `curriculum.json`
+Canonical concept DAG (minimal stored fields only):
+- `topic`
+- `nodes[]` with: `id`, `title`, `capability`, `prerequisites`, `core_ideas`, `pitfalls`, `mastery_check`, `estimate_minutes`, optional `estimate_confidence`, `resources[]`
+- `open_questions[]` required in strict mode
+
+Derived only (never source of truth):
+- topological order
+- milestones/layers
 - critical path
 - total time
-- coverage reports
+- coverage summaries
 
 ### `plan.json`
-- `duration_weeks`: integer in `[2,4]`
-- `weekly_budget_minutes`: number
-- `weeks`: array of:
-- `week`: integer
-- `nodes`: string[]
-- `deliverables`: array of per-node mastery outputs
-- `review`: spaced review items (optional)
+Deterministic schedule and deliverables from validated curriculum.
 
 ### `diff_report.json`
-- `added_nodes`: string[]
-- `removed_nodes`: string[]
-- `changed_nodes`: array of `{id, changed_fields[]}`
-- `time_delta_minutes`: number
-- `critical_path_changed`: boolean
+Structural/time deltas across reruns.
 
-## Evidence Mode Matrix
+## Evidence Dial (single pipeline)
 
-| Mode | Node-level requirement | Curriculum-level requirement | Blocking rule |
-|---|---|---|---|
-| minimal | each node has >=1 resource | all nodes covered | missing resource on any node = `ERROR` |
-| standard | each node has >=2 resources | at least one definition source + one example source per node | missing either source type = `ERROR` |
-| strict | standard rules + citations for claim-bearing resources + `estimate_confidence` | contradictions represented as explicit open-question nodes | uncited claim or unresolved contradiction = `ERROR` |
+- `minimal`: >=1 resource per node
+- `standard`: >=2 resources per node with `definition` + `example`
+- `strict`: standard + citations + `estimate_confidence` + explicit `open_questions`
 
-## Validation Severity And Exit Codes
+No pipeline forks by mode; only validation strictness changes.
 
-Severity:
-- `ERROR`: blocks pipeline
-- `WARN`: allowed, must be listed
-- `INFO`: non-blocking diagnostics
+## Implementation Plan
 
-Exit codes:
-- `0`: no errors
-- `1`: one or more errors
-- `2`: invalid input artifacts (parse/schema failure)
+### WP1 - Create explicit Agent module
+- Add `learning_compiler/agent/` with generation entrypoint.
+- Move generation logic out of orchestration command modules into agent module.
+- Keep one callable path from CLI/tooling.
 
-## Work Packages (Implementation Order)
+Acceptance:
+- curriculum generation runs through `learning_compiler.agent` API.
 
-WP1 - Spec contract
-- Update: `workflows/templates/topic_spec.template.json`, `prompts/topic_spec.md`, `scripts/validator.py`
-- Add strict schema checks for new fields and enums
-- Acceptance: invalid/missing spec fields fail with actionable errors
+### WP2 - Add retrieval interface for references
+- Define retrieval adapter interface (search + select + normalize citation fields).
+- Implement phase-one provider (web-backed when available, deterministic fallback otherwise).
+- Ensure output always matches evidence-mode requirements.
 
-WP2 - Canonical curriculum schema
-- Update: `prompts/curriculum_generator.md`, `data/curriculum.json`, `scripts/validator.py`, `app/main.js`
-- Remove exercise-centric fields and coverage maps from canonical schema
-- Acceptance: validator accepts only canonical+allowed top-level fields
+Acceptance:
+- strict mode outputs citation-complete resources and passes validator.
 
-WP3 - Structural validator pass
-- Update: `scripts/validator.py`
-- Keep: DAG, cycle, reachability, unique IDs/titles, time/constraint checks
-- Acceptance: deterministic structural report with stable error codes/messages
+### WP3 - Keep validator as hard gate
+- Preserve current structural/evidence checks.
+- Ensure error messages are actionable and deterministic.
 
-WP4 - Evidence validator pass
-- Update: `scripts/validator.py`, docs/prompts
-- Implement mode-specific rules from matrix
-- Acceptance: mode switch changes checks without forking pipeline
+Acceptance:
+- invalid curriculum fails with stable messages/exit code.
 
-WP5 - Planner
-- Add: planning generator module (script) + `plan.json` output
-- Update: `scripts/workflow.py`, workflow templates
-- Acceptance: produces 2-4 week schedule and node deliverables within constraints
+### WP4 - Rewire orchestration to be tooling-only
+- `orchestration run` should call agent generation, then validate/plan/iterate.
+- Keep run metadata and artifact history.
+- Remove generation-quality logic from orchestration.
 
-WP6 - Iterate + diff
-- Add: diff computation script/report
-- Update: `scripts/workflow.py` stage flow and status output
-- Acceptance: reruns produce machine-readable diffs and comparable artifacts
+Acceptance:
+- orchestration can be skipped; direct agent invocation still produces valid curriculum.
 
-WP7 - Cleanup
-- Remove phase-one irrelevant prompts/logic (pedagogical-review gating, exercise-specific remnants)
-- Acceptance: workflow aligns only to `Spec -> Map -> Validate -> Plan -> Iterate`
+### WP5 - Tighten module boundaries and file size
+- Split long files by responsibility.
+- keep each module focused and reviewable.
+- document boundaries in code comments/docstrings.
 
-## Test Plan
+Acceptance:
+- no single "god module" for pipeline control + generation + validation.
+
+### WP6 - UI integration check
+- Ensure UI reads latest curriculum artifact and renders graph correctly.
+- no schema drift between agent output and UI input.
+
+Acceptance:
+- generated curriculum is visible in UI without manual edits.
+
+### WP7 - Docs and contracts
+- Update README with agent-first usage:
+  - provide `topic_spec.json`
+  - run generation command
+  - inspect curriculum in UI
+- Keep prompt docs concise and consistent with schema.
+
+Acceptance:
+- a new user can run end-to-end without manual curriculum authoring.
+
+## Testing Strategy
 
 Unit:
-- topic spec schema and invariant checks
-- DAG validity (cycle, missing prereq, orphan)
-- evidence-mode checks (`minimal`, `standard`, `strict`)
-- planning constraints (time/week bounds)
-- diff accuracy
+- topic spec contract
+- DAG validity
+- evidence mode behavior
+- planner constraints
+- diff correctness
 
 Integration:
-- happy path: full pipeline succeeds
-- strict mode with citation failure
-- frontier mode with open-question node requirement
-- rerun with small spec change emits expected diff
+- end-to-end: spec -> agent generate -> validate -> plan -> iterate
+- strict mode with missing citation fails
+- rerun with spec change emits meaningful diff
 
-Fixtures:
-- one mature-domain fixture
-- one frontier-domain fixture
+Gate:
+- `make gate` must pass before handoff
 
-## Definition Of Done
+## Definition of Done (Phase One)
 
 Done when all are true:
-- pipeline stages run end-to-end with current make/workflow commands
-- schemas above are enforced and documented
-- tests cover structural, evidence, planning, and diff behavior
-- `make gate` passes
-- docs describe only phase-one loop and remove phase-two ideas
-
-## Iteration Rules
-
-Rerun triggers:
-- topic spec changes
-- curriculum proposal changes
-- validator logic changes
-
-Stability requirement:
-- identical inputs produce semantically equivalent outputs (ordering can vary only where declared non-semantic)
-
-Diff requirement on rerun:
-- node add/remove/change summary
-- total time delta
-- critical path change flag
+- Agent is the primary curriculum generator.
+- Orchestration is optional tooling, not content authority.
+- Strict mode can generate and validate citation-backed curriculum.
+- Plan and diff artifacts are deterministic and usable.
+- UI can display generated curriculum.
+- README documents agent-first flow clearly.

@@ -1,4 +1,4 @@
-"""Stage inference and synchronization logic for workflow runs."""
+"""Stage inference and synchronization logic for orchestration runs."""
 
 from __future__ import annotations
 
@@ -8,8 +8,8 @@ from pathlib import Path
 from typing import Any
 
 from learning_compiler.validator.topic_spec import validate_topic_spec_contract
-from learning_compiler.workflow.fs import read_json, required_paths, utc_now, write_json
-from learning_compiler.workflow.types import STAGE_INDEX, RunPaths, Stage, stage_from
+from learning_compiler.orchestration.fs import read_json, required_paths, utc_now, write_json
+from learning_compiler.orchestration.types import STAGE_INDEX, RunPaths, Stage, stage_from
 
 
 def append_history(meta: dict[str, Any], stage: Stage, reason: str) -> None:
@@ -109,8 +109,8 @@ def infer_stage_from_artifacts(run_dir: Path) -> Stage:
     if looks_ready_spec(paths.topic_spec):
         stage = Stage.SPEC_READY
     if stage == Stage.SPEC_READY and paths.curriculum.exists():
-        stage = Stage.MAP_GENERATED
-    if stage == Stage.MAP_GENERATED and validation_is_current(paths):
+        stage = Stage.GENERATED
+    if stage == Stage.GENERATED and validation_is_current(paths):
         stage = Stage.VALIDATED
     if stage == Stage.VALIDATED and plan_is_current(paths):
         stage = Stage.PLANNED

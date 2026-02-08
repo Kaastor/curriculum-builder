@@ -1,30 +1,27 @@
-"""Pipeline workflow commands: validate/plan/iterate/run."""
+"""Pipeline orchestration commands: generate/validate/plan/iterate/run."""
 
 from __future__ import annotations
 
 import argparse
-import shutil
 import sys
 from pathlib import Path
 from typing import Any
 
-from learning_compiler.workflow.command_utils import run_id_from_args
-from learning_compiler.workflow.exec import (
-    is_command_set,
-    load_automation,
-    run_shell,
+from learning_compiler.agent import generate_curriculum_file
+from learning_compiler.orchestration.command_utils import run_id_from_args
+from learning_compiler.orchestration.exec import (
     run_validator,
     write_validation_report,
 )
-from learning_compiler.workflow.fs import REPO_ROOT, load_run, read_json, required_paths, write_json
-from learning_compiler.workflow.planning import build_plan, compute_diff
-from learning_compiler.workflow.stage import (
+from learning_compiler.orchestration.fs import load_run, read_json, required_paths, write_json
+from learning_compiler.orchestration.planning import build_plan, compute_diff
+from learning_compiler.orchestration.stage import (
     ensure_stage,
     persist_if_changed,
     sync_stage,
     topic_spec_errors,
 )
-from learning_compiler.workflow.types import RunPaths, Stage, stage_from
+from learning_compiler.orchestration.types import RunPaths, Stage, stage_from
 
 
 def _load_synced_run(run_id: str) -> tuple[Path, dict[str, Any], RunPaths]:
@@ -132,16 +129,15 @@ def cmd_run(args: argparse.Namespace) -> int:
     if stage == Stage.INITIALIZED:
         raise SystemExit(f"Topic spec not ready: {paths.topic_spec}")
 
-    automation = load_automation(run_dir)
-    logs_dir = run_dir / "logs"
-    map_cmd = str(automation.get("map_cmd", ""))
-
-    if is_command_set(map_cmd):
-        if paths.curriculum.exists():
-            shutil.copy2(paths.curriculum, paths.previous_curriculum)
-        run_shell(map_cmd, REPO_ROOT, logs_dir / "01_map_generation.log")
-    elif not paths.curriculum.exists():
-        raise SystemExit("map_cmd is not configured in inputs/automation.json")
+    if paths.curriculum.exists():
+        paths.previous_curriculum.write_text(
+            paths.curriculum.read_text(encoding="utf-8"),
+            encoding="utf-8",
+        )
+    generate_curriculum_file(paths.topic_spec, paths.curriculum)
+    if ensure_stage(meta, Stage.GENERATED, "agent generated curriculum"):
+        write_json(run_dir / "run.json", meta)
+    print(f"Generated curriculum with agent: {paths.curriculum}")
 
     if not paths.curriculum.exists():
         raise SystemExit(f"Curriculum was not produced at expected path: {paths.curriculum}")
@@ -152,5 +148,5 @@ def cmd_run(args: argparse.Namespace) -> int:
     _save_plan(run_dir, meta, paths)
     _save_diff(run_dir, meta, paths)
 
-    print(f"Workflow run completed: {run_id}")
+    print(f"Orchestration run completed: {run_id}")
     return 0

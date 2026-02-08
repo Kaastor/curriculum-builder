@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import json
 import os
-import shlex
 import subprocess
 import sys
 import tempfile
@@ -12,24 +11,22 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-WORKFLOW_SCRIPT = ROOT / "scripts" / "workflow.py"
+ORCHESTRATION_SCRIPT = ROOT / "scripts" / "orchestration.py"
 TOPIC_SPEC_TEMPLATE = ROOT / "workflows" / "templates" / "topic_spec.template.json"
-AUTOMATION_TEMPLATE = ROOT / "workflows" / "templates" / "automation.template.json"
 SAMPLE_CURRICULUM = ROOT / "data" / "curriculum.json"
 
 
-class WorkflowCliTests(unittest.TestCase):
+class OrchestrationCliTests(unittest.TestCase):
     def _env(self, tmp_dir: str) -> dict[str, str]:
         env = os.environ.copy()
-        env["WORKFLOW_BASE_DIR"] = str(Path(tmp_dir) / "runs")
-        env["WORKFLOW_TEMPLATE_FILE"] = str(TOPIC_SPEC_TEMPLATE)
-        env["WORKFLOW_AUTOMATION_TEMPLATE"] = str(AUTOMATION_TEMPLATE)
-        env["WORKFLOW_ARCHIVE_DIR"] = str(Path(tmp_dir) / "archives")
+        env["ORCHESTRATION_BASE_DIR"] = str(Path(tmp_dir) / "runs")
+        env["ORCHESTRATION_TEMPLATE_FILE"] = str(TOPIC_SPEC_TEMPLATE)
+        env["ORCHESTRATION_ARCHIVE_DIR"] = str(Path(tmp_dir) / "archives")
         return env
 
     def _run(self, env: dict[str, str], *args: str, check: bool = True) -> subprocess.CompletedProcess[str]:
         return subprocess.run(
-            [sys.executable, str(WORKFLOW_SCRIPT), *args],
+            [sys.executable, str(ORCHESTRATION_SCRIPT), *args],
             cwd=ROOT,
             env=env,
             text=True,
@@ -62,7 +59,7 @@ class WorkflowCliTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp_dir:
             env = self._env(tmp_dir)
             result = self._run(env, "init", "Bayesian Decisions")
-            self.assertIn("Initialized workflow run.", result.stdout)
+            self.assertIn("Initialized orchestration run.", result.stdout)
 
             run_dirs = sorted((Path(tmp_dir) / "runs").iterdir())
             self.assertEqual(1, len(run_dirs))
@@ -70,11 +67,11 @@ class WorkflowCliTests(unittest.TestCase):
 
             self.assertTrue((run_dir / "run.json").exists())
             self.assertTrue((run_dir / "inputs" / "topic_spec.json").exists())
-            self.assertTrue((run_dir / "inputs" / "automation.json").exists())
             self.assertTrue((run_dir / "outputs" / "curriculum").exists())
             self.assertTrue((run_dir / "outputs" / "reviews").exists())
             self.assertTrue((run_dir / "outputs" / "plan").exists())
             self.assertTrue((run_dir / "logs").exists())
+            self.assertFalse((run_dir / "inputs" / "automation.json").exists())
 
     def test_validate_requires_ready_topic_spec(self):
         with tempfile.TemporaryDirectory() as tmp_dir:
@@ -134,18 +131,19 @@ class WorkflowCliTests(unittest.TestCase):
             run_meta = json.loads((run_dir / "run.json").read_text(encoding="utf-8"))
             self.assertEqual("planned", run_meta["stage"])
 
-    def test_run_requires_map_command_when_curriculum_missing(self):
+    def test_run_generates_curriculum_with_agent(self):
         with tempfile.TemporaryDirectory() as tmp_dir:
             env = self._env(tmp_dir)
-            self._run(env, "init", "Missing Map Command")
+            self._run(env, "init", "Agent Generation")
             run_dir = sorted((Path(tmp_dir) / "runs").iterdir())[0]
 
             topic_spec_path = run_dir / "inputs" / "topic_spec.json"
             self._write_valid_topic_spec(topic_spec_path)
 
-            failed = self._run(env, "run", run_dir.name, check=False)
-            self.assertNotEqual(0, failed.returncode)
-            self.assertIn("map_cmd is not configured", failed.stderr)
+            result = self._run(env, "run", run_dir.name)
+            self.assertIn("Generated curriculum with agent", result.stdout)
+            self.assertIn("Orchestration run completed", result.stdout)
+            self.assertTrue((run_dir / "outputs" / "curriculum" / "curriculum.json").exists())
 
     def test_run_executes_full_pipeline_and_writes_diff(self):
         with tempfile.TemporaryDirectory() as tmp_dir:
@@ -156,16 +154,8 @@ class WorkflowCliTests(unittest.TestCase):
             topic_spec_path = run_dir / "inputs" / "topic_spec.json"
             self._write_valid_topic_spec(topic_spec_path)
 
-            curriculum_path = run_dir / "outputs" / "curriculum" / "curriculum.json"
-            automation_path = run_dir / "inputs" / "automation.json"
-            automation = json.loads(automation_path.read_text(encoding="utf-8"))
-            automation["map_cmd"] = (
-                f"cp {shlex.quote(str(SAMPLE_CURRICULUM))} {shlex.quote(str(curriculum_path))}"
-            )
-            automation_path.write_text(json.dumps(automation, indent=2) + "\n", encoding="utf-8")
-
             result = self._run(env, "run", run_dir.name)
-            self.assertIn("Workflow run completed", result.stdout)
+            self.assertIn("Orchestration run completed", result.stdout)
 
             self.assertTrue((run_dir / "outputs" / "reviews" / "validation_report.md").exists())
             self.assertTrue((run_dir / "outputs" / "plan" / "plan.json").exists())
@@ -196,7 +186,7 @@ class WorkflowCliTests(unittest.TestCase):
             curriculum_path.write_text(json.dumps(curriculum, indent=2) + "\n", encoding="utf-8")
 
             status = self._run(env, "status", run_dir.name)
-            self.assertIn("Stage: map_generated", status.stdout)
+            self.assertIn("Stage: generated", status.stdout)
 
 
 if __name__ == "__main__":

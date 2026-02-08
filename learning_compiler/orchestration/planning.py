@@ -1,4 +1,4 @@
-"""Deterministic planning and diff utilities for workflow runs."""
+"""Deterministic planning and diff utilities for orchestration runs."""
 
 from __future__ import annotations
 

@@ -1,4 +1,4 @@
-"""Shared helpers for workflow command handlers."""
+"""Shared helpers for orchestration command handlers."""
 
 from __future__ import annotations
 

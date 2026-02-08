@@ -1,18 +1,18 @@
-"""CLI parser and dispatch for workflow commands."""
+"""CLI parser and dispatch for orchestration commands."""
 
 from __future__ import annotations
 
 import argparse
 from typing import Callable, cast
 
-from learning_compiler.workflow.commands_basic import (
+from learning_compiler.orchestration.commands_basic import (
     cmd_archive,
     cmd_init,
     cmd_list,
     cmd_next,
     cmd_status,
 )
-from learning_compiler.workflow.commands_pipeline import (
+from learning_compiler.orchestration.commands_pipeline import (
     cmd_iterate,
     cmd_plan,
     cmd_run,
@@ -21,10 +21,10 @@ from learning_compiler.workflow.commands_pipeline import (
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Workflow run manager")
+    parser = argparse.ArgumentParser(description="Orchestration run manager")
     sub = parser.add_subparsers(dest="command", required=True)
 
-    p_init = sub.add_parser("init", help="Initialize a new workflow run")
+    p_init = sub.add_parser("init", help="Initialize a new orchestration run")
     p_init.add_argument("name", nargs="?", help="Optional run name")
     p_init.set_defaults(func=cmd_init)
 
@@ -48,7 +48,7 @@ def build_parser() -> argparse.ArgumentParser:
     p_iterate.add_argument("run_id")
     p_iterate.set_defaults(func=cmd_iterate)
 
-    p_run = sub.add_parser("run", help="Execute map -> validate -> plan -> iterate")
+    p_run = sub.add_parser("run", help="Execute generate -> validate -> plan -> iterate")
     p_run.add_argument("run_id")
     p_run.set_defaults(func=cmd_run)
 

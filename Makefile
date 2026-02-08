@@ -4,15 +4,15 @@
 	test \
 	validate \
 	gate \
-	workflow-start \
-	workflow-list \
-	workflow-status \
-	workflow-next \
-	workflow-validate \
-	workflow-plan \
-	workflow-iterate \
-	workflow-run \
-	workflow-archive
+	orchestration-start \
+	orchestration-list \
+	orchestration-status \
+	orchestration-next \
+	orchestration-validate \
+	orchestration-plan \
+	orchestration-iterate \
+	orchestration-run \
+	orchestration-archive
 
 PYTHON ?= python3.11
 
@@ -31,33 +31,33 @@ validate:
 gate:
 	./scripts/gate.sh
 
-workflow-start:
+orchestration-start:
 	@if [ -n "$(RUN_NAME)" ]; then \
-		$(PYTHON) scripts/workflow.py init "$(RUN_NAME)"; \
+		$(PYTHON) scripts/orchestration.py init "$(RUN_NAME)"; \
 	else \
-		$(PYTHON) scripts/workflow.py init; \
+		$(PYTHON) scripts/orchestration.py init; \
 	fi
 
-workflow-list:
-	@$(PYTHON) scripts/workflow.py list
+orchestration-list:
+	@$(PYTHON) scripts/orchestration.py list
 
-workflow-status:
-	@$(PYTHON) scripts/workflow.py status "$(RUN_ID)"
+orchestration-status:
+	@$(PYTHON) scripts/orchestration.py status "$(RUN_ID)"
 
-workflow-next:
-	@$(PYTHON) scripts/workflow.py next "$(RUN_ID)"
+orchestration-next:
+	@$(PYTHON) scripts/orchestration.py next "$(RUN_ID)"
 
-workflow-validate:
-	@$(PYTHON) scripts/workflow.py validate "$(RUN_ID)"
+orchestration-validate:
+	@$(PYTHON) scripts/orchestration.py validate "$(RUN_ID)"
 
-workflow-plan:
-	@$(PYTHON) scripts/workflow.py plan "$(RUN_ID)"
+orchestration-plan:
+	@$(PYTHON) scripts/orchestration.py plan "$(RUN_ID)"
 
-workflow-iterate:
-	@$(PYTHON) scripts/workflow.py iterate "$(RUN_ID)"
+orchestration-iterate:
+	@$(PYTHON) scripts/orchestration.py iterate "$(RUN_ID)"
 
-workflow-run:
-	@$(PYTHON) scripts/workflow.py run "$(RUN_ID)"
+orchestration-run:
+	@$(PYTHON) scripts/orchestration.py run "$(RUN_ID)"
 
-workflow-archive:
-	@$(PYTHON) scripts/workflow.py archive "$(RUN_ID)"
+orchestration-archive:
+	@$(PYTHON) scripts/orchestration.py archive "$(RUN_ID)"

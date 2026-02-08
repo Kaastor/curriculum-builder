@@ -44,3 +44,85 @@
 - Prefer concrete prerequisites over vague experience labels.
 - `misconceptions` should capture costly misunderstandings.
 - Re-running with same spec should produce comparable curriculum structure.
+
+## Field Guide
+
+`spec_version`
+- Type: string.
+- Use: contract version for validator compatibility.
+- Rule: set to `"1.0"`.
+
+`goal`
+- Type: string.
+- Use: target capability at the end of the plan.
+- Write as: observable outcome, not a vague interest.
+- Good: `"Design and justify a Bayesian decision rule for product launch choices."`
+
+`audience`
+- Type: string.
+- Use: who the curriculum is written for.
+- Include: role + baseline context.
+
+`prerequisites`
+- Type: array of strings.
+- Use: required prior knowledge before starting node N1.
+- Keep concrete: concepts/tools, not generic labels like `"beginner"` or `"smart people"`.
+
+`scope_in`
+- Type: array of strings.
+- Use: topics/capabilities explicitly included in this run.
+- Purpose: anchors decomposition and prevents omissions.
+
+`scope_out`
+- Type: array of strings.
+- Use: topics explicitly excluded.
+- Purpose: protects time budget and prevents drift.
+
+`constraints`
+- Type: object.
+- Use: hard limits for planner and validator.
+
+`constraints.hours_per_week`
+- Type: number (> 0).
+- Use: weekly learning budget.
+
+`constraints.total_hours_min`
+- Type: number (> 0).
+- Use: minimum total runtime target.
+
+`constraints.total_hours_max`
+- Type: number (> 0).
+- Use: maximum total runtime target.
+
+`constraints.depth`
+- Type: enum (`survey|practical|mastery`).
+- Use: expected granularity and rigor.
+
+`constraints.node_count_min` (optional)
+- Type: integer.
+- Use: lower bound for DAG node count.
+
+`constraints.node_count_max` (optional)
+- Type: integer.
+- Use: upper bound for DAG node count.
+
+`constraints.max_prerequisites_per_node` (optional)
+- Type: integer (>= 1).
+- Use: cap branching complexity and reduce prerequisite overload.
+
+`domain_mode`
+- Type: enum (`mature|frontier`).
+- Use: controls how uncertainty is handled.
+- `mature`: stable body of knowledge.
+- `frontier`: conflicting/unfinished knowledge likely.
+
+`evidence_mode`
+- Type: enum (`minimal|standard|strict`).
+- Use: strictness dial for evidence requirements.
+- `minimal`: >=1 resource per node.
+- `standard`: >=2 resources with definition + example anchoring.
+- `strict`: citation-backed claims + confidence + explicit open questions.
+
+`misconceptions` (optional)
+- Type: array of strings.
+- Use: known traps to explicitly address in node pitfalls/mastery checks.

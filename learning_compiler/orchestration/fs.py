@@ -1,4 +1,4 @@
-"""Filesystem and environment helpers for workflow runs."""
+"""Filesystem and environment helpers for orchestration runs."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ import re
 from pathlib import Path
 from typing import Any
 
-from learning_compiler.workflow.types import RunPaths
+from learning_compiler.orchestration.types import RunPaths
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -21,33 +21,27 @@ def utc_now() -> str:
 
 def slugify(raw: str) -> str:
     slug = re.sub(r"[^a-z0-9]+", "-", raw.lower()).strip("-")
-    return slug or "workflow"
+    return slug or "orchestration"
 
 
-def workflow_base_dir() -> Path:
+def orchestration_base_dir() -> Path:
     default = REPO_ROOT / "workflows" / "runs"
-    return Path(os.environ.get("WORKFLOW_BASE_DIR", str(default)))
+    return Path(os.environ.get("ORCHESTRATION_BASE_DIR", str(default)))
 
 
-def workflow_archive_dir() -> Path:
+def orchestration_archive_dir() -> Path:
     default = REPO_ROOT / "workflows" / "archives"
-    return Path(os.environ.get("WORKFLOW_ARCHIVE_DIR", str(default)))
+    return Path(os.environ.get("ORCHESTRATION_ARCHIVE_DIR", str(default)))
 
 
 def topic_spec_template() -> Path:
     default = REPO_ROOT / "workflows" / "templates" / "topic_spec.template.json"
-    return Path(os.environ.get("WORKFLOW_TEMPLATE_FILE", str(default)))
-
-
-def automation_template() -> Path:
-    default = REPO_ROOT / "workflows" / "templates" / "automation.template.json"
-    return Path(os.environ.get("WORKFLOW_AUTOMATION_TEMPLATE", str(default)))
+    return Path(os.environ.get("ORCHESTRATION_TEMPLATE_FILE", str(default)))
 
 
 def required_paths(run_dir: Path) -> RunPaths:
     return RunPaths(
         topic_spec=run_dir / "inputs" / "topic_spec.json",
-        automation=run_dir / "inputs" / "automation.json",
         curriculum=run_dir / "outputs" / "curriculum" / "curriculum.json",
         previous_curriculum=run_dir / "outputs" / "curriculum" / "previous_curriculum.json",
         validation_report=run_dir / "outputs" / "reviews" / "validation_report.md",
@@ -70,7 +64,7 @@ def write_json(path: Path, payload: dict[str, Any]) -> None:
 
 
 def load_run(run_id: str) -> tuple[Path, dict[str, Any]]:
-    run_dir = workflow_base_dir() / run_id
+    run_dir = orchestration_base_dir() / run_id
     paths = required_paths(run_dir)
     if not paths.run_meta.exists():
         raise SystemExit(f"Run not found: {run_id}")

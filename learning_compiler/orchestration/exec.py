@@ -1,13 +1,12 @@
-"""Execution helpers for workflow commands."""
+"""Execution helpers for orchestration commands."""
 
 from __future__ import annotations
 
 import subprocess
 import sys
 from pathlib import Path
-from typing import Any
 
-from learning_compiler.workflow.fs import REPO_ROOT, read_json
+from learning_compiler.orchestration.fs import REPO_ROOT
 
 
 def run_validator(
@@ -36,30 +35,3 @@ def write_validation_report(run_dir: Path, result: subprocess.CompletedProcess[s
     out_path.write_text("\n".join(report) + "\n", encoding="utf-8")
     return out_path
 
-
-def load_automation(run_dir: Path) -> dict[str, Any]:
-    path = run_dir / "inputs" / "automation.json"
-    if not path.exists():
-        raise SystemExit(f"Missing automation config: {path}")
-    return read_json(path)
-
-
-def is_command_set(command: str) -> bool:
-    cleaned = command.strip()
-    return bool(cleaned) and "<" not in cleaned and "replace" not in cleaned.lower()
-
-
-def run_shell(command: str, cwd: Path, log_path: Path) -> None:
-    with log_path.open("w", encoding="utf-8") as log_file:
-        proc = subprocess.run(
-            command,
-            cwd=cwd,
-            shell=True,
-            text=True,
-            stdout=log_file,
-            stderr=subprocess.STDOUT,
-            executable="/bin/bash",
-            check=False,
-        )
-    if proc.returncode != 0:
-        raise SystemExit(f"Command failed ({proc.returncode}): {command}\nSee: {log_path}")
