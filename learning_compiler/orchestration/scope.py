@@ -5,7 +5,13 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
-from learning_compiler.agent import ScopeIngestMode, compile_scope_document
+from learning_compiler.agent import (
+    ScopeIngestMode,
+    ScopeProfile,
+    ScopeSynthesisPolicy,
+    compile_scope_document,
+    scope_policy_for_profile,
+)
 from learning_compiler.config import load_config
 from learning_compiler.errors import ErrorCode, LearningCompilerError
 from learning_compiler.orchestration.fs import resolve_within, write_json
@@ -55,6 +61,25 @@ def scope_mode_from_args(args: argparse.Namespace) -> ScopeIngestMode:
         ) from exc
 
 
+def scope_policy_from_args(args: argparse.Namespace) -> ScopeSynthesisPolicy:
+    raw = getattr(args, "scope_profile", ScopeProfile.BALANCED.value)
+    if not isinstance(raw, str):
+        raise LearningCompilerError(
+            ErrorCode.INVALID_ARGUMENT,
+            "--scope-profile must be a string.",
+        )
+    normalized = raw.strip().lower()
+    try:
+        profile = ScopeProfile(normalized)
+    except ValueError as exc:
+        raise LearningCompilerError(
+            ErrorCode.INVALID_ARGUMENT,
+            "--scope-profile must be one of: fast, balanced, deep.",
+            {"scope_profile": raw},
+        ) from exc
+    return scope_policy_for_profile(profile)
+
+
 def validate_scope_selection(mode: ScopeIngestMode, sections: tuple[str, ...]) -> None:
     if mode == ScopeIngestMode.SECTION and not sections:
         raise LearningCompilerError(
@@ -99,12 +124,14 @@ def synthesize_topic_spec_from_scope(
     scope_path: Path,
     mode: ScopeIngestMode,
     section_filters: tuple[str, ...],
+    policy: ScopeSynthesisPolicy,
 ) -> None:
     compiled = compile_scope_document(
         scope_path,
         mode=mode,
         section_filters=section_filters,
+        policy=policy,
     )
     write_json(paths.topic_spec, compiled.topic_spec)
-    write_json(paths.scope_concepts, compiled.scope_concepts)
-    write_json(paths.scope_dag, compiled.scope_dag)
+    write_json(paths.scope_concepts, compiled.scope_concepts.to_dict())
+    write_json(paths.scope_dag, compiled.scope_dag.to_dict())

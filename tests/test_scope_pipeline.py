@@ -6,7 +6,9 @@ from pathlib import Path
 
 from learning_compiler.errors import LearningCompilerError
 from learning_compiler.agent.concept_dag_builder import build_concept_dag
-from learning_compiler.agent.scope_contracts import ScopeIngestMode
+from learning_compiler.agent.scope_artifacts import parse_scope_artifact
+from learning_compiler.agent.scope_contracts import ScopeArtifactType, ScopeIngestMode
+from learning_compiler.agent.scope_policy import ScopeProfile, scope_policy_for_profile
 from learning_compiler.agent.scope_extractor import extract_scope
 from learning_compiler.agent.scope_pipeline import compile_scope_document
 from learning_compiler.validator.topic_spec import validate_topic_spec_contract
@@ -65,13 +67,16 @@ class ScopePipelineTests(unittest.TestCase):
                 scope_path,
                 mode=ScopeIngestMode.SECTION,
                 section_filters=("runtime", "evaluation"),
+                policy=scope_policy_for_profile(ScopeProfile.BALANCED),
             )
 
             errors = validate_topic_spec_contract(compiled.topic_spec)
             self.assertEqual([], errors)
-            self.assertGreater(len(compiled.scope_dag["nodes"]), 2)
+            self.assertGreater(len(compiled.scope_dag.payload["nodes"]), 2)
             self.assertIn("scope_in", compiled.topic_spec)
             self.assertGreater(len(compiled.topic_spec["scope_in"]), 2)
+            self.assertEqual("1.0", compiled.scope_concepts.schema_version)
+            self.assertEqual("scope_dag", compiled.scope_dag.artifact_type.value)
 
     def test_section_mode_requires_section_filters(self) -> None:
         with tempfile.TemporaryDirectory() as tmp_dir:
@@ -102,6 +107,24 @@ class ScopePipelineTests(unittest.TestCase):
             self.assertNotIn('version: "1.0"', texts)
             self.assertIn("Focus", texts)
             self.assertIn("Learning loops", texts)
+
+    def test_scope_artifact_parser_enforces_type(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            scope_path = Path(tmp_dir) / "scope.md"
+            scope_path.write_text(SCOPE_MARKDOWN, encoding="utf-8")
+            compiled = compile_scope_document(scope_path)
+
+            parsed = parse_scope_artifact(
+                compiled.scope_concepts.to_dict(),
+                expected_type=ScopeArtifactType.CONCEPTS,
+            )
+            self.assertEqual("scope_concepts", parsed.artifact_type.value)
+
+            with self.assertRaises(LearningCompilerError):
+                parse_scope_artifact(
+                    compiled.scope_concepts.to_dict(),
+                    expected_type=ScopeArtifactType.DAG,
+                )
 
 
 if __name__ == "__main__":

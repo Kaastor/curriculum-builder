@@ -167,7 +167,7 @@ class CurriculumNode:
     core_ideas: tuple[str, ...]
     pitfalls: tuple[str, ...]
     mastery_check: MasteryCheck
-    estimate_minutes: int
+    estimate_minutes: float
     resources: tuple[Resource, ...]
     estimate_confidence: float | None = None
 

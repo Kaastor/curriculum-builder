@@ -1,5 +1,6 @@
 """Domain models used by agent and public API surfaces."""
 
+from learning_compiler.domain.parsing import parse_curriculum, parse_topic_spec
 from learning_compiler.domain.models import (
     ContextPack,
     Constraints,
@@ -20,4 +21,6 @@ __all__ = [
     "OpenQuestion",
     "Resource",
     "TopicSpec",
+    "parse_curriculum",
+    "parse_topic_spec",
 ]

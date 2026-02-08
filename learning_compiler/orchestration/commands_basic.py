@@ -5,10 +5,12 @@ from __future__ import annotations
 import argparse
 import datetime as dt
 import json
+from pathlib import Path
 import shutil
 import tarfile
 
-from learning_compiler.errors import ConfigError
+from learning_compiler.agent import ScopeArtifactType, load_scope_artifact
+from learning_compiler.errors import ConfigError, LearningCompilerError
 from learning_compiler.orchestration.command_utils import run_id_from_args
 from learning_compiler.orchestration.events import stage_event
 from learning_compiler.orchestration.fs import (
@@ -38,6 +40,16 @@ DEFAULT_SCOPE_TEMPLATE = """# Learning Scope
 - Mixed granularity is fine (broad + specific).
 - The system will infer ordering and prerequisites.
 """
+
+
+def _scope_artifact_status(path: Path, expected_type: ScopeArtifactType) -> str:
+    if not path.exists():
+        return "missing"
+    try:
+        load_scope_artifact(path, expected_type)
+    except (LearningCompilerError, ValueError):
+        return "invalid"
+    return "ok"
 
 
 def cmd_init(args: argparse.Namespace) -> int:
@@ -109,6 +121,8 @@ def cmd_status(args: argparse.Namespace) -> int:
     print(f"Validation report: {'ok' if paths.validation_report.exists() else 'missing'}")
     print(f"Plan: {'ok' if paths.plan.exists() else 'missing'}")
     print(f"Diff report: {'ok' if paths.diff_report.exists() else 'missing'}")
+    print(f"Scope concepts: {_scope_artifact_status(paths.scope_concepts, ScopeArtifactType.CONCEPTS)}")
+    print(f"Scope DAG: {_scope_artifact_status(paths.scope_dag, ScopeArtifactType.DAG)}")
     return 0
 
 

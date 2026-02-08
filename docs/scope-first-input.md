@@ -26,16 +26,30 @@ python3.11 scripts/orchestration.py run <run_id> \
   --scope-section "Part I"
 ```
 
+Profile control:
+
+```bash
+python3.11 scripts/orchestration.py run <run_id> \
+  --scope-file runs/<run_id>/inputs/scope.md \
+  --scope-mode seed-list \
+  --scope-profile deep
+```
+
 `--scope-mode` values:
 - `full`: headings + bullets + prose
 - `section`: same extraction, limited by `--scope-section` (at least one is required)
 - `seed-list`: bullets/table cells only
 
+`--scope-profile` values:
+- `fast`: smaller concept set, shorter plan defaults
+- `balanced`: default decomposition profile
+- `deep`: larger concept set, deeper decomposition
+
 ## Artifacts
 
 Scope-first mode writes:
-- `runs/<run_id>/scope_concepts.json`
-- `runs/<run_id>/scope_dag.json`
+- `runs/<run_id>/scope_concepts.json` (versioned envelope; payload is under `payload`)
+- `runs/<run_id>/scope_dag.json` (versioned envelope; payload is under `payload`)
 - `runs/<run_id>/inputs/topic_spec.json` (synthesized, then used by standard pipeline)
 
 Then normal outputs are generated:

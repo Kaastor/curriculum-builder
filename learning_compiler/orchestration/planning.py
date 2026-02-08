@@ -6,21 +6,37 @@ import math
 from typing import Any
 
 from learning_compiler.dag import topological_order as dag_topological_order
+from learning_compiler.domain import Curriculum, CurriculumNode, TopicSpec, parse_curriculum, parse_topic_spec
+
+def _as_topic_spec(topic_spec: TopicSpec | dict[str, Any]) -> TopicSpec:
+    if isinstance(topic_spec, TopicSpec):
+        return topic_spec
+    return parse_topic_spec(topic_spec)
+
+
+def _as_curriculum(curriculum: Curriculum | dict[str, Any]) -> Curriculum:
+    if isinstance(curriculum, Curriculum):
+        return curriculum
+    return parse_curriculum(curriculum)
+
+
+def _nodes_to_mappings(nodes: tuple[CurriculumNode, ...]) -> list[dict[str, Any]]:
+    return [node.to_dict() for node in nodes]
+
 
 def topological_order(nodes: list[dict[str, Any]]) -> list[str]:
     """Return deterministic topological order for node dictionaries."""
     return dag_topological_order(nodes)
 
 
-def compute_critical_path(nodes: list[dict[str, Any]]) -> list[str]:
+def compute_critical_path(nodes: tuple[CurriculumNode, ...]) -> list[str]:
     """Return node IDs on the longest estimated-time prerequisite chain."""
-    node_map = {str(node.get("id")): node for node in nodes}
-    ordered = topological_order(nodes)
+    node_map = {node.id: node for node in nodes}
+    ordered = topological_order(_nodes_to_mappings(nodes))
 
     duration = {
-        node_id: float(node_map[node_id].get("estimate_minutes", 0.0))
-        for node_id in ordered
-        if node_id in node_map
+        node_id: float(node_map[node_id].estimate_minutes)
+        for node_id in ordered if node_id in node_map
     }
     best: dict[str, float] = {}
     previous: dict[str, str | None] = {}
@@ -30,7 +46,7 @@ def compute_critical_path(nodes: list[dict[str, Any]]) -> list[str]:
         if not node:
             continue
 
-        prereqs = [str(item) for item in node.get("prerequisites", []) if str(item) in duration]
+        prereqs = [prereq for prereq in node.prerequisites if prereq in duration]
         if not prereqs:
             best[node_id] = duration.get(node_id, 0.0)
             previous[node_id] = None
@@ -59,22 +75,19 @@ def compute_critical_path(nodes: list[dict[str, Any]]) -> list[str]:
     return path
 
 
-def build_plan(topic_spec: dict[str, Any], curriculum: dict[str, Any]) -> dict[str, Any]:
+def build_plan(
+    topic_spec: TopicSpec | dict[str, Any],
+    curriculum: Curriculum | dict[str, Any],
+) -> dict[str, Any]:
     """Build a 2-4 week deterministic plan from topic spec and curriculum DAG."""
-    constraints = topic_spec["constraints"]
-    nodes = curriculum.get("nodes", [])
-    if not isinstance(nodes, list):
-        nodes = []
+    topic = _as_topic_spec(topic_spec)
+    curriculum_doc = _as_curriculum(curriculum)
+    nodes = curriculum_doc.nodes
+    node_map = {node.id: node for node in nodes}
+    ordered = topological_order(_nodes_to_mappings(nodes))
 
-    node_map = {str(node.get("id")): node for node in nodes if isinstance(node, dict)}
-    ordered = topological_order([node for node in nodes if isinstance(node, dict)])
-
-    total_minutes = sum(
-        float(node.get("estimate_minutes", 0.0))
-        for node in nodes
-        if isinstance(node, dict)
-    )
-    weekly_budget_minutes = float(constraints["hours_per_week"]) * 60.0
+    total_minutes = sum(float(node.estimate_minutes) for node in nodes)
+    weekly_budget_minutes = float(topic.constraints.hours_per_week) * 60.0
 
     if weekly_budget_minutes <= 0:
         weeks = 4
@@ -98,7 +111,7 @@ def build_plan(topic_spec: dict[str, Any], curriculum: dict[str, Any]) -> dict[s
         if node is None:
             continue
 
-        estimate = float(node.get("estimate_minutes", 0.0))
+        estimate = float(node.estimate_minutes)
         if (
             week_index < weeks - 1
             and week_minutes + estimate > week_capacity
@@ -108,14 +121,11 @@ def build_plan(topic_spec: dict[str, Any], curriculum: dict[str, Any]) -> dict[s
             week_minutes = 0.0
 
         buckets[week_index]["nodes"].append(node_id)
-        mastery = node.get("mastery_check", {})
-        task = mastery.get("task", "") if isinstance(mastery, dict) else ""
-        pass_criteria = mastery.get("pass_criteria", "") if isinstance(mastery, dict) else ""
         buckets[week_index]["deliverables"].append(
             {
                 "node_id": node_id,
-                "task": task,
-                "pass_criteria": pass_criteria,
+                "task": node.mastery_check.task,
+                "pass_criteria": node.mastery_check.pass_criteria,
             }
         )
         week_minutes += estimate
@@ -126,7 +136,7 @@ def build_plan(topic_spec: dict[str, Any], curriculum: dict[str, Any]) -> dict[s
             buckets[index]["review"] = prior_nodes[-2:]
 
     return {
-        "topic": curriculum.get("topic"),
+        "topic": curriculum_doc.topic,
         "duration_weeks": weeks,
         "weekly_budget_minutes": round(weekly_budget_minutes, 2),
         "total_estimated_minutes": round(total_minutes, 2),
@@ -134,17 +144,20 @@ def build_plan(topic_spec: dict[str, Any], curriculum: dict[str, Any]) -> dict[s
     }
 
 
-def compute_diff(previous: dict[str, Any], current: dict[str, Any]) -> dict[str, Any]:
+def compute_diff(
+    previous: Curriculum | dict[str, Any],
+    current: Curriculum | dict[str, Any],
+) -> dict[str, Any]:
     """Compute structural and effort deltas between previous/current curricula."""
+    previous_doc = _as_curriculum(previous)
+    current_doc = _as_curriculum(current)
     previous_nodes = {
-        str(node.get("id")): node
-        for node in previous.get("nodes", [])
-        if isinstance(node, dict)
+        node.id: node.to_dict()
+        for node in previous_doc.nodes
     }
     current_nodes = {
-        str(node.get("id")): node
-        for node in current.get("nodes", [])
-        if isinstance(node, dict)
+        node.id: node.to_dict()
+        for node in current_doc.nodes
     }
 
     previous_ids = set(previous_nodes.keys())
@@ -174,8 +187,8 @@ def compute_diff(previous: dict[str, Any], current: dict[str, Any]) -> dict[str,
         float(node.get("estimate_minutes", 0.0)) for node in current_nodes.values()
     )
 
-    previous_critical = compute_critical_path(list(previous_nodes.values()))
-    current_critical = compute_critical_path(list(current_nodes.values()))
+    previous_critical = compute_critical_path(previous_doc.nodes)
+    current_critical = compute_critical_path(current_doc.nodes)
 
     return {
         "added_nodes": added,

@@ -113,6 +113,7 @@ def extract_scope(
     *,
     mode: ScopeIngestMode = ScopeIngestMode.FULL,
     section_filters: tuple[str, ...] = (),
+    max_concepts: int = 120,
 ) -> ScopeExtraction:
     """Extract deterministic concept candidates from a markdown scope document."""
     if not scope_path.exists():
@@ -131,7 +132,7 @@ def extract_scope(
 
     normalized_filters = tuple(filter(None, (canonical_key(item) for item in section_filters)))
     items = collect_scope_items(scope_path, mode, normalized_filters)
-    concepts = _extract_concepts(items)
+    concepts = _extract_concepts(items, max_concepts=max_concepts)
     if not concepts:
         raise LearningCompilerError(
             ErrorCode.INVALID_ARGUMENT,
