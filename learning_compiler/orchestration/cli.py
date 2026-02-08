@@ -66,12 +66,6 @@ def build_parser() -> argparse.ArgumentParser:
         choices=["full", "section", "seed-list"],
         help="Scope extraction mode (default: full).",
     )
-    p_run.add_argument(
-        "--scope-profile",
-        default="balanced",
-        choices=["fast", "balanced", "deep"],
-        help="Scope synthesis profile controlling decomposition depth and output size.",
-    )
     p_run.set_defaults(func=cmd_run)
 
     p_archive = sub.add_parser("archive", help="Archive run folder")

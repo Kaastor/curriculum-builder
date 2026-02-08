@@ -11,7 +11,6 @@ from learning_compiler.agent.scope_contracts import (
     ScopeArtifactType,
     ScopeIngestMode,
 )
-from learning_compiler.agent.scope_policy import ScopeSynthesisPolicy
 from learning_compiler.errors import ErrorCode, LearningCompilerError
 
 
@@ -21,16 +20,16 @@ def build_scope_artifact(
     source_path: Path,
     mode: ScopeIngestMode,
     section_filters: tuple[str, ...],
-    policy: ScopeSynthesisPolicy,
+    policy_snapshot: dict[str, Any],
     payload: dict[str, Any],
 ) -> ScopeArtifactEnvelope:
     return ScopeArtifactEnvelope(
-        schema_version=policy.artifact_schema_version,
+        schema_version="1.0",
         artifact_type=artifact_type,
         source_path=str(source_path),
         mode=mode,
         section_filters=section_filters,
-        policy_snapshot=policy.snapshot(),
+        policy_snapshot=dict(policy_snapshot),
         payload=payload,
     )
 
@@ -77,4 +76,3 @@ def load_scope_artifact(path: Path, expected_type: ScopeArtifactType) -> ScopeAr
             {"path": str(path)},
         )
     return parse_scope_artifact(payload, expected_type)
-

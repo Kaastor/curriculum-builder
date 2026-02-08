@@ -63,9 +63,16 @@ def _schema_for(schema_name: str) -> dict[str, Any]:
 
 def _build_prompt(request: LLMRequest) -> str:
     payload = json.dumps(request.payload, indent=2, sort_keys=True)
+    scope_hint = ""
+    if isinstance(request.payload.get("scope_document"), dict):
+        scope_hint = (
+            "If scope_document.text is provided, ground node titles, ordering, and mastery checks "
+            "in that source document; treat draft_curriculum as scaffolding only.\n"
+        )
     return (
         "You are generating structured curriculum-engineering output.\n"
         "Return ONLY JSON that conforms to the provided schema.\n"
+        f"{scope_hint}"
         f"Stage: {request.stage}\n"
         f"Schema: {request.schema_name}\n"
         "Input payload:\n"

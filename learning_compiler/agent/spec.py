@@ -3,8 +3,11 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from pathlib import Path
+import re
 from typing import Any
 
+from learning_compiler.config import load_config
 from learning_compiler.domain import TopicSpec
 
 
@@ -19,6 +22,8 @@ class GenerationSpec:
     titles: tuple[str, ...]
     minutes: tuple[int, ...]
     misconceptions: tuple[str, ...]
+    scope_document_path: str | None
+    scope_document_text: str | None
 
 
 def as_int(value: Any, default: int) -> int:
@@ -45,17 +50,120 @@ def derive_topic_label(topic_spec: TopicSpec) -> str:
     return goal[:69].rstrip() + "..."
 
 
-def seed_titles(topic_spec: TopicSpec, target_nodes: int) -> tuple[str, ...]:
+def _normalize_scope_seed(raw: str) -> str:
+    value = raw.strip()
+    value = re.sub(r"\[([^\]]+)\]\([^)]+\)", r"\1", value)
+    value = value.replace("`", "")
+    value = re.sub(r"\s+", " ", value).strip(" -:;,.")
+    return value
+
+
+def _scope_titles_from_markdown(scope_text: str, max_titles: int) -> tuple[str, ...]:
+    heading_re = re.compile(r"^(#{1,6})\s+(.*?)\s*$")
+    bullet_re = re.compile(r"^\s*(?:[-*+]|\d+[.)])\s+(.*?)\s*$")
+    titles: list[str] = []
+
+    lines = scope_text.splitlines()
+    in_code = False
+    in_front_matter = bool(lines and lines[0].strip() == "---")
+    for index, raw_line in enumerate(lines):
+        line_no = index + 1
+        stripped = raw_line.strip()
+        if in_front_matter:
+            if line_no == 1:
+                continue
+            if stripped == "---":
+                in_front_matter = False
+            continue
+        if stripped.startswith("```"):
+            in_code = not in_code
+            continue
+        if in_code or not stripped:
+            continue
+
+        heading_match = heading_re.match(raw_line)
+        if heading_match:
+            depth = len(heading_match.group(1))
+            if depth <= 3:
+                heading = _normalize_scope_seed(heading_match.group(2))
+                if heading:
+                    titles.append(heading)
+            continue
+
+        bullet_match = bullet_re.match(raw_line)
+        if bullet_match:
+            bullet = _normalize_scope_seed(bullet_match.group(1))
+            if bullet:
+                titles.append(bullet)
+            if len(titles) >= max_titles:
+                break
+            continue
+
+        for fragment in re.split(r"[.!?;]+", stripped):
+            sentence = _normalize_scope_seed(fragment)
+            if not sentence:
+                continue
+            if len(sentence.split()) < 3:
+                continue
+            titles.append(sentence)
+        if len(titles) >= max_titles:
+            break
+
+    deduped: list[str] = []
+    seen: set[str] = set()
+    for title in titles:
+        key = title.lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        deduped.append(title)
+    return tuple(deduped[:max_titles])
+
+
+def _read_scope_document(topic_spec: TopicSpec) -> tuple[str | None, str | None]:
+    context = topic_spec.context_pack
+    if context is None:
+        return None, None
+
+    for raw_path in context.local_paths:
+        candidate = Path(raw_path)
+        if candidate.is_absolute():
+            resolved = candidate.resolve()
+        else:
+            resolved = (Path.cwd() / candidate).resolve()
+            if not resolved.exists():
+                resolved = (load_config().repo_root / candidate).resolve()
+        if not resolved.exists() or not resolved.is_file():
+            continue
+        if resolved.suffix.lower() not in {".md", ".markdown", ".txt"}:
+            continue
+
+        text = resolved.read_text(encoding="utf-8").strip()
+        if not text:
+            continue
+        if len(text) > 50000:
+            head = text[:45000]
+            tail = text[-5000:]
+            text = head + "\n\n...[scope document truncated]...\n\n" + tail
+        try:
+            display = str(resolved.relative_to(Path.cwd()))
+        except ValueError:
+            display = str(resolved)
+        return display, text
+
+    return None, None
+
+
+def seed_titles(topic_spec: TopicSpec, target_nodes: int, scope_document_text: str | None = None) -> tuple[str, ...]:
     seeds: list[str] = ["Capability framing and success criteria"]
 
     if topic_spec.prerequisites:
         seeds.append("Prerequisite bridge and terminology alignment")
 
-    seeds.extend(
-        f"Implement {item.strip()}"
-        for item in topic_spec.scope_in
-        if item.strip()
-    )
+    if scope_document_text:
+        seeds.extend(_scope_titles_from_markdown(scope_document_text, max_titles=max(12, target_nodes * 3)))
+    else:
+        seeds.extend(item.strip() for item in topic_spec.scope_in if item.strip())
 
     if topic_spec.context_pack is not None:
         seeds.extend(
@@ -166,7 +274,8 @@ def build_generation_spec(raw_topic_spec: dict[str, Any]) -> GenerationSpec:
     topic_spec = TopicSpec.from_mapping(raw_topic_spec)
     count = target_nodes(topic_spec)
     evidence_mode = normalize_evidence_mode(topic_spec.evidence_mode)
-    titles = seed_titles(topic_spec, count)
+    scope_document_path, scope_document_text = _read_scope_document(topic_spec)
+    titles = seed_titles(topic_spec, count, scope_document_text)
 
     return GenerationSpec(
         topic_spec=topic_spec,
@@ -181,4 +290,6 @@ def build_generation_spec(raw_topic_spec: dict[str, Any]) -> GenerationSpec:
         titles=titles,
         minutes=target_minutes(topic_spec, titles),
         misconceptions=topic_spec.misconceptions,
+        scope_document_path=scope_document_path,
+        scope_document_text=scope_document_text,
     )

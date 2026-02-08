@@ -17,7 +17,7 @@ Mixed granularity is supported:
 python3.11 scripts/orchestration.py run <run_id> --scope-file runs/<run_id>/inputs/scope.md
 ```
 
-Optional extraction controls:
+Optional scope selection controls:
 
 ```bash
 python3.11 scripts/orchestration.py run <run_id> \
@@ -26,31 +26,18 @@ python3.11 scripts/orchestration.py run <run_id> \
   --scope-section "Part I"
 ```
 
-Profile control:
-
-```bash
-python3.11 scripts/orchestration.py run <run_id> \
-  --scope-file runs/<run_id>/inputs/scope.md \
-  --scope-mode seed-list \
-  --scope-profile deep
-```
-
 `--scope-mode` values:
-- `full`: headings + bullets + prose
-- `section`: same extraction, limited by `--scope-section` (at least one is required)
-- `seed-list`: bullets/table cells only
-
-`--scope-profile` values:
-- `fast`: smaller concept set, shorter plan defaults
-- `balanced`: default decomposition profile
-- `deep`: larger concept set, deeper decomposition
+- `full`: pass full markdown content into generation
+- `section`: pass only matching heading sections (requires one or more `--scope-section`)
+- `seed-list`: pass only list-like lines (bullets/numbered items)
 
 ## Artifacts
 
 Scope-first mode writes:
-- `runs/<run_id>/scope_concepts.json` (versioned envelope; payload is under `payload`)
-- `runs/<run_id>/scope_dag.json` (versioned envelope; payload is under `payload`)
-- `runs/<run_id>/inputs/topic_spec.json` (synthesized, then used by standard pipeline)
+- `runs/<run_id>/inputs/scope.md` (selected scope content used directly by generation)
+- `runs/<run_id>/scope_concepts.json` (versioned envelope; scope-selection diagnostics under `payload`)
+- `runs/<run_id>/scope_dag.json` (versioned envelope; direct-scope generation notes under `payload`)
+- `runs/<run_id>/inputs/topic_spec.json` (synthesized orchestration contract)
 
 Then normal outputs are generated:
 - `outputs/curriculum/curriculum.json`

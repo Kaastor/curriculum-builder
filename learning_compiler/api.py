@@ -7,11 +7,6 @@ from pathlib import Path
 from typing import Any
 
 from learning_compiler.agent import (
-    ScopeCompilationResult,
-    ScopeIngestMode,
-    ScopeProfile,
-    scope_policy_for_profile,
-    compile_scope_document,
     generate_curriculum,
     generate_curriculum_file,
 )
@@ -33,21 +28,6 @@ class AgentAPI:
 
     def generate_to_file(self, topic_spec_path: Path, curriculum_path: Path) -> dict[str, Any]:
         return generate_curriculum_file(topic_spec_path, curriculum_path)
-
-    def compile_scope(
-        self,
-        scope_path: Path,
-        *,
-        mode: ScopeIngestMode = ScopeIngestMode.FULL,
-        section_filters: tuple[str, ...] = (),
-        profile: ScopeProfile = ScopeProfile.BALANCED,
-    ) -> ScopeCompilationResult:
-        return compile_scope_document(
-            scope_path,
-            mode=mode,
-            section_filters=section_filters,
-            policy=scope_policy_for_profile(profile),
-        )
 
 
 @dataclass(slots=True)

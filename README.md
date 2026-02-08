@@ -9,7 +9,7 @@ Evidence strictness is a dial, not a fork:
 `minimal | standard | strict`
 
 Scope-first entry path:
-`Scope Markdown -> Extract Concepts -> Infer DAG -> Synthesize topic_spec -> Generate -> Validate -> Plan -> Iterate`
+`Scope Markdown -> Select Content (mode/sections) -> Synthesize topic_spec -> Generate (grounded in scope text) -> Validate -> Plan -> Iterate`
 
 ## Quickstart
 
@@ -23,15 +23,6 @@ Scope-first quickstart:
 
 ```bash
 python3.11 scripts/orchestration.py run <run_id> --scope-file runs/<run_id>/inputs/scope.md
-```
-
-Profile tuning (optional):
-
-```bash
-python3.11 scripts/orchestration.py run <run_id> \
-  --scope-file runs/<run_id>/inputs/scope.md \
-  --scope-mode seed-list \
-  --scope-profile fast
 ```
 
 ## Architecture
@@ -65,11 +56,7 @@ graph LR
 - `learning_compiler/agent/`: LLM-first iterative generation engine (`propose -> critique -> judge -> repair`), topic-spec normalization, node construction, context-aware resource resolver contracts, and optimization trace emission.
 - `learning_compiler/agent/resource_catalog.py`: deterministic reference catalogs grouped by domain hints.
 - `learning_compiler/agent/resource_resolvers.py`: resolver contracts and deterministic resolver implementations.
-- `learning_compiler/agent/scope_extractor.py`: deterministic markdown scope parsing + concept candidate extraction.
-- `learning_compiler/agent/concept_dag_builder.py`: deterministic hard/soft relation inference and phase ordering.
-- `learning_compiler/agent/scope_policy.py`: scope synthesis policy profiles (`fast|balanced|deep`).
 - `learning_compiler/agent/scope_artifacts.py`: versioned scope artifact envelope parsing/loading.
-- `learning_compiler/agent/scope_pipeline.py`: scope document to `topic_spec.json` synthesis.
 - `learning_compiler/validator/`: deterministic quality gate for schema, graph, evidence, and node-quality checks.
 - `learning_compiler/validator/rules.py`: stable validator rule registry with rule IDs.
 - `learning_compiler/orchestration/`: run lifecycle, stage sync, reports, artifact persistence, planning, diffing.
@@ -189,8 +176,8 @@ Per run (`runs/<run_id>/`):
 - `outputs/reviews/optimization_trace.json`
 - `outputs/plan/plan.json`
 - `outputs/reviews/diff_report.json`
-- `scope_concepts.json` (versioned envelope with extraction diagnostics + policy snapshot)
-- `scope_dag.json` (versioned envelope with inferred relations + policy snapshot)
+- `scope_concepts.json` (versioned envelope with scope-selection diagnostics + policy snapshot)
+- `scope_dag.json` (versioned envelope with direct-scope generation notes + policy snapshot)
 - `logs/events.jsonl`
 - `run.json`
 
@@ -223,7 +210,6 @@ Direct CLI:
 - `python3.11 scripts/orchestration.py run <run_id>`
 - `python3.11 scripts/orchestration.py run <run_id> --scope-file <path/to/scope.md>`
 - `python3.11 scripts/orchestration.py run <run_id> --scope-file docs/agentic-engineering-atlas.md --scope-mode section --scope-section "Part I"` (`section` mode requires one or more `--scope-section`)
-- `python3.11 scripts/orchestration.py run <run_id> --scope-file <path/to/scope.md> --scope-profile {fast|balanced|deep}`
 - `python3.11 scripts/orchestration.py validate <run_id>`
 - `python3.11 scripts/orchestration.py plan <run_id>`
 - `python3.11 scripts/orchestration.py iterate <run_id>`

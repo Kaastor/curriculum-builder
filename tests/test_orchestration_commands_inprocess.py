@@ -95,13 +95,13 @@ class OrchestrationInProcessTests(unittest.TestCase):
             finally:
                 self._restore_env(previous)
 
-    def test_scope_run_with_profile_generates_artifacts(self) -> None:
+    def test_scope_run_generates_artifacts(self) -> None:
         api = OrchestrationAPI()
         with tempfile.TemporaryDirectory() as tmp_dir:
             previous, runs_dir = self._set_env(tmp_dir)
             try:
                 with contextlib.redirect_stdout(io.StringIO()):
-                    api.run_cli(["init", "scope-profile"])
+                    api.run_cli(["init", "scope-input"])
                 run_dir = sorted(runs_dir.iterdir())[0]
                 scope_path = run_dir / "inputs" / "scope.md"
                 scope_path.write_text(
@@ -118,19 +118,98 @@ class OrchestrationInProcessTests(unittest.TestCase):
                             str(scope_path),
                             "--scope-mode",
                             "seed-list",
-                            "--scope-profile",
-                            "fast",
                         ]
                     )
                 self.assertEqual(0, code)
                 concepts = json.loads((run_dir / "scope_concepts.json").read_text(encoding="utf-8"))
                 self.assertEqual("1.0", concepts.get("schema_version"))
                 self.assertEqual("scope_concepts", concepts.get("artifact_type"))
-                self.assertEqual("fast", concepts.get("policy_snapshot", {}).get("profile"))
+                self.assertEqual({}, concepts.get("policy_snapshot"))
+                effective_scope = (run_dir / "inputs" / "scope.md").read_text(encoding="utf-8")
+                self.assertIn("deterministic planning", effective_scope)
+            finally:
+                self._restore_env(previous)
+
+    def test_scope_section_mode_writes_selected_scope_input(self) -> None:
+        api = OrchestrationAPI()
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            previous, runs_dir = self._set_env(tmp_dir)
+            try:
+                with contextlib.redirect_stdout(io.StringIO()):
+                    api.run_cli(["init", "scope-section-selection"])
+                run_dir = sorted(runs_dir.iterdir())[0]
+                source_scope = run_dir / "inputs" / "source.md"
+                source_scope.write_text(
+                    (
+                        "# Scope\n"
+                        "## Runtime\n"
+                        "- retry policies\n"
+                        "## Evaluation\n"
+                        "- benchmark harness\n"
+                    ),
+                    encoding="utf-8",
+                )
+                with contextlib.redirect_stdout(io.StringIO()):
+                    code = api.run_cli(
+                        [
+                            "run",
+                            run_dir.name,
+                            "--scope-file",
+                            str(source_scope),
+                            "--scope-mode",
+                            "section",
+                            "--scope-section",
+                            "runtime",
+                        ]
+                    )
+                self.assertEqual(0, code)
+                effective_scope = (run_dir / "inputs" / "scope.md").read_text(encoding="utf-8")
+                self.assertIn("## Runtime", effective_scope)
+                self.assertIn("retry policies", effective_scope)
+                self.assertNotIn("## Evaluation", effective_scope)
+                self.assertNotIn("benchmark harness", effective_scope)
+            finally:
+                self._restore_env(previous)
+
+    def test_scope_breadth_scales_scope_in_and_curriculum_size(self) -> None:
+        api = OrchestrationAPI()
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            previous, runs_dir = self._set_env(tmp_dir)
+            try:
+                with contextlib.redirect_stdout(io.StringIO()):
+                    api.run_cli(["init", "scope-breadth"])
+                run_dir = sorted(runs_dir.iterdir())[0]
+                scope_path = run_dir / "inputs" / "scope.md"
+                scope_path.write_text(
+                    "\n".join(
+                        ["# Scope"]
+                        + [f"- topic area {index}: implementation and validation pattern {index}" for index in range(1, 31)]
+                    )
+                    + "\n",
+                    encoding="utf-8",
+                )
+                with contextlib.redirect_stdout(io.StringIO()):
+                    code = api.run_cli(
+                        [
+                            "run",
+                            run_dir.name,
+                            "--scope-file",
+                            str(scope_path),
+                            "--scope-mode",
+                            "seed-list",
+                        ]
+                    )
+                self.assertEqual(0, code)
+
+                topic_spec = json.loads((run_dir / "inputs" / "topic_spec.json").read_text(encoding="utf-8"))
+                curriculum = json.loads(
+                    (run_dir / "outputs" / "curriculum" / "curriculum.json").read_text(encoding="utf-8")
+                )
+                self.assertGreaterEqual(len(topic_spec.get("scope_in", [])), 20)
+                self.assertGreater(len(curriculum.get("nodes", [])), 8)
             finally:
                 self._restore_env(previous)
 
 
 if __name__ == "__main__":
     unittest.main()
-

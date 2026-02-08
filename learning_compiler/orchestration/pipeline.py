@@ -9,7 +9,6 @@ import sys
 from learning_compiler.agent import (
     DefaultCurriculumGenerator,
     ScopeIngestMode,
-    ScopeSynthesisPolicy,
 )
 from learning_compiler.agent.contracts import CurriculumGenerator
 from learning_compiler.domain import parse_curriculum, parse_topic_spec
@@ -39,7 +38,6 @@ class ScopeRunOptions:
     scope_file: str
     mode: ScopeIngestMode
     sections: tuple[str, ...]
-    policy: ScopeSynthesisPolicy
 
 
 @dataclass(slots=True)
@@ -150,7 +148,6 @@ class RunPipeline:
             scope_path=scope_path,
             mode=options.mode,
             section_filters=options.sections,
-            policy=options.policy,
         )
         self._save_meta_if_advanced(
             context,
@@ -159,7 +156,6 @@ class RunPipeline:
             metadata={
                 "scope_file": str(scope_path),
                 "scope_mode": options.mode.value,
-                "scope_profile": options.policy.profile.value,
                 "scope_sections": list(options.sections),
             },
         )

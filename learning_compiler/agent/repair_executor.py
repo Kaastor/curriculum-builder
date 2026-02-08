@@ -123,12 +123,20 @@ class LLMRepairExecutor:
         if policy.provider != ModelProvider.CODING_AGENT:
             return patched
 
+        scope_document_payload: dict[str, str] | None = None
+        if spec.scope_document_text is not None:
+            scope_document_payload = {
+                "path": spec.scope_document_path or "",
+                "text": spec.scope_document_text,
+            }
+
         response = self._client.run_json(
             LLMRequest(
                 stage="repair",
                 schema_name="repair_curriculum_v1",
                 payload={
                     "topic_spec": spec.topic_spec.to_dict(),
+                    "scope_document": scope_document_payload,
                     "current_curriculum": patched,
                     "actions": [action.to_dict() for action in actions],
                 },
