@@ -52,6 +52,23 @@ graph LR
 - `learning_compiler/errors.py`: typed error taxonomy and stable exit-code mapping.
 - `learning_compiler/config.py`: centralized runtime configuration.
 
+### Code structure patterns (industry baseline)
+
+- Thin CLI / rich core:
+  - `scripts/*.py` are wrappers only.
+  - business logic lives in `learning_compiler/*`.
+- Typed protocol boundaries:
+  - generation contracts (`CurriculumGenerator`, `ResourceResolver`) are interface-driven.
+  - domain payloads are modeled as dataclasses in `learning_compiler/domain/`.
+- Explicit run metadata model:
+  - orchestration uses `RunMeta` instead of ad-hoc dict mutation.
+- Versioned artifact evolution:
+  - run metadata migrations are centralized in `learning_compiler/orchestration/migrations.py`.
+- Structured operational traces:
+  - lifecycle events are standardized and appended to `logs/events.jsonl`.
+- Centralized configuration:
+  - path and environment resolution is handled by `learning_compiler/config.py`.
+
 ## Pipeline Design
 
 ### Runtime flow

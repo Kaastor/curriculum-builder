@@ -22,6 +22,7 @@ from learning_compiler.orchestration.fs import (
     utc_now,
     write_json,
 )
+from learning_compiler.orchestration.meta import RunMeta
 from learning_compiler.orchestration.migrations import RUN_META_SCHEMA_VERSION
 from learning_compiler.orchestration.stage import (
     looks_ready_spec,
@@ -59,22 +60,22 @@ def cmd_init(args: argparse.Namespace) -> int:
     shutil.copy2(spec_template, run_dir / "inputs" / "topic_spec.json")
 
     now = utc_now()
-    meta = {
-        "schema_version": RUN_META_SCHEMA_VERSION,
-        "run_id": run_id,
-        "created_at_utc": now,
-        "stage": Stage.INITIALIZED.value,
-        "history": [
+    meta = RunMeta(
+        schema_version=RUN_META_SCHEMA_VERSION,
+        run_id=run_id,
+        created_at_utc=now,
+        stage=Stage.INITIALIZED,
+        history=[
             stage_event(
                 at_utc=now,
                 stage=Stage.INITIALIZED.value,
                 message="run initialized",
             ).to_dict()
         ],
-    }
-    write_json(run_dir / "run.json", meta)
+    )
+    write_json(run_dir / "run.json", meta.to_dict())
     required_paths(run_dir).event_log.write_text(
-        json.dumps(meta["history"][0]) + "\n",
+        json.dumps(meta.history[0]) + "\n",
         encoding="utf-8",
     )
 

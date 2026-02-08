@@ -10,6 +10,7 @@ from typing import Any
 from learning_compiler.errors import LearningCompilerError
 from learning_compiler.orchestration.events import stage_event
 from learning_compiler.orchestration.fs import read_json, required_paths, utc_now, write_json
+from learning_compiler.orchestration.meta import RunMeta
 from learning_compiler.orchestration.types import STAGE_INDEX, RunPaths, Stage, stage_from
 from learning_compiler.validator.topic_spec import validate_topic_spec_contract
 
@@ -22,7 +23,7 @@ def _append_event_log(run_dir: Path, event_payload: dict[str, Any]) -> None:
 
 
 def append_history(
-    meta: dict[str, Any],
+    meta: RunMeta,
     stage: Stage,
     message: str,
     *,
@@ -36,27 +37,21 @@ def append_history(
         metadata=metadata,
     ).to_dict()
 
-    history = meta.get("history")
-    if isinstance(history, list):
-        history.append(event_payload)
-    else:
-        meta["history"] = [event_payload]
-
+    meta.history.append(event_payload)
     if run_dir is not None:
         _append_event_log(run_dir, event_payload)
 
 
 def ensure_stage(
-    meta: dict[str, Any],
+    meta: RunMeta,
     stage: Stage,
     message: str,
     *,
     run_dir: Path | None = None,
     metadata: dict[str, Any] | None = None,
 ) -> bool:
-    current = stage_from(meta.get("stage", Stage.INITIALIZED.value))
-    if STAGE_INDEX[stage] > STAGE_INDEX[current]:
-        meta["stage"] = stage.value
+    if STAGE_INDEX[stage] > STAGE_INDEX[meta.stage]:
+        meta.stage = stage
         append_history(meta, stage, message, run_dir=run_dir, metadata=metadata)
         return True
     return False
@@ -154,19 +149,19 @@ def infer_stage_from_artifacts(run_dir: Path) -> Stage:
     return stage
 
 
-def persist_if_changed(run_dir: Path, meta: dict[str, Any], changed: bool) -> None:
+def persist_if_changed(run_dir: Path, meta: RunMeta, changed: bool) -> None:
     if not changed:
         return
 
-    write_json(run_dir / "run.json", meta)
+    write_json(run_dir / "run.json", meta.to_dict())
 
 
-def sync_stage(run_dir: Path, meta: dict[str, Any]) -> tuple[Stage, bool]:
+def sync_stage(run_dir: Path, meta: RunMeta) -> tuple[Stage, bool]:
     inferred = infer_stage_from_artifacts(run_dir)
-    current = stage_from(meta.get("stage", Stage.INITIALIZED.value))
+    current = meta.stage
     changed = current != inferred
     if changed:
-        meta["stage"] = inferred.value
+        meta.stage = inferred
         append_history(
             meta,
             inferred,
@@ -174,4 +169,4 @@ def sync_stage(run_dir: Path, meta: dict[str, Any]) -> tuple[Stage, bool]:
             run_dir=run_dir,
             metadata={"previous_stage": current.value},
         )
-    return stage_from(meta.get("stage", inferred.value)), changed
+    return stage_from(meta.stage.value), changed

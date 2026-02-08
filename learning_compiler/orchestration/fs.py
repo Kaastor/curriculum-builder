@@ -11,6 +11,7 @@ from typing import Any
 from learning_compiler.config import load_config
 from learning_compiler.errors import ErrorCode, LearningCompilerError, NotFoundError
 from learning_compiler.orchestration.migrations import migrate_run_meta
+from learning_compiler.orchestration.meta import RunMeta
 from learning_compiler.orchestration.types import RunPaths
 
 
@@ -86,7 +87,7 @@ def write_json(path: Path, payload: dict[str, Any]) -> None:
     path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
 
 
-def load_run(run_id: str) -> tuple[Path, dict[str, Any]]:
+def load_run(run_id: str) -> tuple[Path, RunMeta]:
     run_dir = orchestration_base_dir() / run_id
     paths = required_paths(run_dir)
     if not paths.run_meta.exists():
@@ -96,4 +97,4 @@ def load_run(run_id: str) -> tuple[Path, dict[str, Any]]:
     migrated_meta, changed = migrate_run_meta(meta)
     if changed:
         write_json(paths.run_meta, migrated_meta)
-    return run_dir, migrated_meta
+    return run_dir, RunMeta.from_dict(migrated_meta)
