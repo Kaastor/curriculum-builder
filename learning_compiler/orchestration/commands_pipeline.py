@@ -8,7 +8,7 @@ from pathlib import Path
 
 from learning_compiler.agent import DefaultCurriculumGenerator
 from learning_compiler.agent.contracts import CurriculumGenerator
-from learning_compiler.errors import StageConflictError
+from learning_compiler.errors import ErrorCode, LearningCompilerError, StageConflictError
 from learning_compiler.orchestration.command_utils import run_id_from_args
 from learning_compiler.orchestration.exec import run_validator, write_validation_report
 from learning_compiler.orchestration.fs import load_run, read_json, required_paths, write_json
@@ -16,9 +16,11 @@ from learning_compiler.orchestration.meta import RunMeta
 from learning_compiler.orchestration.planning import build_plan, compute_diff
 from learning_compiler.orchestration.stage import (
     ensure_stage,
+    plan_is_current,
     persist_if_changed,
     sync_stage,
     topic_spec_errors,
+    validation_is_current,
 )
 from learning_compiler.orchestration.types import RunPaths, Stage
 
@@ -65,7 +67,14 @@ def _validate_run(run_dir: Path, meta: RunMeta, paths: RunPaths) -> int:
 def _save_plan(run_dir: Path, meta: RunMeta, paths: RunPaths) -> None:
     topic_spec = read_json(paths.topic_spec)
     curriculum = read_json(paths.curriculum)
-    plan = build_plan(topic_spec, curriculum)
+    try:
+        plan = build_plan(topic_spec, curriculum)
+    except (KeyError, TypeError, ValueError) as exc:
+        raise LearningCompilerError(
+            ErrorCode.INVALID_ARGUMENT,
+            "Unable to build plan from current artifacts. Validate and regenerate inputs.",
+            {"run_dir": str(run_dir)},
+        ) from exc
     write_json(paths.plan, plan)
 
     if ensure_stage(meta, Stage.PLANNED, "plan generated", run_dir=run_dir):
@@ -78,7 +87,14 @@ def _save_diff(run_dir: Path, meta: RunMeta, paths: RunPaths) -> None:
     current = read_json(paths.curriculum)
     previous = read_json(paths.previous_curriculum) if paths.previous_curriculum.exists() else {"nodes": []}
 
-    diff = compute_diff(previous, current)
+    try:
+        diff = compute_diff(previous, current)
+    except (KeyError, TypeError, ValueError) as exc:
+        raise LearningCompilerError(
+            ErrorCode.INVALID_ARGUMENT,
+            "Unable to compute diff from current artifacts. Validate and regenerate inputs.",
+            {"run_dir": str(run_dir)},
+        ) from exc
     write_json(paths.diff_report, diff)
 
     if ensure_stage(meta, Stage.ITERATED, "diff generated", run_dir=run_dir):
@@ -129,6 +145,12 @@ def cmd_iterate(args: argparse.Namespace) -> int:
     if not paths.curriculum.exists():
         print(f"Missing curriculum file: {paths.curriculum}", file=sys.stderr)
         return 1
+
+    if _validate_run(run_dir, meta, paths) != 0:
+        return 1
+
+    if not plan_is_current(paths) or not validation_is_current(paths):
+        _save_plan(run_dir, meta, paths)
 
     _save_diff(run_dir, meta, paths)
     return 0

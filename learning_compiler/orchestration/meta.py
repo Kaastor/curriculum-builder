@@ -33,8 +33,12 @@ class RunMeta:
             raise ValueError(f"stage must be one of {[item.value for item in Stage]}") from exc
 
         history = payload.get("history")
-        if not isinstance(history, list) or any(not isinstance(item, dict) for item in history):
+        if not isinstance(history, list):
             raise ValueError("history must be a list of objects")
+        if not history:
+            raise ValueError("history must contain at least one event")
+        for idx, item in enumerate(history):
+            cls._validate_history_event(item, idx)
 
         reserved = {"run_id", "created_at_utc", "stage", "history"}
         extras = {key: value for key, value in payload.items() if key not in reserved}
@@ -45,6 +49,44 @@ class RunMeta:
             history=list(history),
             extras=extras,
         )
+
+    @staticmethod
+    def _validate_history_event(event: Any, index: int) -> None:
+        if not isinstance(event, dict):
+            raise ValueError(f"history[{index}] must be an object")
+
+        required = {"at_utc", "event_type", "stage", "message", "metadata"}
+        keys = set(event.keys())
+        missing = sorted(required - keys)
+        if missing:
+            raise ValueError(f"history[{index}] missing keys: {missing}")
+        extra = sorted(keys - required)
+        if extra:
+            raise ValueError(f"history[{index}] has unexpected keys: {extra}")
+
+        at_utc = event.get("at_utc")
+        if not isinstance(at_utc, str) or not at_utc.strip():
+            raise ValueError(f"history[{index}].at_utc must be a non-empty string")
+
+        event_type = event.get("event_type")
+        if not isinstance(event_type, str) or not event_type.strip():
+            raise ValueError(f"history[{index}].event_type must be a non-empty string")
+
+        stage = event.get("stage")
+        try:
+            Stage(str(stage))
+        except ValueError as exc:
+            raise ValueError(
+                f"history[{index}].stage must be one of {[item.value for item in Stage]}"
+            ) from exc
+
+        message = event.get("message")
+        if not isinstance(message, str) or not message.strip():
+            raise ValueError(f"history[{index}].message must be a non-empty string")
+
+        metadata = event.get("metadata")
+        if not isinstance(metadata, dict):
+            raise ValueError(f"history[{index}].metadata must be an object")
 
     def to_dict(self) -> dict[str, Any]:
         payload: dict[str, Any] = {

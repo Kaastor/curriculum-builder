@@ -17,6 +17,7 @@ from learning_compiler.orchestration.fs import (
     orchestration_archive_dir,
     orchestration_base_dir,
     required_paths,
+    resolve_within,
     slugify,
     topic_spec_template,
     utc_now,
@@ -128,7 +129,7 @@ def cmd_archive(args: argparse.Namespace) -> int:
     run_dir, _ = load_run(run_id)
     archive_dir = orchestration_archive_dir()
     archive_dir.mkdir(parents=True, exist_ok=True)
-    archive_path = archive_dir / f"{run_id}.tar.gz"
+    archive_path = resolve_within(archive_dir, archive_dir / f"{run_id}.tar.gz")
 
     with tarfile.open(archive_path, "w:gz") as tar:
         tar.add(run_dir, arcname=run_id)

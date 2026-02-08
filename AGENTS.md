@@ -16,6 +16,7 @@
 
 ## PoC Priority
 - This repository is a PoC; prioritize validating core logic and orchestration correctness over polish.
+- Primary goal: use this PoC as the best practical environment for learning agentic engineering deeply through real implementation and reliability work.
 - Optimize for fast, reliable feedback on behavior (tests/validation), and defer non-essential refinements.
 - No backward-compatible run metadata migrations: keep a strict fresh-run contract and re-initialize local runs when metadata/artifact schemas change.
 

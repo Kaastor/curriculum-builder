@@ -86,8 +86,21 @@ def write_json(path: Path, payload: dict[str, Any]) -> None:
     path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
 
 
+def resolve_within(base_dir: Path, candidate: Path) -> Path:
+    base_resolved = base_dir.resolve()
+    candidate_resolved = candidate.resolve()
+    if candidate_resolved != base_resolved and base_resolved not in candidate_resolved.parents:
+        raise LearningCompilerError(
+            ErrorCode.INVALID_ARGUMENT,
+            f"Path escapes configured base directory: {candidate}",
+            {"base_dir": str(base_resolved), "candidate": str(candidate_resolved)},
+        )
+    return candidate_resolved
+
+
 def load_run(run_id: str) -> tuple[Path, RunMeta]:
-    run_dir = orchestration_base_dir() / run_id
+    base_dir = orchestration_base_dir()
+    run_dir = resolve_within(base_dir, base_dir / run_id)
     paths = required_paths(run_dir)
     if not paths.run_meta.exists():
         raise NotFoundError(f"Run not found: {run_id}", {"run_id": run_id})

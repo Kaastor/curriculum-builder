@@ -86,6 +86,13 @@ class OrchestrationCliTests(unittest.TestCase):
             self.assertNotEqual(0, failed.returncode)
             self.assertIn("Topic spec missing or incomplete", failed.stderr)
 
+    def test_status_rejects_invalid_run_id_format(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            env = self._env(tmp_dir)
+            failed = self._run(env, "status", "../evil", check=False)
+            self.assertNotEqual(0, failed.returncode)
+            self.assertIn("[invalid_argument] Invalid run_id format", failed.stderr)
+
     def test_status_rejects_legacy_run_metadata(self):
         with tempfile.TemporaryDirectory() as tmp_dir:
             env = self._env(tmp_dir)
@@ -98,6 +105,34 @@ class OrchestrationCliTests(unittest.TestCase):
                         "created_at_utc": "2026-01-01T00:00:00Z",
                         "stage": "map_generated",
                         "history": [],
+                    }
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+
+            failed = self._run(env, "status", run_dir.name, check=False)
+            self.assertNotEqual(0, failed.returncode)
+            self.assertIn("[invalid_argument] Invalid run metadata", failed.stderr)
+
+    def test_status_rejects_invalid_history_event_schema(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            env = self._env(tmp_dir)
+            run_dir = Path(tmp_dir) / "runs" / "20260101-000001-history"
+            run_dir.mkdir(parents=True)
+            (run_dir / "run.json").write_text(
+                json.dumps(
+                    {
+                        "run_id": run_dir.name,
+                        "created_at_utc": "2026-01-01T00:00:01Z",
+                        "stage": "initialized",
+                        "history": [
+                            {
+                                "at_utc": "2026-01-01T00:00:01Z",
+                                "stage": "initialized",
+                                "reason": "legacy format",
+                            }
+                        ],
                     }
                 )
                 + "\n",
@@ -152,6 +187,53 @@ class OrchestrationCliTests(unittest.TestCase):
 
             run_meta = json.loads((run_dir / "run.json").read_text(encoding="utf-8"))
             self.assertEqual("planned", run_meta["stage"])
+
+    def test_iterate_bootstraps_validation_and_plan_before_diff(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            env = self._env(tmp_dir)
+            self._run(env, "init", "Iterate Bootstrap")
+            run_dir = sorted((Path(tmp_dir) / "runs").iterdir())[0]
+
+            topic_spec_path = run_dir / "inputs" / "topic_spec.json"
+            self._write_valid_topic_spec(topic_spec_path)
+
+            curriculum_path = run_dir / "outputs" / "curriculum" / "curriculum.json"
+            curriculum_path.write_text(SAMPLE_CURRICULUM.read_text(encoding="utf-8"), encoding="utf-8")
+
+            result = self._run(env, "iterate", run_dir.name)
+            self.assertIn("Saved diff report", result.stdout)
+
+            self.assertTrue((run_dir / "outputs" / "reviews" / "validation_report.md").exists())
+            self.assertTrue((run_dir / "outputs" / "plan" / "plan.json").exists())
+            self.assertTrue((run_dir / "outputs" / "reviews" / "diff_report.json").exists())
+
+            run_meta = json.loads((run_dir / "run.json").read_text(encoding="utf-8"))
+            self.assertEqual("iterated", run_meta["stage"])
+
+            status = self._run(env, "status", run_dir.name)
+            self.assertIn("Stage: iterated", status.stdout)
+
+    def test_iterate_invalid_curriculum_fails_without_traceback(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            env = self._env(tmp_dir)
+            self._run(env, "init", "Iterate Invalid")
+            run_dir = sorted((Path(tmp_dir) / "runs").iterdir())[0]
+
+            topic_spec_path = run_dir / "inputs" / "topic_spec.json"
+            self._write_valid_topic_spec(topic_spec_path)
+
+            curriculum_path = run_dir / "outputs" / "curriculum" / "curriculum.json"
+            curriculum = json.loads(SAMPLE_CURRICULUM.read_text(encoding="utf-8"))
+            curriculum["nodes"][0]["estimate_minutes"] = "oops"
+            curriculum_path.write_text(json.dumps(curriculum, indent=2) + "\n", encoding="utf-8")
+
+            failed = self._run(env, "iterate", run_dir.name, check=False)
+            self.assertNotEqual(0, failed.returncode)
+            self.assertNotIn("Traceback", failed.stderr)
+            self.assertIn("FAILED:", failed.stdout)
+
+            run_meta = json.loads((run_dir / "run.json").read_text(encoding="utf-8"))
+            self.assertNotEqual("iterated", run_meta["stage"])
 
     def test_run_generates_curriculum_with_agent(self):
         with tempfile.TemporaryDirectory() as tmp_dir:

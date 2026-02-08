@@ -664,9 +664,10 @@ function makeNodeCard(node, layer) {
   const card = document.createElement("button");
   card.type = "button";
   card.className = `node-card ${state.selectedNodeId === node.id ? "selected" : ""}`;
+  const safeId = escapeHtml(node.id);
 
   card.innerHTML = `
-    <div class="title mono">${node.id} - ${escapeHtml(node.title)}</div>
+    <div class="title mono">${safeId} - ${escapeHtml(node.title)}</div>
     <div class="meta">Layer ${layer} | ${node.estimate_minutes}m</div>
   `;
 
@@ -685,9 +686,10 @@ function renderNodeTable(filteredNodes) {
       const selectedClass = node.id === state.selectedNodeId ? "active" : "";
       const layer = state.derived?.nodeLayers?.[node.id] ?? 0;
       const resourceCount = Array.isArray(node.resources) ? node.resources.length : 0;
+      const safeId = escapeHtml(node.id);
       return `
-        <tr class="clickable ${selectedClass}" data-node-id="${node.id}">
-          <td class="mono">${node.id}</td>
+        <tr class="clickable ${selectedClass}" data-node-id="${safeId}">
+          <td class="mono">${safeId}</td>
           <td>${escapeHtml(node.title)}</td>
           <td>${layer}</td>
           <td>${node.estimate_minutes}m</td>
@@ -729,10 +731,11 @@ function renderLearningPath() {
   els.learningPath.innerHTML = topological
     .map((nodeId, index) => {
       const marker = criticalPath.has(nodeId) ? "critical" : "path";
+      const safeId = escapeHtml(nodeId);
       return `
         <div class="path-item">
-          <span class="mono">${index + 1}. ${nodeId}</span>
-          <span class="chip-link" data-node-link="${nodeId}">${marker}</span>
+          <span class="mono">${index + 1}. ${safeId}</span>
+          <span class="chip-link" data-node-link="${safeId}">${marker}</span>
         </div>
       `;
     })
@@ -745,7 +748,10 @@ function renderMilestones() {
   els.milestones.innerHTML = (state.derived?.milestones || [])
     .map((milestone) => {
       const chips = (milestone.nodes || [])
-        .map((nodeId) => `<button class="chip-link mono" data-node-link="${nodeId}">${nodeId}</button>`)
+        .map((nodeId) => {
+          const safeId = escapeHtml(nodeId);
+          return `<button class="chip-link mono" data-node-link="${safeId}">${safeId}</button>`;
+        })
         .join("");
 
       return `
@@ -774,7 +780,10 @@ function renderOpenQuestions() {
   els.openQuestions.innerHTML = openQuestions
     .map((item) => {
       const related = (item.related_nodes || [])
-        .map((nodeId) => `<button class="chip-link mono" data-node-link="${nodeId}">${nodeId}</button>`)
+        .map((nodeId) => {
+          const safeId = escapeHtml(nodeId);
+          return `<button class="chip-link mono" data-node-link="${safeId}">${safeId}</button>`;
+        })
         .join(" ");
       return `
         <article class="coverage-item">
@@ -812,7 +821,7 @@ function renderNodeDetails() {
   els.nodeDetails.innerHTML = `
     <div class="kv">
       <div class="kv-key">Identity</div>
-      <div class="kv-value mono">${node.id} - ${escapeHtml(node.title)}</div>
+      <div class="kv-value mono">${escapeHtml(node.id)} - ${escapeHtml(node.title)}</div>
     </div>
     <div class="kv">
       <div class="kv-key">Meta</div>
@@ -857,7 +866,10 @@ function renderNodeDetails() {
 
 function formatNodeLinks(nodeIds) {
   return nodeIds
-    .map((nodeId) => `<button class="chip-link mono" data-node-link="${nodeId}">${nodeId}</button>`)
+    .map((nodeId) => {
+      const safeId = escapeHtml(nodeId);
+      return `<button class="chip-link mono" data-node-link="${safeId}">${safeId}</button>`;
+    })
     .join(" ");
 }
 
