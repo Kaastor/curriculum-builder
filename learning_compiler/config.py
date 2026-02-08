@@ -30,7 +30,7 @@ def load_config() -> AppConfig:
             str(runs_dir / "templates" / "topic_spec.template.json"),
         )
     )
-    agent_provider = os.environ.get("AGENT_PROVIDER", "internal")
+    agent_provider = os.environ.get("AGENT_PROVIDER", "coding_agent")
     agent_model = os.environ.get("AGENT_MODEL", "internal-heuristic-v1")
     coding_agent_cmd = os.environ.get("CODING_AGENT_CMD", "codex")
 

@@ -22,6 +22,7 @@ class OrchestrationCliTests(unittest.TestCase):
         env["ORCHESTRATION_BASE_DIR"] = str(Path(tmp_dir) / "runs")
         env["ORCHESTRATION_TEMPLATE_FILE"] = str(TOPIC_SPEC_TEMPLATE)
         env["ORCHESTRATION_ARCHIVE_DIR"] = str(Path(tmp_dir) / "archives")
+        env["AGENT_PROVIDER"] = "internal"
         return env
 
     def _run(self, env: dict[str, str], *args: str, check: bool = True) -> subprocess.CompletedProcess[str]:

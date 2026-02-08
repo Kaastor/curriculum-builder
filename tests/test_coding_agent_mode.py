@@ -11,7 +11,7 @@ from learning_compiler.config import reset_config_cache
 
 
 class CodingAgentModeTests(unittest.TestCase):
-    def test_default_model_policy_uses_internal_provider(self) -> None:
+    def test_default_model_policy_uses_coding_agent_provider(self) -> None:
         previous = os.environ.pop("AGENT_PROVIDER", None)
         reset_config_cache()
         try:
@@ -20,7 +20,7 @@ class CodingAgentModeTests(unittest.TestCase):
             if previous is not None:
                 os.environ["AGENT_PROVIDER"] = previous
             reset_config_cache()
-        self.assertEqual(ModelProvider.INTERNAL, policy.provider)
+        self.assertEqual(ModelProvider.CODING_AGENT, policy.provider)
 
     def test_default_model_policy_parses_coding_agent_provider(self) -> None:
         previous_provider = os.environ.get("AGENT_PROVIDER")

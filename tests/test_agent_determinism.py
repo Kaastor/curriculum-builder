@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import tempfile
 import unittest
 from pathlib import Path
@@ -32,6 +33,18 @@ def topic_spec() -> dict[str, object]:
 
 
 class AgentDeterminismTests(unittest.TestCase):
+    _previous_provider: str | None
+
+    def setUp(self) -> None:
+        self._previous_provider = os.environ.get("AGENT_PROVIDER")
+        os.environ["AGENT_PROVIDER"] = "internal"
+
+    def tearDown(self) -> None:
+        if self._previous_provider is None:
+            os.environ.pop("AGENT_PROVIDER", None)
+            return
+        os.environ["AGENT_PROVIDER"] = self._previous_provider
+
     def test_generate_curriculum_is_deterministic_for_same_spec(self) -> None:
         spec = topic_spec()
         first = generate_curriculum(spec)

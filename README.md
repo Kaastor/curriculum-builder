@@ -95,8 +95,8 @@ sequenceDiagram
 ### Agent provider modes
 
 Generation provider is configurable:
-- `AGENT_PROVIDER=internal` (default): deterministic in-process proposer/repair logic.
-- `AGENT_PROVIDER=coding_agent`: use Codex CLI (`codex exec`) for proposer + repair JSON outputs, while deterministic judge remains final acceptance gate.
+- `AGENT_PROVIDER=internal`: deterministic in-process proposer/repair logic.
+- `AGENT_PROVIDER=coding_agent` (default): use Codex CLI (`codex exec`) for proposer + repair JSON outputs, while deterministic judge remains final acceptance gate.
 
 Related env vars:
 - `AGENT_PROVIDER`
