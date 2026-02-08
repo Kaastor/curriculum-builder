@@ -4,10 +4,13 @@ from __future__ import annotations
 
 from typing import Any
 
+from learning_compiler.agent.llm_client import LLMClient, LLMRequest
+from learning_compiler.agent.model_policy import ModelPolicy, ModelProvider
 from learning_compiler.agent.node_builder import build_node
 from learning_compiler.agent.research import ResourceResolver
 from learning_compiler.agent.spec import GenerationSpec
 from learning_compiler.domain import OpenQuestion
+from learning_compiler.errors import ErrorCode, LearningCompilerError
 
 
 def node_id(index: int) -> str:
@@ -15,7 +18,15 @@ def node_id(index: int) -> str:
 
 
 class LLMProposer:
-    def propose(self, spec: GenerationSpec, resolver: ResourceResolver) -> dict[str, Any]:
+    def __init__(self, client: LLMClient) -> None:
+        self._client = client
+
+    def propose(
+        self,
+        spec: GenerationSpec,
+        resolver: ResourceResolver,
+        policy: ModelPolicy,
+    ) -> dict[str, Any]:
         nodes = []
         used_urls: set[str] = set()
         for index in range(spec.target_nodes):
@@ -44,4 +55,29 @@ class LLMProposer:
                     status="open",
                 ).to_dict()
             ]
-        return payload
+
+        if policy.provider != ModelProvider.CODING_AGENT:
+            return payload
+
+        response = self._client.run_json(
+            LLMRequest(
+                stage="proposer",
+                schema_name="proposer_curriculum_v1",
+                payload={
+                    "topic_spec": spec.topic_spec.to_dict(),
+                    "draft_curriculum": payload,
+                    "requirements": {
+                        "strict_atomic_nodes": True,
+                        "must_remain_dag": True,
+                    },
+                },
+            ),
+            policy,
+        )
+        candidate = response.get("curriculum")
+        if not isinstance(candidate, dict):
+            raise LearningCompilerError(
+                ErrorCode.INTERNAL_ERROR,
+                "coding_agent proposer returned invalid curriculum payload.",
+            )
+        return candidate

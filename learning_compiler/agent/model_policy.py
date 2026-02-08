@@ -4,10 +4,15 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum
+import os
+
+from learning_compiler.config import load_config
 
 
 class ModelProvider(str, Enum):
     INTERNAL = "internal"
+    LLM_API = "llm_api"
+    CODING_AGENT = "coding_agent"
 
 
 @dataclass(slots=True, frozen=True)
@@ -36,15 +41,38 @@ class ModelPolicy:
         }
 
 
+def _env_int(raw: str, default: int) -> int:
+    try:
+        parsed = int(raw)
+    except ValueError:
+        return default
+    return parsed if parsed > 0 else default
+
+
+def _parse_provider(raw: str) -> ModelProvider:
+    value = raw.strip().lower()
+    if value == ModelProvider.CODING_AGENT.value:
+        return ModelProvider.CODING_AGENT
+    if value == ModelProvider.LLM_API.value:
+        return ModelProvider.LLM_API
+    return ModelProvider.INTERNAL
+
+
 def default_model_policy() -> ModelPolicy:
+    config = load_config()
+    provider = _parse_provider(config.agent_provider)
+    model_id = config.agent_model.strip() or "internal-heuristic-v1"
+
     return ModelPolicy(
-        provider=ModelProvider.INTERNAL,
-        model_id="internal-heuristic-v1",
+        provider=provider,
+        model_id=model_id,
         temperature=0.0,
-        max_iterations=4,
-        max_actions_per_iteration=4,
-        target_score=82,
-        timeout_seconds=30,
-        retry_budget=1,
+        max_iterations=_env_int(os.environ.get("AGENT_MAX_ITERATIONS", "4"), 4),
+        max_actions_per_iteration=_env_int(
+            os.environ.get("AGENT_MAX_ACTIONS_PER_ITERATION", "4"), 4
+        ),
+        target_score=_env_int(os.environ.get("AGENT_TARGET_SCORE", "82"), 82),
+        timeout_seconds=_env_int(os.environ.get("AGENT_TIMEOUT_SECONDS", "30"), 30),
+        retry_budget=_env_int(os.environ.get("AGENT_RETRY_BUDGET", "1"), 1),
         schema_version="1.0",
     )

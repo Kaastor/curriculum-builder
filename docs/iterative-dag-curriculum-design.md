@@ -287,6 +287,11 @@ Implemented now:
 
 5. Validator alignment:
 - added learner-path coherence check in `learning_compiler/validator/curriculum_quality.py`.
+
+6. Provider modes:
+- `internal` deterministic mode is retained.
+- `coding_agent` mode added: proposer + repair stages can call Codex CLI (`codex exec`) with strict JSON schema output contracts.
+- deterministic judge remains the final acceptance authority in both modes.
 8. stop reason
 
 This gives explainability and learning value without migrations.

@@ -45,7 +45,7 @@ class LoopController:
         resolver: ResourceResolver,
         policy: ModelPolicy,
     ) -> OptimizeResult:
-        draft = self._proposer.propose(spec, resolver)
+        draft = self._proposer.propose(spec, resolver, policy)
         best = draft
         best_score = -1
         accepted = False
@@ -86,7 +86,7 @@ class LoopController:
                 stop_reason = "no_actions_available"
                 break
 
-            draft = self._repair.apply(draft, actions, spec, resolver)
+            draft = self._repair.apply(draft, actions, spec, resolver, policy)
 
         trace = OptimizationTrace(
             schema_version=policy.schema_version,

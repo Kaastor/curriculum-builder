@@ -5,6 +5,8 @@ from __future__ import annotations
 from copy import deepcopy
 from typing import Any
 
+from learning_compiler.agent.llm_client import LLMClient, LLMRequest
+from learning_compiler.agent.model_policy import ModelPolicy, ModelProvider
 from learning_compiler.agent.node_builder import (
     NodeStage,
     node_core_ideas,
@@ -16,6 +18,7 @@ from learning_compiler.agent.repair_actions import RepairAction, RepairActionTyp
 from learning_compiler.agent.research import ResourceRequest, ResourceResolver
 from learning_compiler.agent.spec import GenerationSpec
 from learning_compiler.domain import Resource
+from learning_compiler.errors import ErrorCode, LearningCompilerError
 
 
 def _id_to_index(node_id: str) -> int:
@@ -77,12 +80,16 @@ def _stage_for_repair(index: int, total: int) -> NodeStage:
 
 
 class LLMRepairExecutor:
+    def __init__(self, client: LLMClient) -> None:
+        self._client = client
+
     def apply(
         self,
         curriculum: dict[str, Any],
         actions: tuple[RepairAction, ...],
         spec: GenerationSpec,
         resolver: ResourceResolver,
+        policy: ModelPolicy,
     ) -> dict[str, Any]:
         patched = deepcopy(curriculum)
         nodes = [item for item in patched.get("nodes", []) if isinstance(item, dict)]
@@ -113,7 +120,28 @@ class LLMRepairExecutor:
             _replace_node(nodes, node_id, node)
 
         patched["nodes"] = nodes
-        return patched
+        if policy.provider != ModelProvider.CODING_AGENT:
+            return patched
+
+        response = self._client.run_json(
+            LLMRequest(
+                stage="repair",
+                schema_name="repair_curriculum_v1",
+                payload={
+                    "topic_spec": spec.topic_spec.to_dict(),
+                    "current_curriculum": patched,
+                    "actions": [action.to_dict() for action in actions],
+                },
+            ),
+            policy,
+        )
+        candidate = response.get("curriculum")
+        if not isinstance(candidate, dict):
+            raise LearningCompilerError(
+                ErrorCode.INTERNAL_ERROR,
+                "coding_agent repair returned invalid curriculum payload.",
+            )
+        return candidate
 
     def _rewrite_node(self, node: dict[str, Any], index: int, spec: GenerationSpec) -> None:
         node_id = str(node.get("id", _node_id(index)))

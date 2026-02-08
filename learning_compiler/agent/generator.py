@@ -6,24 +6,28 @@ import json
 from pathlib import Path
 from typing import Any
 
-from learning_compiler.agent.model_policy import default_model_policy
-from learning_compiler.agent.optimizer import LLMProposer, LLMRepairExecutor, LoopController
+from learning_compiler.agent.llm_client import build_llm_client
+from learning_compiler.agent.model_policy import ModelPolicy, default_model_policy
+from learning_compiler.agent.optimizer import LoopController
 from learning_compiler.agent.pedagogy_critic import LLMCritic
+from learning_compiler.agent.proposer import LLMProposer
 from learning_compiler.agent.quality_model import DeterministicQualityJudge
+from learning_compiler.agent.repair_executor import LLMRepairExecutor
 from learning_compiler.agent.repair_planner import RepairPlanner
 from learning_compiler.agent.research import ResourceResolver, default_resource_resolver
 from learning_compiler.agent.spec import build_generation_spec
 from learning_compiler.errors import ErrorCode, LearningCompilerError
 
 
-def _controller() -> LoopController:
-    policy = default_model_policy()
+def _controller(policy_model: ModelPolicy | None = None) -> LoopController:
+    policy = policy_model or default_model_policy()
+    client = build_llm_client(policy)
     return LoopController(
-        proposer=LLMProposer(),
+        proposer=LLMProposer(client=client),
         critic=LLMCritic(),
         judge=DeterministicQualityJudge(),
         planner=RepairPlanner(max_actions_per_iteration=policy.max_actions_per_iteration),
-        repair=LLMRepairExecutor(),
+        repair=LLMRepairExecutor(client=client),
     )
 
 
@@ -35,7 +39,7 @@ def generate_curriculum(
     spec = build_generation_spec(topic_spec)
     active_resolver = resolver or default_resource_resolver(spec.topic_spec)
     policy = default_model_policy()
-    result = _controller().optimize(spec, active_resolver, policy)
+    result = _controller(policy).optimize(spec, active_resolver, policy)
     return result.curriculum
 
 
@@ -64,7 +68,7 @@ def generate_curriculum_file(
     spec = build_generation_spec(topic_spec)
     active_resolver = resolver or default_resource_resolver(spec.topic_spec)
     policy = default_model_policy()
-    result = _controller().optimize(spec, active_resolver, policy)
+    result = _controller(policy).optimize(spec, active_resolver, policy)
     curriculum = result.curriculum
     curriculum_path.parent.mkdir(parents=True, exist_ok=True)
     curriculum_path.write_text(json.dumps(curriculum, indent=2) + "\n", encoding="utf-8")

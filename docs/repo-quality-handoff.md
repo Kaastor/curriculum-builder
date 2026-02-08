@@ -14,6 +14,7 @@ Implemented in code:
 8. Implemented iterative LLM-first optimizer architecture (`propose -> critique -> judge -> repair`) with deterministic acceptance.
 9. Added optimization trace artifact emission: `outputs/reviews/optimization_trace.json`.
 10. Added deterministic learner-path coherence check to validator quality stage.
+11. Added configurable `coding_agent` provider mode to use Codex CLI for proposer/repair generation with strict JSON output schema.
 
 Verification:
 

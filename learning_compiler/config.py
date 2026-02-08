@@ -13,6 +13,9 @@ class AppConfig:
     runs_dir: Path
     runs_archive_dir: Path
     topic_spec_template: Path
+    agent_provider: str
+    agent_model: str
+    coding_agent_cmd: str
 
 
 def load_config() -> AppConfig:
@@ -27,12 +30,18 @@ def load_config() -> AppConfig:
             str(runs_dir / "templates" / "topic_spec.template.json"),
         )
     )
+    agent_provider = os.environ.get("AGENT_PROVIDER", "internal")
+    agent_model = os.environ.get("AGENT_MODEL", "internal-heuristic-v1")
+    coding_agent_cmd = os.environ.get("CODING_AGENT_CMD", "codex")
 
     return AppConfig(
         repo_root=repo_root,
         runs_dir=runs_dir,
         runs_archive_dir=archive_dir,
         topic_spec_template=template_path,
+        agent_provider=agent_provider,
+        agent_model=agent_model,
+        coding_agent_cmd=coding_agent_cmd,
     )
 
 

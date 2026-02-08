@@ -92,6 +92,31 @@ sequenceDiagram
     Orch->>Run: update run.json + events.jsonl
 ```
 
+### Agent provider modes
+
+Generation provider is configurable:
+- `AGENT_PROVIDER=internal` (default): deterministic in-process proposer/repair logic.
+- `AGENT_PROVIDER=coding_agent`: use Codex CLI (`codex exec`) for proposer + repair JSON outputs, while deterministic judge remains final acceptance gate.
+
+Related env vars:
+- `AGENT_PROVIDER`
+- `AGENT_MODEL` (for coding agent mode, for example `codex`)
+- `CODING_AGENT_CMD` (defaults to `codex`)
+- `AGENT_MAX_ITERATIONS`
+- `AGENT_MAX_ACTIONS_PER_ITERATION`
+- `AGENT_TARGET_SCORE`
+- `AGENT_TIMEOUT_SECONDS`
+- `AGENT_RETRY_BUDGET`
+
+Example:
+
+```bash
+AGENT_PROVIDER=coding_agent \
+AGENT_MODEL=codex \
+CODING_AGENT_CMD=codex \
+python3.11 scripts/orchestration.py run <run_id>
+```
+
 ### Run lifecycle state machine
 
 ```mermaid
