@@ -4,6 +4,8 @@
 	test \
 	validate \
 	gate \
+	static-check \
+	coverage-check \
 	orchestration-start \
 	orchestration-list \
 	orchestration-status \
@@ -26,10 +28,16 @@ test:
 	$(PYTHON) -m unittest discover -s tests -p 'test_*.py'
 
 validate:
-	$(PYTHON) scripts/validator.py data/curriculum.json
+	$(PYTHON) scripts/validator.py
 
 gate:
 	./scripts/gate.sh
+
+static-check:
+	$(PYTHON) scripts/static_checks.py
+
+coverage-check:
+	$(PYTHON) scripts/coverage_check.py
 
 orchestration-start:
 	@if [ -n "$(RUN_NAME)" ]; then \

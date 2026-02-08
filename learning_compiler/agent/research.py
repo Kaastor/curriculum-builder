@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any
+from typing import Protocol
+
+from learning_compiler.domain import TopicSpec
 
 
 @dataclass(slots=True, frozen=True)
@@ -12,6 +14,20 @@ class ResourceSpec:
     url: str
     kind: str
     citation: str
+
+
+@dataclass(slots=True, frozen=True)
+class ResourceRequest:
+    topic_spec: TopicSpec
+    node_title: str
+    evidence_mode: str
+
+
+class ResourceResolver(Protocol):
+    """Contract for resource selection implementations."""
+
+    def resolve(self, request: ResourceRequest) -> list[dict[str, str]]:
+        """Return normalized resources for one node."""
 
 
 QUANTUM_RESOURCES = (
@@ -76,9 +92,9 @@ def _contains_any(text: str, terms: tuple[str, ...]) -> bool:
     return any(term in text for term in terms)
 
 
-def _resource_pool(topic_spec: dict[str, Any], node_title: str) -> tuple[ResourceSpec, ...]:
-    joined_scope = " ".join(str(item) for item in topic_spec.get("scope_in", []))
-    corpus = f"{topic_spec.get('goal', '')} {joined_scope} {node_title}".lower()
+def _resource_pool(request: ResourceRequest) -> tuple[ResourceSpec, ...]:
+    joined_scope = " ".join(request.topic_spec.scope_in)
+    corpus = f"{request.topic_spec.goal} {joined_scope} {request.node_title}".lower()
 
     if _contains_any(corpus, ("quantum", "qubit", "qnn", "nisq")):
         return QUANTUM_RESOURCES
@@ -87,40 +103,51 @@ def _resource_pool(topic_spec: dict[str, Any], node_title: str) -> tuple[Resourc
     return GENERAL_RESOURCES
 
 
-def build_resources(
-    topic_spec: dict[str, Any],
-    node_title: str,
-    evidence_mode: str,
-) -> list[dict[str, str]]:
-    pool = _resource_pool(topic_spec, node_title)
+class DeterministicResourceResolver:
+    """Deterministic in-repo resolver used as the default provider."""
 
-    definition = pool[0]
-    example = pool[1] if len(pool) > 1 else pool[0]
+    def resolve(self, request: ResourceRequest) -> list[dict[str, str]]:
+        pool = _resource_pool(request)
 
-    resources: list[dict[str, str]] = [
-        {
-            "title": definition.title,
-            "url": definition.url,
-            "kind": definition.kind,
-            "role": "definition",
-        }
-    ]
+        definition = pool[0]
+        example = pool[1] if len(pool) > 1 else pool[0]
 
-    if evidence_mode in {"standard", "strict"}:
-        resources.append(
+        resources: list[dict[str, str]] = [
             {
-                "title": example.title,
-                "url": example.url,
-                "kind": example.kind,
-                "role": "example",
+                "title": definition.title,
+                "url": definition.url,
+                "kind": definition.kind,
+                "role": "definition",
             }
+        ]
+
+        if request.evidence_mode in {"standard", "strict"}:
+            resources.append(
+                {
+                    "title": example.title,
+                    "url": example.url,
+                    "kind": example.kind,
+                    "role": "example",
+                }
+            )
+
+        if request.evidence_mode == "strict":
+            for resource in resources:
+                if resource["title"] == definition.title:
+                    resource["citation"] = definition.citation
+                else:
+                    resource["citation"] = example.citation
+
+        return resources
+
+
+def build_resources(topic_spec: TopicSpec, node_title: str, evidence_mode: str) -> list[dict[str, str]]:
+    """Backward-compatible convenience wrapper around default resolver."""
+    resolver = DeterministicResourceResolver()
+    return resolver.resolve(
+        ResourceRequest(
+            topic_spec=topic_spec,
+            node_title=node_title,
+            evidence_mode=evidence_mode,
         )
-
-    if evidence_mode == "strict":
-        for resource in resources:
-            if resource["title"] == definition.title:
-                resource["citation"] = definition.citation
-            else:
-                resource["citation"] = example.citation
-
-    return resources
+    )

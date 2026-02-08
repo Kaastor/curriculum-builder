@@ -1,41 +1,121 @@
 # curriculum-builder
 
-Agent-first learning compiler for generating curriculum DAGs from `topic_spec.json`.
+Agent-first learning compiler that turns a `topic_spec.json` into a validated curriculum DAG and an executable learning plan.
 
-Pipeline:
+Core loop:
 `Spec -> Generate -> Validate -> Plan -> Iterate`
 
-Evidence strictness dial:
+Evidence strictness is a dial, not a fork:
 `minimal | standard | strict`
 
-## Scope
+## Quickstart
 
-This repo focuses on:
-- topic spec contract
-- agent-owned curriculum generation (`curriculum.json`)
-- deterministic validation (structural + evidence)
-- deterministic 2-4 week plan output
-- iteration diff report
-
-Out of scope (phase one):
-- exercise generation
-- adaptive tutoring/personalization
+- `make setup`
+- `make orchestration-start RUN_NAME="quantum-neural-networks"`
+- fill `runs/<run_id>/inputs/topic_spec.json`
+- `make orchestration-run RUN_ID="<run_id>"`
+- inspect `runs/<run_id>/outputs/curriculum/curriculum.json`
 
 ## Architecture
 
-- `learning_compiler/agent/`: curriculum generation logic and resource selection.
-- `learning_compiler/validator/`: hard validation gate.
-- `learning_compiler/orchestration/`: reproducible run tooling (artifacts, stage sync, planning, diff).
-- `scripts/`: thin CLIs (`orchestration.py`, `validator.py`) and `gate.sh`.
+### High-level system
+
+```mermaid
+graph LR
+    U[User / AI Agent] --> C1[scripts/orchestration.py]
+    U --> C2[scripts/validator.py]
+
+    C1 --> O[Orchestration Layer]
+    C2 --> V[Validator Layer]
+
+    O --> A[Agent Layer]
+    O --> P[Planner + Diff]
+    O --> R[(runs/<run_id>/...)]
+
+    A --> D[Domain Models]
+    A --> RR[Resource Resolver]
+    A --> R
+
+    V --> D
+    V --> R
+
+    P --> R
+```
+
+### Module responsibilities
+
+- `learning_compiler/agent/`: generation engine, topic-spec normalization, node construction, resource resolver contracts.
+- `learning_compiler/validator/`: deterministic quality gate for schema, graph, evidence, and node-quality checks.
+- `learning_compiler/orchestration/`: run lifecycle, stage sync, reports, artifact persistence, planning, diffing.
+- `learning_compiler/domain/`: typed domain models (`TopicSpec`, `Curriculum`, `CurriculumNode`, etc.).
+- `learning_compiler/api.py`: stable public API facade (`AgentAPI`, `ValidatorAPI`, `OrchestrationAPI`).
+- `learning_compiler/errors.py`: typed error taxonomy and stable exit-code mapping.
+- `learning_compiler/config.py`: centralized runtime configuration.
+
+## Pipeline Design
+
+### Runtime flow
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant Orch as Orchestration
+    participant Agent as Agent Generator
+    participant Val as Validator
+    participant Plan as Planner
+    participant Run as runs/<run_id>
+
+    User->>Orch: run <run_id>
+    Orch->>Agent: generate_file(topic_spec, curriculum)
+    Agent->>Run: write curriculum.json
+    Orch->>Val: validate(curriculum, topic_spec)
+    Val->>Run: write validation_report.md
+    Orch->>Plan: build_plan() + compute_diff()
+    Plan->>Run: write plan.json + diff_report.json
+    Orch->>Run: update run.json + events.jsonl
+```
+
+### Run lifecycle state machine
+
+```mermaid
+stateDiagram-v2
+    [*] --> initialized
+    initialized --> spec_ready
+    spec_ready --> generated
+    generated --> validated
+    validated --> planned
+    planned --> iterated
+```
+
+## Design Patterns Used
+
+- Compiler pipeline pattern: strict staged transformation and validation.
+- Proposer/Judge split: agent proposes, validator decides acceptance.
+- Orchestrator pattern: orchestration coordinates work without owning generation intelligence.
+- Functional core / imperative shell: deterministic core logic wrapped by thin CLI/process shell.
+- Strategy/DI pattern: generation and resource resolution are interface-driven and injectable.
+- State machine pattern: explicit run stage progression with migration/backward compatibility.
+
+## Why This Is Staff-Level Agentic Engineering
+
+- Clear domain boundaries: agent, validator, orchestration have explicit responsibilities.
+- Typed contracts over ad-hoc dict flow: domain models and API facade reduce ambiguity.
+- Reliability-first data model: immutable run artifacts under `runs/<run_id>/...`.
+- Determinism as policy: reproducible generation/planning with documented guarantees.
+- Backward compatibility: run metadata migration layer for schema evolution.
+- Quality gates in CI: syntax, architecture boundary checks, validator checks, tests, and coverage threshold.
+- Operational traceability: standardized run events and stage history.
 
 ## Canonical Artifacts
 
-Per run (`workflows/runs/<run_id>/`):
+Per run (`runs/<run_id>/`):
 - `inputs/topic_spec.json`
 - `outputs/curriculum/curriculum.json`
 - `outputs/reviews/validation_report.md`
 - `outputs/plan/plan.json`
 - `outputs/reviews/diff_report.json`
+- `logs/events.jsonl`
+- `run.json`
 
 ## Commands
 
@@ -45,6 +125,10 @@ General:
 - `make test`
 - `make validate`
 - `make gate`
+- `make static-check`
+- `make coverage-check`
+
+`make validate` defaults to the latest generated run curriculum when path is omitted.
 
 Orchestration:
 - `make orchestration-start RUN_NAME="<topic-slug>"`
@@ -67,27 +151,11 @@ Direct CLI:
 - `python3.11 scripts/orchestration.py next <run_id>`
 - `python3.11 scripts/orchestration.py archive <run_id>`
 - `python3.11 scripts/orchestration.py list`
-- `python3.11 scripts/validator.py <curriculum.json> --topic-spec <topic_spec.json>`
+- `python3.11 scripts/validator.py [curriculum.json] --topic-spec <topic_spec.json>`
 
-## Generate a Curriculum
+## Topic Spec Contract
 
-1. Start run:
-   - `make orchestration-start RUN_NAME="quantum-neural-networks"`
-2. Get run id:
-   - `make orchestration-list`
-3. Fill topic spec:
-   - edit `workflows/runs/<run_id>/inputs/topic_spec.json`
-4. Execute full pipeline (agent generates curriculum):
-   - `make orchestration-run RUN_ID="<run_id>"`
-5. Inspect outputs:
-   - `workflows/runs/<run_id>/outputs/curriculum/curriculum.json`
-   - `workflows/runs/<run_id>/outputs/reviews/validation_report.md`
-   - `workflows/runs/<run_id>/outputs/plan/plan.json`
-   - `workflows/runs/<run_id>/outputs/reviews/diff_report.json`
-
-## Topic Spec Fields
-
-Contract details: `prompts/topic_spec.md`.
+Detailed contract is in `prompts/topic_spec.md`.
 
 Top-level fields:
 - `spec_version`
@@ -111,29 +179,16 @@ Top-level fields:
 - `max_prerequisites_per_node` (optional int >= 1)
 
 Enum meanings:
-- `depth`:
-  - `survey`: broad coverage.
-  - `practical`: applied working depth.
-  - `mastery`: deeper rigor and edge cases.
-- `domain_mode`:
-  - `mature`: stable domain.
-  - `frontier`: evolving domain with contradictory/uncertain evidence.
-- `evidence_mode`:
-  - `minimal`: at least one resource per node.
-  - `standard`: at least two resources per node with `definition` and `example` roles.
-  - `strict`: standard requirements plus citations and confidence, with explicit `open_questions`.
+- `depth`: `survey`, `practical`, `mastery`
+- `domain_mode`: `mature`, `frontier`
+- `evidence_mode`: `minimal`, `standard`, `strict`
 
 ## UI
 
-Run local UI:
-
-```bash
-make dev
-```
-
-Open `http://localhost:4173/app/`.
-- Default load: `data/curriculum.json`.
-- To inspect generated run output, upload `workflows/runs/<run_id>/outputs/curriculum/curriculum.json` via file picker.
+- Run `make dev`
+- Open `http://localhost:4173/app/`
+- Default behavior: loads latest available run curriculum from `runs/<run_id>/outputs/curriculum/curriculum.json`
+- Fallback: load a local JSON via file picker
 
 ## Quality Gate
 
@@ -142,3 +197,14 @@ Run before handoff:
 ```bash
 make gate
 ```
+
+Gate includes:
+- syntax checks
+- static architecture checks
+- curriculum validation
+- tests
+- statement coverage threshold check (stdlib trace-based)
+
+Supporting docs:
+- `docs/determinism.md`
+- `docs/migrations.md`

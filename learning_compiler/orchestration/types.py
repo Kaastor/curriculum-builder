@@ -33,6 +33,7 @@ class RunPaths:
     topic_spec: Path
     curriculum: Path
     previous_curriculum: Path
+    event_log: Path
     validation_report: Path
     validation_pass_marker: Path
     plan: Path

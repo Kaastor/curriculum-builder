@@ -1,4 +1,6 @@
-const DEFAULT_URL = "../data/curriculum.json";
+const RUNS_INDEX_URL = "../runs/";
+const RUN_CURRICULUM_SUFFIX = "/outputs/curriculum/curriculum.json";
+const RUN_ID_PATTERN = /^\d{8}-\d{6}(?:-[a-z0-9-]+)?\/?$/;
 
 const REQUIRED_TOP_LEVEL = ["topic", "nodes"];
 
@@ -60,19 +62,48 @@ function validateCurriculumShape(data) {
   return null;
 }
 
-async function loadFromUrl(url, label) {
-  try {
-    const response = await fetch(url, { cache: "no-store" });
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
-    }
-
-    const data = await response.json();
-    setCurriculum(data);
-    showStatus(`Loaded ${label} from ${url}`);
-  } catch (error) {
-    showStatus(`Failed to load ${label}: ${error.message}`, "error");
+async function fetchCurriculum(url) {
+  const response = await fetch(url, { cache: "no-store" });
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status}`);
   }
+  return response.json();
+}
+
+async function listRunDirectories() {
+  const response = await fetch(RUNS_INDEX_URL, { cache: "no-store" });
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status}`);
+  }
+  const html = await response.text();
+  const doc = new window.DOMParser().parseFromString(html, "text/html");
+  const runIds = Array.from(doc.querySelectorAll("a"))
+    .map((link) => link.getAttribute("href") || "")
+    .filter((href) => RUN_ID_PATTERN.test(href))
+    .map((href) => href.replace(/\/$/, ""))
+    .sort();
+  return runIds;
+}
+
+async function loadLatestRunCurriculum() {
+  const runIds = await listRunDirectories();
+  if (runIds.length === 0) {
+    throw new Error("No run directories found under runs/.");
+  }
+
+  for (const runId of [...runIds].reverse()) {
+    const url = `${RUNS_INDEX_URL}${runId}${RUN_CURRICULUM_SUFFIX}`;
+    try {
+      const data = await fetchCurriculum(url);
+      setCurriculum(data);
+      showStatus(`Loaded latest run curriculum from ${runId}`);
+      return;
+    } catch {
+      // Keep scanning older runs until a curriculum artifact is found.
+    }
+  }
+
+  throw new Error("No run contains outputs/curriculum/curriculum.json.");
 }
 
 async function loadFromFile(file) {
@@ -871,4 +902,6 @@ function setupEvents() {
 }
 
 setupEvents();
-loadFromUrl(DEFAULT_URL, "default curriculum");
+loadLatestRunCurriculum().catch((error) => {
+  showStatus(`Failed to load latest run curriculum: ${error.message}`, "error");
+});

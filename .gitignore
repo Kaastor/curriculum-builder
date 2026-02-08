@@ -5,4 +5,4 @@ __pycache__/
 .pytest_cache/
 
 # Orchestration run artifacts
-workflows/archives/
+runs/archives/

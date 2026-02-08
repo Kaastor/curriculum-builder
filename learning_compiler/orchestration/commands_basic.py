@@ -4,11 +4,15 @@ from __future__ import annotations
 
 import argparse
 import datetime as dt
+import json
 import shutil
 import tarfile
 
+from learning_compiler.errors import ConfigError
 from learning_compiler.orchestration.command_utils import run_id_from_args
+from learning_compiler.orchestration.events import stage_event
 from learning_compiler.orchestration.fs import (
+    list_run_dirs,
     load_run,
     orchestration_archive_dir,
     orchestration_base_dir,
@@ -18,6 +22,7 @@ from learning_compiler.orchestration.fs import (
     utc_now,
     write_json,
 )
+from learning_compiler.orchestration.migrations import RUN_META_SCHEMA_VERSION
 from learning_compiler.orchestration.stage import (
     looks_ready_spec,
     persist_if_changed,
@@ -32,7 +37,10 @@ def cmd_init(args: argparse.Namespace) -> int:
 
     spec_template = topic_spec_template()
     if not spec_template.exists():
-        raise SystemExit(f"Topic spec template not found: {spec_template}")
+        raise ConfigError(
+            f"Topic spec template not found: {spec_template}",
+            {"template_path": str(spec_template)},
+        )
 
     timestamp = dt.datetime.now(dt.timezone.utc).strftime("%Y%m%d-%H%M%S")
     run_name = getattr(args, "name", None)
@@ -52,18 +60,23 @@ def cmd_init(args: argparse.Namespace) -> int:
 
     now = utc_now()
     meta = {
+        "schema_version": RUN_META_SCHEMA_VERSION,
         "run_id": run_id,
         "created_at_utc": now,
         "stage": Stage.INITIALIZED.value,
         "history": [
-            {
-                "at_utc": now,
-                "stage": Stage.INITIALIZED.value,
-                "reason": "run initialized",
-            }
+            stage_event(
+                at_utc=now,
+                stage=Stage.INITIALIZED.value,
+                message="run initialized",
+            ).to_dict()
         ],
     }
     write_json(run_dir / "run.json", meta)
+    required_paths(run_dir).event_log.write_text(
+        json.dumps(meta["history"][0]) + "\n",
+        encoding="utf-8",
+    )
 
     print("Initialized orchestration run.")
     print(f"Run directory: {run_dir}")
@@ -126,10 +139,6 @@ def cmd_archive(args: argparse.Namespace) -> int:
 
 
 def cmd_list(_: argparse.Namespace) -> int:
-    base = orchestration_base_dir()
-    if not base.exists():
-        return 0
-
-    for path in sorted([candidate for candidate in base.iterdir() if candidate.is_dir()]):
+    for path in list_run_dirs(orchestration_base_dir()):
         print(path.name)
     return 0

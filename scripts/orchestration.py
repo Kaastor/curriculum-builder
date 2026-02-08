@@ -11,7 +11,12 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from learning_compiler.orchestration.cli import main
+from learning_compiler.errors import LearningCompilerError
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    try:
+        raise SystemExit(main())
+    except LearningCompilerError as exc:
+        print(str(exc), file=sys.stderr)
+        raise SystemExit(exc.exit_code()) from exc

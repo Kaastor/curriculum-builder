@@ -31,18 +31,25 @@
 
 ## Architecture Map
 - `app/`: Static curriculum inspector UI (`index.html`, `styles.css`, `main.js`).
-- `data/`: Curriculum JSON used by validator and UI (`data/curriculum.json`).
 - `prompts/`: Prompt specifications for topic spec, generation, validation, and orchestration.
-- `workflows/`: Run-oriented workspace for topic specs, generated artifacts, and logs.
+- `runs/`: Run-oriented workspace for topic specs, generated artifacts, and logs.
 - `scripts/validator.py`: Validator CLI entrypoint.
 - `scripts/orchestration.py`: Orchestration CLI entrypoint (`init|status|next|validate|plan|iterate|run|archive|list`).
 - `learning_compiler/agent/generator.py`: Agent-owned curriculum generation from `topic_spec.json`.
-- `learning_compiler/agent/research.py`: Resource/citation selection helpers for evidence modes.
+- `learning_compiler/agent/spec.py`: Topic-spec normalization and deterministic generation inputs.
+- `learning_compiler/agent/node_builder.py`: Node-level curriculum content construction.
+- `learning_compiler/agent/research.py`: Resource resolver interface + deterministic resolver implementation.
+- `learning_compiler/agent/contracts.py`: Generation protocol for dependency-injected generators.
+- `learning_compiler/domain/models.py`: Typed domain models for topic spec and curriculum artifacts.
+- `learning_compiler/api.py`: Stable public API facade for agent/validator/orchestration.
+- `learning_compiler/errors.py`: Shared typed error taxonomy and exit-code mapping.
+- `learning_compiler/config.py`: Centralized app config loading from environment/defaults.
 - `learning_compiler/validator/core.py`: Validator orchestration entrypoint.
 - `learning_compiler/validator/topic_spec.py`: Topic spec contract checks + validator config derivation.
 - `learning_compiler/validator/curriculum_schema.py`: Curriculum schema-level checks.
 - `learning_compiler/validator/curriculum_graph.py`: DAG and structural constraint checks.
 - `learning_compiler/validator/curriculum_evidence.py`: Evidence/open-question checks.
+- `learning_compiler/validator/curriculum_quality.py`: DAG progression, node quality, and estimate granularity checks.
 - `learning_compiler/validator/types.py`: Validator enums, constants, and result/config types.
 - `learning_compiler/validator/helpers.py`: Primitive validator helper predicates.
 - `learning_compiler/orchestration/cli.py`: Orchestration parser and CLI dispatch.
@@ -51,11 +58,15 @@
 - `learning_compiler/orchestration/command_utils.py`: Shared command argument helpers.
 - `learning_compiler/orchestration/types.py`: Orchestration enums and typed path contracts.
 - `learning_compiler/orchestration/fs.py`: Filesystem/env/run loading helpers.
+- `learning_compiler/orchestration/migrations.py`: Backward-compatible run metadata migrations.
+- `learning_compiler/orchestration/events.py`: Standardized run event schema.
 - `learning_compiler/orchestration/stage.py`: Stage inference/sync logic.
 - `learning_compiler/orchestration/exec.py`: Validator execution helpers.
 - `learning_compiler/orchestration/planning.py`: Deterministic topology, planning, and diff computations.
+- `scripts/static_checks.py`: Static architecture-boundary checks.
+- `scripts/coverage_check.py`: Stdlib trace-based statement coverage check.
 - `scripts/gate.sh`: Canonical local quality gate.
-- `tests/`: Regression checks for data and tooling.
+- `tests/`: Regression checks for fixtures and tooling (`tests/fixtures/curriculum.json`).
 
 
 ## Code quality and style rules (staff-level defaults)

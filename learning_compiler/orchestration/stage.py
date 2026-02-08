@@ -7,25 +7,57 @@ import os
 from pathlib import Path
 from typing import Any
 
-from learning_compiler.validator.topic_spec import validate_topic_spec_contract
+from learning_compiler.errors import LearningCompilerError
+from learning_compiler.orchestration.events import stage_event
 from learning_compiler.orchestration.fs import read_json, required_paths, utc_now, write_json
 from learning_compiler.orchestration.types import STAGE_INDEX, RunPaths, Stage, stage_from
+from learning_compiler.validator.topic_spec import validate_topic_spec_contract
 
 
-def append_history(meta: dict[str, Any], stage: Stage, reason: str) -> None:
-    item = {"at_utc": utc_now(), "stage": stage.value, "reason": reason}
+def _append_event_log(run_dir: Path, event_payload: dict[str, Any]) -> None:
+    event_log = required_paths(run_dir).event_log
+    event_log.parent.mkdir(parents=True, exist_ok=True)
+    with event_log.open("a", encoding="utf-8") as handle:
+        handle.write(json.dumps(event_payload) + "\n")
+
+
+def append_history(
+    meta: dict[str, Any],
+    stage: Stage,
+    message: str,
+    *,
+    run_dir: Path | None = None,
+    metadata: dict[str, Any] | None = None,
+) -> None:
+    event_payload = stage_event(
+        at_utc=utc_now(),
+        stage=stage.value,
+        message=message,
+        metadata=metadata,
+    ).to_dict()
+
     history = meta.get("history")
     if isinstance(history, list):
-        history.append(item)
+        history.append(event_payload)
     else:
-        meta["history"] = [item]
+        meta["history"] = [event_payload]
+
+    if run_dir is not None:
+        _append_event_log(run_dir, event_payload)
 
 
-def ensure_stage(meta: dict[str, Any], stage: Stage, reason: str) -> bool:
+def ensure_stage(
+    meta: dict[str, Any],
+    stage: Stage,
+    message: str,
+    *,
+    run_dir: Path | None = None,
+    metadata: dict[str, Any] | None = None,
+) -> bool:
     current = stage_from(meta.get("stage", Stage.INITIALIZED.value))
     if STAGE_INDEX[stage] > STAGE_INDEX[current]:
         meta["stage"] = stage.value
-        append_history(meta, stage, reason)
+        append_history(meta, stage, message, run_dir=run_dir, metadata=metadata)
         return True
     return False
 
@@ -37,6 +69,8 @@ def topic_spec_errors(topic_spec_path: Path) -> list[str]:
         payload = read_json(topic_spec_path)
     except json.JSONDecodeError:
         return ["invalid JSON"]
+    except LearningCompilerError as exc:
+        return [exc.message]
     return validate_topic_spec_contract(payload)
 
 
@@ -133,5 +167,11 @@ def sync_stage(run_dir: Path, meta: dict[str, Any]) -> tuple[Stage, bool]:
     changed = current != inferred
     if changed:
         meta["stage"] = inferred.value
-        append_history(meta, inferred, f"auto-sync from artifacts (was {current.value})")
+        append_history(
+            meta,
+            inferred,
+            f"auto-sync from artifacts (was {current.value})",
+            run_dir=run_dir,
+            metadata={"previous_stage": current.value},
+        )
     return stage_from(meta.get("stage", inferred.value)), changed

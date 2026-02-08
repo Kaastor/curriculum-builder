@@ -7,7 +7,7 @@ from learning_compiler.validator.core import validate
 
 
 ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_CURRICULUM = ROOT / "data" / "curriculum.json"
+DEFAULT_CURRICULUM = ROOT / "tests" / "fixtures" / "curriculum.json"
 
 
 class CurriculumFixtureTests(unittest.TestCase):

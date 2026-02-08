@@ -12,8 +12,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 ORCHESTRATION_SCRIPT = ROOT / "scripts" / "orchestration.py"
-TOPIC_SPEC_TEMPLATE = ROOT / "workflows" / "templates" / "topic_spec.template.json"
-SAMPLE_CURRICULUM = ROOT / "data" / "curriculum.json"
+TOPIC_SPEC_TEMPLATE = ROOT / "runs" / "templates" / "topic_spec.template.json"
+SAMPLE_CURRICULUM = ROOT / "tests" / "fixtures" / "curriculum.json"
 
 
 class OrchestrationCliTests(unittest.TestCase):

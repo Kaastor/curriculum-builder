@@ -8,13 +8,13 @@ Pipeline:
 ## Run Artifacts
 
 Inputs:
-- `workflows/runs/<run_id>/inputs/topic_spec.json`
+- `runs/<run_id>/inputs/topic_spec.json`
 
 Outputs:
-- `workflows/runs/<run_id>/outputs/curriculum/curriculum.json`
-- `workflows/runs/<run_id>/outputs/reviews/validation_report.md`
-- `workflows/runs/<run_id>/outputs/plan/plan.json`
-- `workflows/runs/<run_id>/outputs/reviews/diff_report.json`
+- `runs/<run_id>/outputs/curriculum/curriculum.json`
+- `runs/<run_id>/outputs/reviews/validation_report.md`
+- `runs/<run_id>/outputs/plan/plan.json`
+- `runs/<run_id>/outputs/reviews/diff_report.json`
 
 ## Commands
 

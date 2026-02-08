@@ -1,0 +1,5 @@
+*
+!.gitignore
+!.gitkeep
+!templates/
+!templates/topic_spec.template.json

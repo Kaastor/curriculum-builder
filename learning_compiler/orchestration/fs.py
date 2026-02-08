@@ -4,15 +4,17 @@ from __future__ import annotations
 
 import datetime as dt
 import json
-import os
 import re
 from pathlib import Path
 from typing import Any
 
+from learning_compiler.config import load_config
+from learning_compiler.errors import ErrorCode, LearningCompilerError, NotFoundError
+from learning_compiler.orchestration.migrations import migrate_run_meta
 from learning_compiler.orchestration.types import RunPaths
 
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
+REPO_ROOT = load_config().repo_root
 
 
 def utc_now() -> str:
@@ -25,18 +27,15 @@ def slugify(raw: str) -> str:
 
 
 def orchestration_base_dir() -> Path:
-    default = REPO_ROOT / "workflows" / "runs"
-    return Path(os.environ.get("ORCHESTRATION_BASE_DIR", str(default)))
+    return load_config().runs_dir
 
 
 def orchestration_archive_dir() -> Path:
-    default = REPO_ROOT / "workflows" / "archives"
-    return Path(os.environ.get("ORCHESTRATION_ARCHIVE_DIR", str(default)))
+    return load_config().runs_archive_dir
 
 
 def topic_spec_template() -> Path:
-    default = REPO_ROOT / "workflows" / "templates" / "topic_spec.template.json"
-    return Path(os.environ.get("ORCHESTRATION_TEMPLATE_FILE", str(default)))
+    return load_config().topic_spec_template
 
 
 def required_paths(run_dir: Path) -> RunPaths:
@@ -44,6 +43,7 @@ def required_paths(run_dir: Path) -> RunPaths:
         topic_spec=run_dir / "inputs" / "topic_spec.json",
         curriculum=run_dir / "outputs" / "curriculum" / "curriculum.json",
         previous_curriculum=run_dir / "outputs" / "curriculum" / "previous_curriculum.json",
+        event_log=run_dir / "logs" / "events.jsonl",
         validation_report=run_dir / "outputs" / "reviews" / "validation_report.md",
         validation_pass_marker=run_dir / "logs" / "validation.ok",
         plan=run_dir / "outputs" / "plan" / "plan.json",
@@ -52,10 +52,33 @@ def required_paths(run_dir: Path) -> RunPaths:
     )
 
 
+def list_run_dirs(base_dir: Path | None = None) -> list[Path]:
+    root = base_dir or orchestration_base_dir()
+    if not root.exists():
+        return []
+    return sorted(
+        candidate
+        for candidate in root.iterdir()
+        if candidate.is_dir() and (candidate / "run.json").exists()
+    )
+
+
+def latest_curriculum_path(base_dir: Path | None = None) -> Path | None:
+    for run_dir in reversed(list_run_dirs(base_dir)):
+        curriculum_path = required_paths(run_dir).curriculum
+        if curriculum_path.exists():
+            return curriculum_path
+    return None
+
+
 def read_json(path: Path) -> dict[str, Any]:
     payload = json.loads(path.read_text(encoding="utf-8"))
     if not isinstance(payload, dict):
-        raise SystemExit(f"Expected JSON object in {path}")
+        raise LearningCompilerError(
+            ErrorCode.INVALID_ARGUMENT,
+            f"Expected JSON object in {path}",
+            {"path": str(path)},
+        )
     return payload
 
 
@@ -67,5 +90,10 @@ def load_run(run_id: str) -> tuple[Path, dict[str, Any]]:
     run_dir = orchestration_base_dir() / run_id
     paths = required_paths(run_dir)
     if not paths.run_meta.exists():
-        raise SystemExit(f"Run not found: {run_id}")
-    return run_dir, read_json(paths.run_meta)
+        raise NotFoundError(f"Run not found: {run_id}", {"run_id": run_id})
+
+    meta = read_json(paths.run_meta)
+    migrated_meta, changed = migrate_run_meta(meta)
+    if changed:
+        write_json(paths.run_meta, migrated_meta)
+    return run_dir, migrated_meta

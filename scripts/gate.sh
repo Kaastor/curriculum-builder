@@ -29,10 +29,16 @@ for root in (Path("scripts"), Path("learning_compiler"), Path("tests")):
 print("syntax-ok")
 PY
 
+echo "== static checks =="
+"$PYTHON_BIN" scripts/static_checks.py
+
 echo "== curriculum validation =="
-"$PYTHON_BIN" scripts/validator.py data/curriculum.json
+"$PYTHON_BIN" scripts/validator.py tests/fixtures/curriculum.json
 
 echo "== tests =="
 "$PYTHON_BIN" -m unittest discover -s tests -p 'test_*.py'
+
+echo "== coverage check =="
+"$PYTHON_BIN" scripts/coverage_check.py
 
 echo "\n✅ gate passed"

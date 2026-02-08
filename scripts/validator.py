@@ -11,17 +11,22 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
+from learning_compiler.orchestration.fs import latest_curriculum_path
+from learning_compiler.errors import ErrorCode, LearningCompilerError
 from learning_compiler.validator.core import validate
 
 
 def parse_args() -> argparse.Namespace:
-    default_path = Path(__file__).resolve().parent.parent / "data" / "curriculum.json"
+    default_path = latest_curriculum_path()
     parser = argparse.ArgumentParser(description="Validate curriculum JSON")
     parser.add_argument(
         "curriculum_path",
         nargs="?",
-        default=str(default_path),
-        help="Path to curriculum JSON (default: data/curriculum.json)",
+        default=str(default_path) if default_path else None,
+        help=(
+            "Path to curriculum JSON "
+            "(default: latest runs/<run_id>/outputs/curriculum/curriculum.json)"
+        ),
     )
     parser.add_argument(
         "--topic-spec",
@@ -33,6 +38,14 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> int:
     args = parse_args()
+    if args.curriculum_path is None:
+        raise LearningCompilerError(
+            ErrorCode.INVALID_ARGUMENT,
+            "No curriculum path provided and no generated run curriculum found. "
+            "Run `python3.11 scripts/orchestration.py run <run_id>` first "
+            "or pass an explicit curriculum path.",
+        )
+
     curriculum_path = Path(args.curriculum_path)
     topic_spec_path = Path(args.topic_spec_path) if args.topic_spec_path else None
 
@@ -42,4 +55,8 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    try:
+        raise SystemExit(main())
+    except LearningCompilerError as exc:
+        print(str(exc), file=sys.stderr)
+        raise SystemExit(exc.exit_code()) from exc
