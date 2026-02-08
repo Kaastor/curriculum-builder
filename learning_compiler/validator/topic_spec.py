@@ -18,6 +18,14 @@ from learning_compiler.validator.types import (
     ValidationConfig,
 )
 
+ALLOWED_CONTEXT_PACK_FIELDS = {
+    "domain",
+    "focus_terms",
+    "local_paths",
+    "preferred_resource_kinds",
+    "required_outcomes",
+}
+
 
 def _parse_domain_mode(value: Any) -> DomainMode:
     try:
@@ -77,6 +85,37 @@ def validate_topic_spec_contract(topic_spec: object) -> list[str]:
             for idx, item in enumerate(misconceptions):
                 if not is_non_empty_str(item):
                     errors.append(f"misconceptions[{idx}] must be a non-empty string")
+
+    context_pack = topic_spec.get("context_pack")
+    if context_pack is not None:
+        if not isinstance(context_pack, dict):
+            errors.append("context_pack must be an object when provided")
+        else:
+            context_extra = sorted(set(context_pack.keys()) - ALLOWED_CONTEXT_PACK_FIELDS)
+            if context_extra:
+                errors.append(f"context_pack has unexpected keys: {context_extra}")
+
+            domain = context_pack.get("domain")
+            if domain is not None and not is_non_empty_str(domain):
+                errors.append("context_pack.domain must be a non-empty string when provided")
+
+            for field in (
+                "focus_terms",
+                "local_paths",
+                "preferred_resource_kinds",
+                "required_outcomes",
+            ):
+                value = context_pack.get(field)
+                if value is None:
+                    continue
+                if not isinstance(value, list):
+                    errors.append(f"context_pack.{field} must be a list when provided")
+                    continue
+                for idx, item in enumerate(value):
+                    if not is_non_empty_str(item):
+                        errors.append(
+                            f"context_pack.{field}[{idx}] must be a non-empty string"
+                        )
 
     constraints = topic_spec.get("constraints")
     if not isinstance(constraints, dict):

@@ -46,12 +46,30 @@ def derive_topic_label(topic_spec: TopicSpec) -> str:
 
 
 def seed_titles(topic_spec: TopicSpec, target_nodes: int) -> tuple[str, ...]:
-    seeds: list[str] = [
-        "Goal framing and capability criteria",
-        "Prerequisite bridge and terminology",
-    ]
-    seeds.extend(item.strip() for item in topic_spec.scope_in if item.strip())
-    seeds.append("Integrated synthesis and production risk review")
+    seeds: list[str] = ["Capability framing and success criteria"]
+
+    if topic_spec.prerequisites:
+        seeds.append("Prerequisite bridge and terminology alignment")
+
+    seeds.extend(
+        f"Implement {item.strip()}"
+        for item in topic_spec.scope_in
+        if item.strip()
+    )
+
+    if topic_spec.context_pack is not None:
+        seeds.extend(
+            f"Deliverable: {outcome.strip()}"
+            for outcome in topic_spec.context_pack.required_outcomes
+            if outcome.strip()
+        )
+
+    seeds.extend(
+        [
+            "Integration and interface trade-offs",
+            "Verification, reliability checks, and iteration plan",
+        ]
+    )
 
     deduped: list[str] = []
     seen: set[str] = set()
@@ -63,24 +81,62 @@ def seed_titles(topic_spec: TopicSpec, target_nodes: int) -> tuple[str, ...]:
         deduped.append(title)
 
     while len(deduped) < target_nodes:
-        deduped.append(f"Applied synthesis {len(deduped) + 1}")
+        deduped.append(f"Applied implementation cycle {len(deduped) + 1}")
 
     return tuple(deduped[:target_nodes])
 
 
-def distribute_minutes(total_minutes: int, count: int) -> tuple[int, ...]:
+def _title_weight(index: int, count: int, title: str) -> float:
+    ratio = index / max(1, count - 1)
+    weight = 1.0 + (0.4 * ratio)
+
+    keyword_boosts = {
+        "integration": 0.25,
+        "verification": 0.25,
+        "reliability": 0.2,
+        "trade-off": 0.15,
+        "deliverable": 0.1,
+        "architecture": 0.2,
+        "orchestration": 0.2,
+        "testing": 0.2,
+    }
+    lowered = title.lower()
+    for token, boost in keyword_boosts.items():
+        if token in lowered:
+            weight += boost
+
+    if index == count - 1:
+        weight += 0.15
+
+    return weight
+
+
+def distribute_minutes(total_minutes: int, titles: tuple[str, ...]) -> tuple[int, ...]:
+    count = len(titles)
     if count <= 0:
         return ()
 
-    base = max(30, total_minutes // count)
-    minutes = [base for _ in range(count)]
-    remainder = total_minutes - (base * count)
+    minimum = min(20, total_minutes // count) if total_minutes >= count else 0
 
-    index = 0
-    while remainder > 0:
-        minutes[index % count] += 1
-        remainder -= 1
-        index += 1
+    base_total = minimum * count
+    remainder = max(0, total_minutes - base_total)
+    weights = [_title_weight(index, count, title) for index, title in enumerate(titles)]
+    weight_sum = sum(weights) or 1.0
+
+    increments = [int(remainder * (weight / weight_sum)) for weight in weights]
+    distributed = sum(increments)
+    if distributed < remainder:
+        order = sorted(
+            range(count),
+            key=lambda idx: (
+                -((remainder * (weights[idx] / weight_sum)) - increments[idx]),
+                idx,
+            ),
+        )
+        for idx in order[: remainder - distributed]:
+            increments[idx] += 1
+
+    minutes = [minimum + extra for extra in increments]
 
     return tuple(minutes)
 
@@ -95,20 +151,22 @@ def target_nodes(topic_spec: TopicSpec) -> int:
     return max(min_nodes, min(max_nodes, max(6, scope_size + 3)))
 
 
-def target_minutes(topic_spec: TopicSpec, node_count: int) -> tuple[int, ...]:
+def target_minutes(topic_spec: TopicSpec, titles: tuple[str, ...]) -> tuple[int, ...]:
+    node_count = len(titles)
     min_hours = topic_spec.constraints.total_hours_min
     max_hours = topic_spec.constraints.total_hours_max
     if max_hours < min_hours:
         max_hours = min_hours
 
     total_minutes = int(round(((min_hours + max_hours) / 2.0) * 60.0))
-    return distribute_minutes(total_minutes, node_count)
+    return distribute_minutes(total_minutes, titles)
 
 
 def build_generation_spec(raw_topic_spec: dict[str, Any]) -> GenerationSpec:
     topic_spec = TopicSpec.from_mapping(raw_topic_spec)
     count = target_nodes(topic_spec)
     evidence_mode = normalize_evidence_mode(topic_spec.evidence_mode)
+    titles = seed_titles(topic_spec, count)
 
     return GenerationSpec(
         topic_spec=topic_spec,
@@ -120,7 +178,7 @@ def build_generation_spec(raw_topic_spec: dict[str, Any]) -> GenerationSpec:
             1,
             topic_spec.constraints.max_prerequisites_per_node or 3,
         ),
-        titles=seed_titles(topic_spec, count),
-        minutes=target_minutes(topic_spec, count),
+        titles=titles,
+        minutes=target_minutes(topic_spec, titles),
         misconceptions=topic_spec.misconceptions,
     )

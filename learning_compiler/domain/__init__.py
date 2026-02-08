@@ -1,6 +1,7 @@
 """Domain models used by agent and public API surfaces."""
 
 from learning_compiler.domain.models import (
+    ContextPack,
     Constraints,
     Curriculum,
     CurriculumNode,
@@ -11,6 +12,7 @@ from learning_compiler.domain.models import (
 )
 
 __all__ = [
+    "ContextPack",
     "Constraints",
     "Curriculum",
     "CurriculumNode",

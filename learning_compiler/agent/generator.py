@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from learning_compiler.agent.node_builder import build_node
-from learning_compiler.agent.research import DeterministicResourceResolver, ResourceResolver
+from learning_compiler.agent.research import ResourceResolver, default_resource_resolver
 from learning_compiler.agent.spec import GenerationSpec, build_generation_spec
 from learning_compiler.domain import Curriculum, OpenQuestion
 from learning_compiler.errors import ErrorCode, LearningCompilerError
@@ -39,7 +39,7 @@ def generate_curriculum(
 ) -> dict[str, Any]:
     """Generate curriculum from topic spec using the provided resource resolver."""
     spec = build_generation_spec(topic_spec)
-    active_resolver = resolver or DeterministicResourceResolver()
+    active_resolver = resolver or default_resource_resolver(spec.topic_spec)
     curriculum = _build_curriculum(spec, active_resolver)
     return curriculum.to_dict()
 

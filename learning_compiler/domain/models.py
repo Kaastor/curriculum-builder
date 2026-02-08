@@ -30,6 +30,41 @@ class Constraints:
 
 
 @dataclass(slots=True, frozen=True)
+class ContextPack:
+    domain: str | None
+    focus_terms: tuple[str, ...]
+    local_paths: tuple[str, ...]
+    preferred_resource_kinds: tuple[str, ...]
+    required_outcomes: tuple[str, ...]
+
+    @classmethod
+    def from_mapping(cls, payload: dict[str, Any]) -> "ContextPack":
+        domain_raw = payload.get("domain")
+        domain = str(domain_raw).strip() if isinstance(domain_raw, str) and domain_raw.strip() else None
+        return cls(
+            domain=domain,
+            focus_terms=_string_tuple(payload.get("focus_terms")),
+            local_paths=_string_tuple(payload.get("local_paths")),
+            preferred_resource_kinds=_string_tuple(payload.get("preferred_resource_kinds")),
+            required_outcomes=_string_tuple(payload.get("required_outcomes")),
+        )
+
+    def to_dict(self) -> dict[str, Any]:
+        payload: dict[str, Any] = {}
+        if self.domain is not None:
+            payload["domain"] = self.domain
+        if self.focus_terms:
+            payload["focus_terms"] = list(self.focus_terms)
+        if self.local_paths:
+            payload["local_paths"] = list(self.local_paths)
+        if self.preferred_resource_kinds:
+            payload["preferred_resource_kinds"] = list(self.preferred_resource_kinds)
+        if self.required_outcomes:
+            payload["required_outcomes"] = list(self.required_outcomes)
+        return payload
+
+
+@dataclass(slots=True, frozen=True)
 class TopicSpec:
     spec_version: str
     goal: str
@@ -41,6 +76,7 @@ class TopicSpec:
     domain_mode: str
     evidence_mode: str
     misconceptions: tuple[str, ...]
+    context_pack: ContextPack | None
 
     @classmethod
     def from_mapping(cls, payload: dict[str, Any]) -> "TopicSpec":
@@ -48,6 +84,8 @@ class TopicSpec:
         constraints = Constraints.from_mapping(
             constraints_raw if isinstance(constraints_raw, dict) else {}
         )
+        context_raw = payload.get("context_pack")
+        context_pack = ContextPack.from_mapping(context_raw) if isinstance(context_raw, dict) else None
 
         return cls(
             spec_version=str(payload.get("spec_version", "1.0")),
@@ -60,10 +98,11 @@ class TopicSpec:
             domain_mode=str(payload.get("domain_mode", "mature")),
             evidence_mode=str(payload.get("evidence_mode", "minimal")),
             misconceptions=_string_tuple(payload.get("misconceptions")),
+            context_pack=context_pack,
         )
 
     def to_dict(self) -> dict[str, Any]:
-        return {
+        payload: dict[str, Any] = {
             "spec_version": self.spec_version,
             "goal": self.goal,
             "audience": self.audience,
@@ -83,6 +122,11 @@ class TopicSpec:
             "evidence_mode": self.evidence_mode,
             "misconceptions": list(self.misconceptions),
         }
+        if self.context_pack is not None:
+            context_payload = self.context_pack.to_dict()
+            if context_payload:
+                payload["context_pack"] = context_payload
+        return payload
 
 
 @dataclass(slots=True, frozen=True)

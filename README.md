@@ -44,7 +44,7 @@ graph LR
 
 ### Module responsibilities
 
-- `learning_compiler/agent/`: generation engine, topic-spec normalization, node construction, resource resolver contracts.
+- `learning_compiler/agent/`: generation engine, topic-spec normalization, node construction, context-aware resource resolver contracts.
 - `learning_compiler/validator/`: deterministic quality gate for schema, graph, evidence, and node-quality checks.
 - `learning_compiler/orchestration/`: run lifecycle, stage sync, reports, artifact persistence, planning, diffing.
 - `learning_compiler/domain/`: typed domain models (`TopicSpec`, `Curriculum`, `CurriculumNode`, etc.).
@@ -111,6 +111,7 @@ stateDiagram-v2
 - Orchestrator pattern: orchestration coordinates work without owning generation intelligence.
 - Functional core / imperative shell: deterministic core logic wrapped by thin CLI/process shell.
 - Strategy/DI pattern: generation and resource resolution are interface-driven and injectable.
+- Optional context-pack pattern: generic topic specs can add domain signals (`context_pack`) without forking core logic.
 - State machine pattern: explicit run stage progression synchronized from artifacts.
 
 ## Why This Is Staff-Level Agentic Engineering
@@ -185,6 +186,7 @@ Top-level fields:
 - `domain_mode`
 - `evidence_mode`
 - `misconceptions` (optional)
+- `context_pack` (optional)
 
 `constraints` fields:
 - `hours_per_week` (> 0)
@@ -199,6 +201,30 @@ Enum meanings:
 - `depth`: `survey`, `practical`, `mastery`
 - `domain_mode`: `mature`, `frontier`
 - `evidence_mode`: `minimal`, `standard`, `strict`
+
+`context_pack` (optional object):
+- `domain`: optional domain label for contextualized generation.
+- `focus_terms`: optional keyword list for resource relevance.
+- `local_paths`: optional repo-relative paths; when set, generator can emit deterministic `local://...` resources.
+- `preferred_resource_kinds`: optional future-facing resource preference hints.
+- `required_outcomes`: optional concrete outputs to inject into mastery checks.
+
+Example:
+
+```json
+{
+  "context_pack": {
+    "domain": "agentic-engineering",
+    "focus_terms": ["orchestration", "validation", "determinism"],
+    "local_paths": [
+      "README.md",
+      "learning_compiler/agent/generator.py",
+      "learning_compiler/validator/core.py"
+    ],
+    "required_outcomes": ["code change", "test update", "gate report"]
+  }
+}
+```
 
 ## UI
 

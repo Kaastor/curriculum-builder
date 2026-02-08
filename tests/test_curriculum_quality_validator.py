@@ -64,6 +64,21 @@ class CurriculumQualityValidatorTests(unittest.TestCase):
                 "\n".join(result.warnings),
             )
 
+    def test_mastery_task_without_action_verb_fails(self) -> None:
+        curriculum = _load_fixture()
+        curriculum["nodes"][0]["mastery_check"]["task"] = "Understanding of concepts and quality."
+
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            curriculum_path = Path(tmp_dir) / "curriculum.json"
+            curriculum_path.write_text(json.dumps(curriculum), encoding="utf-8")
+
+            result = validate(curriculum_path)
+            self.assertFalse(result.success)
+            self.assertIn(
+                "mastery_check.task should contain a concrete action verb",
+                "\n".join(result.failed),
+            )
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -66,6 +66,7 @@ class AgentGenerationTests(unittest.TestCase):
         self.assertEqual(len(nodes), len(resolver.requests))
         self.assertEqual("Stub Definition", nodes[0]["resources"][0]["title"])
         self.assertEqual("standard", resolver.requests[0].evidence_mode)
+        self.assertEqual("N1", resolver.requests[0].node_id)
 
     def test_generate_curriculum_file_writes_output(self) -> None:
         resolver = StubResolver()
@@ -81,6 +82,31 @@ class AgentGenerationTests(unittest.TestCase):
             loaded = json.loads(out_path.read_text(encoding="utf-8"))
             self.assertEqual(payload["topic"], loaded["topic"])
             self.assertGreater(len(loaded["nodes"]), 0)
+
+    def test_context_pack_local_paths_enable_local_resolver(self) -> None:
+        topic_spec = base_topic_spec()
+        topic_spec["context_pack"] = {
+            "domain": "repo-engineering",
+            "focus_terms": ["orchestration", "validation"],
+            "local_paths": [
+                "README.md",
+                "learning_compiler/agent/generator.py",
+                "/etc/hosts",
+            ],
+            "required_outcomes": ["implementation note"],
+        }
+
+        curriculum = generate_curriculum(topic_spec)
+        first_resources = curriculum["nodes"][0]["resources"]
+        self.assertTrue(first_resources, "expected resources on first node")
+        self.assertTrue(
+            any(str(resource["url"]).startswith("local://") for resource in first_resources),
+            "expected at least one local repo resource when context_pack.local_paths is provided",
+        )
+        self.assertTrue(
+            all("etc/hosts" not in str(resource["url"]) for resource in first_resources),
+            "resolver must ignore local_paths outside the repository root",
+        )
 
 
 if __name__ == "__main__":

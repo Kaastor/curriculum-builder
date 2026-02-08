@@ -23,7 +23,14 @@
   },
   "domain_mode": "mature|frontier",
   "evidence_mode": "minimal|standard|strict",
-  "misconceptions": ["optional"]
+  "misconceptions": ["optional"],
+  "context_pack": {
+    "domain": "optional domain label",
+    "focus_terms": ["optional terms to bias resource selection"],
+    "local_paths": ["optional repo-relative files for local references"],
+    "preferred_resource_kinds": ["optional preferred kinds e.g. doc|spec|paper"],
+    "required_outcomes": ["optional concrete outcomes to weave into mastery checks"]
+  }
 }
 ```
 
@@ -37,6 +44,7 @@
 6. `evidence_mode` must be `minimal|standard|strict`.
 7. `node_count_min <= node_count_max` when both are provided.
 8. `max_prerequisites_per_node >= 1` when provided.
+9. `context_pack` is optional, but when provided it must be an object with known keys only.
 
 ## Authoring Notes
 
@@ -126,3 +134,27 @@
 `misconceptions` (optional)
 - Type: array of strings.
 - Use: known traps to explicitly address in node pitfalls/mastery checks.
+
+`context_pack` (optional)
+- Type: object.
+- Use: domain-specific context that keeps generator generic while improving quality.
+
+`context_pack.domain` (optional)
+- Type: string.
+- Use: short domain label (e.g., `"agentic-engineering"`).
+
+`context_pack.focus_terms` (optional)
+- Type: array of strings.
+- Use: additional keywords for resolver relevance matching.
+
+`context_pack.local_paths` (optional)
+- Type: array of strings.
+- Use: repo-local files to prioritize via deterministic `local://` resources.
+
+`context_pack.preferred_resource_kinds` (optional)
+- Type: array of strings.
+- Use: preferred resource categories for future resolver policies.
+
+`context_pack.required_outcomes` (optional)
+- Type: array of strings.
+- Use: concrete deliverables to incorporate into mastery checks.

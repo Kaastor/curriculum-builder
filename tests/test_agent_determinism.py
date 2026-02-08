@@ -52,6 +52,18 @@ class AgentDeterminismTests(unittest.TestCase):
             second = out_path.read_text(encoding="utf-8")
             self.assertEqual(first, second)
 
+    def test_context_pack_generation_is_deterministic(self) -> None:
+        spec = topic_spec()
+        spec["context_pack"] = {
+            "domain": "repo-engineering",
+            "focus_terms": ["orchestration", "validation"],
+            "local_paths": ["README.md", "learning_compiler/agent/spec.py"],
+            "required_outcomes": ["integration plan"],
+        }
+        first = generate_curriculum(spec)
+        second = generate_curriculum(spec)
+        self.assertEqual(first, second)
+
 
 if __name__ == "__main__":
     unittest.main()

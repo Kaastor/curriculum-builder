@@ -56,7 +56,7 @@ REQUIRED_TOPIC_SPEC_FIELDS = {
     "domain_mode",
     "evidence_mode",
 }
-OPTIONAL_TOPIC_SPEC_FIELDS = {"spec_version", "misconceptions"}
+OPTIONAL_TOPIC_SPEC_FIELDS = {"spec_version", "misconceptions", "context_pack"}
 
 REQUIRED_CONSTRAINT_FIELDS = {
     "hours_per_week",

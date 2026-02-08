@@ -17,6 +17,8 @@ from learning_compiler.validator.curriculum_graph import (
 from learning_compiler.validator.curriculum_quality import (
     check_graph_progression,
     check_node_quality,
+    check_repetition,
+    check_resource_relevance,
     check_time_granularity,
 )
 from learning_compiler.validator.curriculum_schema import (
@@ -84,8 +86,10 @@ def validate(path: Path, topic_spec_path: Path | None = None) -> ValidationResul
     check_node_count(nodes, result, config)
     check_total_hours(nodes, result, config)
     check_node_quality(nodes, result)
+    check_repetition(nodes, result)
     check_time_granularity(nodes, result)
     check_evidence(nodes, result, config)
+    check_resource_relevance(nodes, topic_spec, result)
     check_open_questions(data, nodes, result, config)
 
     return result
