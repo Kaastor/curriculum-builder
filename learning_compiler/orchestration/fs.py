@@ -10,7 +10,6 @@ from typing import Any
 
 from learning_compiler.config import load_config
 from learning_compiler.errors import ErrorCode, LearningCompilerError, NotFoundError
-from learning_compiler.orchestration.migrations import migrate_run_meta
 from learning_compiler.orchestration.meta import RunMeta
 from learning_compiler.orchestration.types import RunPaths
 
@@ -93,8 +92,13 @@ def load_run(run_id: str) -> tuple[Path, RunMeta]:
     if not paths.run_meta.exists():
         raise NotFoundError(f"Run not found: {run_id}", {"run_id": run_id})
 
-    meta = read_json(paths.run_meta)
-    migrated_meta, changed = migrate_run_meta(meta)
-    if changed:
-        write_json(paths.run_meta, migrated_meta)
-    return run_dir, RunMeta.from_dict(migrated_meta)
+    payload = read_json(paths.run_meta)
+    try:
+        meta = RunMeta.from_dict(payload)
+    except ValueError as exc:
+        raise LearningCompilerError(
+            ErrorCode.INVALID_ARGUMENT,
+            f"Invalid run metadata in {paths.run_meta}; delete and re-initialize this run.",
+            {"run_id": run_id, "path": str(paths.run_meta)},
+        ) from exc
+    return run_dir, meta

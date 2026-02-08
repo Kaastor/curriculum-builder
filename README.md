@@ -62,8 +62,8 @@ graph LR
   - domain payloads are modeled as dataclasses in `learning_compiler/domain/`.
 - Explicit run metadata model:
   - orchestration uses `RunMeta` instead of ad-hoc dict mutation.
-- Versioned artifact evolution:
-  - run metadata migrations are centralized in `learning_compiler/orchestration/migrations.py`.
+- Fresh-run artifact contract:
+  - run metadata is validated strictly; incompatible local runs should be re-initialized.
 - Structured operational traces:
   - lifecycle events are standardized and appended to `logs/events.jsonl`.
 - Centralized configuration:
@@ -111,7 +111,7 @@ stateDiagram-v2
 - Orchestrator pattern: orchestration coordinates work without owning generation intelligence.
 - Functional core / imperative shell: deterministic core logic wrapped by thin CLI/process shell.
 - Strategy/DI pattern: generation and resource resolution are interface-driven and injectable.
-- State machine pattern: explicit run stage progression with migration/backward compatibility.
+- State machine pattern: explicit run stage progression synchronized from artifacts.
 
 ## Why This Is Staff-Level Agentic Engineering
 
@@ -119,7 +119,7 @@ stateDiagram-v2
 - Typed contracts over ad-hoc dict flow: domain models and API facade reduce ambiguity.
 - Reliability-first data model: immutable run artifacts under `runs/<run_id>/...`.
 - Determinism as policy: reproducible generation/planning with documented guarantees.
-- Backward compatibility: run metadata migration layer for schema evolution.
+- PoC speed with explicit contracts: regenerate run artifacts on incompatible schema changes.
 - Quality gates in CI: syntax, architecture boundary checks, validator checks, tests, and coverage threshold.
 - Operational traceability: standardized run events and stage history.
 
@@ -224,4 +224,4 @@ Gate includes:
 
 Supporting docs:
 - `docs/determinism.md`
-- `docs/migrations.md`
+- `docs/agentic-engineering-map.md`

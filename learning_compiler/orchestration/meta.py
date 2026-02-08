@@ -5,8 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
-from learning_compiler.orchestration.migrations import RUN_META_SCHEMA_VERSION
-from learning_compiler.orchestration.types import Stage, stage_from
+from learning_compiler.orchestration.types import Stage
 
 
 @dataclass(slots=True)
@@ -15,26 +14,40 @@ class RunMeta:
     created_at_utc: str
     stage: Stage
     history: list[dict[str, Any]]
-    schema_version: int = RUN_META_SCHEMA_VERSION
     extras: dict[str, Any] = field(default_factory=dict)
 
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> "RunMeta":
-        reserved = {"run_id", "created_at_utc", "stage", "history", "schema_version"}
-        extras = {key: value for key, value in payload.items() if key not in reserved}
+        run_id = payload.get("run_id")
+        if not isinstance(run_id, str) or not run_id.strip():
+            raise ValueError("run_id must be a non-empty string")
+
+        created_at_utc = payload.get("created_at_utc")
+        if not isinstance(created_at_utc, str) or not created_at_utc.strip():
+            raise ValueError("created_at_utc must be a non-empty string")
+
+        stage_raw = payload.get("stage")
+        try:
+            stage = Stage(str(stage_raw))
+        except ValueError as exc:
+            raise ValueError(f"stage must be one of {[item.value for item in Stage]}") from exc
+
         history = payload.get("history")
+        if not isinstance(history, list) or any(not isinstance(item, dict) for item in history):
+            raise ValueError("history must be a list of objects")
+
+        reserved = {"run_id", "created_at_utc", "stage", "history"}
+        extras = {key: value for key, value in payload.items() if key not in reserved}
         return cls(
-            run_id=str(payload.get("run_id", "")),
-            created_at_utc=str(payload.get("created_at_utc", "")),
-            stage=stage_from(payload.get("stage", Stage.INITIALIZED.value)),
-            history=list(history) if isinstance(history, list) else [],
-            schema_version=int(payload.get("schema_version", RUN_META_SCHEMA_VERSION)),
+            run_id=run_id,
+            created_at_utc=created_at_utc,
+            stage=stage,
+            history=list(history),
             extras=extras,
         )
 
     def to_dict(self) -> dict[str, Any]:
         payload: dict[str, Any] = {
-            "schema_version": self.schema_version,
             "run_id": self.run_id,
             "created_at_utc": self.created_at_utc,
             "stage": self.stage.value,

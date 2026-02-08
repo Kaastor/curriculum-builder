@@ -17,6 +17,7 @@
 ## PoC Priority
 - This repository is a PoC; prioritize validating core logic and orchestration correctness over polish.
 - Optimize for fast, reliable feedback on behavior (tests/validation), and defer non-essential refinements.
+- No backward-compatible run metadata migrations: keep a strict fresh-run contract and re-initialize local runs when metadata/artifact schemas change.
 
 ## Definition Of Done
 - Feature behavior works as requested.
@@ -58,7 +59,6 @@
 - `learning_compiler/orchestration/command_utils.py`: Shared command argument helpers.
 - `learning_compiler/orchestration/types.py`: Orchestration enums and typed path contracts.
 - `learning_compiler/orchestration/fs.py`: Filesystem/env/run loading helpers.
-- `learning_compiler/orchestration/migrations.py`: Backward-compatible run metadata migrations.
 - `learning_compiler/orchestration/events.py`: Standardized run event schema.
 - `learning_compiler/orchestration/stage.py`: Stage inference/sync logic.
 - `learning_compiler/orchestration/exec.py`: Validator execution helpers.

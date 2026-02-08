@@ -5,7 +5,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
-from typing import Any
 
 
 class Stage(str, Enum):
@@ -39,13 +38,3 @@ class RunPaths:
     plan: Path
     diff_report: Path
     run_meta: Path
-
-
-def stage_from(value: Any) -> Stage:
-    raw = str(value)
-    if raw == "map_generated":
-        return Stage.GENERATED
-    try:
-        return Stage(raw)
-    except ValueError:
-        return Stage.INITIALIZED

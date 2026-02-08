@@ -86,6 +86,28 @@ class OrchestrationCliTests(unittest.TestCase):
             self.assertNotEqual(0, failed.returncode)
             self.assertIn("Topic spec missing or incomplete", failed.stderr)
 
+    def test_status_rejects_legacy_run_metadata(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            env = self._env(tmp_dir)
+            run_dir = Path(tmp_dir) / "runs" / "20260101-000000-legacy"
+            run_dir.mkdir(parents=True)
+            (run_dir / "run.json").write_text(
+                json.dumps(
+                    {
+                        "run_id": run_dir.name,
+                        "created_at_utc": "2026-01-01T00:00:00Z",
+                        "stage": "map_generated",
+                        "history": [],
+                    }
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+
+            failed = self._run(env, "status", run_dir.name, check=False)
+            self.assertNotEqual(0, failed.returncode)
+            self.assertIn("[invalid_argument] Invalid run metadata", failed.stderr)
+
     def test_validate_updates_stage_and_writes_report(self):
         with tempfile.TemporaryDirectory() as tmp_dir:
             env = self._env(tmp_dir)

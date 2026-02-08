@@ -23,7 +23,6 @@ from learning_compiler.orchestration.fs import (
     write_json,
 )
 from learning_compiler.orchestration.meta import RunMeta
-from learning_compiler.orchestration.migrations import RUN_META_SCHEMA_VERSION
 from learning_compiler.orchestration.stage import (
     looks_ready_spec,
     persist_if_changed,
@@ -61,7 +60,6 @@ def cmd_init(args: argparse.Namespace) -> int:
 
     now = utc_now()
     meta = RunMeta(
-        schema_version=RUN_META_SCHEMA_VERSION,
         run_id=run_id,
         created_at_utc=now,
         stage=Stage.INITIALIZED,

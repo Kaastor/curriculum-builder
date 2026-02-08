@@ -11,7 +11,7 @@ from learning_compiler.errors import LearningCompilerError
 from learning_compiler.orchestration.events import stage_event
 from learning_compiler.orchestration.fs import read_json, required_paths, utc_now, write_json
 from learning_compiler.orchestration.meta import RunMeta
-from learning_compiler.orchestration.types import STAGE_INDEX, RunPaths, Stage, stage_from
+from learning_compiler.orchestration.types import STAGE_INDEX, RunPaths, Stage
 from learning_compiler.validator.topic_spec import validate_topic_spec_contract
 
 
@@ -169,4 +169,4 @@ def sync_stage(run_dir: Path, meta: RunMeta) -> tuple[Stage, bool]:
             run_dir=run_dir,
             metadata={"previous_stage": current.value},
         )
-    return stage_from(meta.stage.value), changed
+    return meta.stage, changed
