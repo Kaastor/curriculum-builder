@@ -1,6 +1,6 @@
 ---
 title: "Agentic Engineering Atlas: A Systems Map from Field to Implementation"
-subtitle: "Field-breadth reference with repo-oriented examples (all granularity levels)"
+subtitle: "Field-breadth reference (all granularity levels)"
 version: "0.4"
 date: "2026-02-08"
 ---
@@ -9,7 +9,7 @@ date: "2026-02-08"
 
 ## Abstract
 
-Agentic engineering is the engineering discipline concerned with building **agentic systems**: software that uses a model (often a large language model) to **form plans, choose actions, call tools, and update state** in a closed feedback loop. This chapter provides a structured map of the field **from the highest level (L0: field) down to concrete implementation tactics (L4)**, with particular attention to *engineering precision*: interfaces, invariants, failure modes, tests, and operational concerns. It is written as both (i) a conceptual reference for the domain and (ii) a pragmatic roadmap for evolving a proof-of-concept repository into a production-grade system.
+Agentic engineering is the engineering discipline concerned with building **agentic systems**: software that uses a model (often a large language model) to **form plans, choose actions, call tools, and update state** in a closed feedback loop. This chapter provides a structured map of the field **from the highest level (L0: field) down to concrete implementation tactics (L4)**, with particular attention to *engineering precision*: interfaces, invariants, failure modes, tests, and operational concerns.
 
 ---
 
@@ -21,7 +21,6 @@ This document is simultaneously:
 
 - A **taxonomy** of agentic engineering methods (planning, runtime, memory, safety, evaluation, operations, UX, governance).
 - A **capability map** that connects abstract methods to implementable primitives.
-- A **repo-oriented coverage snapshot** plus **recommended target additions** for missing capabilities.
 
 This document is not a literature survey; it is a **systems engineering map**. Citations are intentionally omitted in favor of reproducible implementation guidance and search terms.
 
@@ -38,17 +37,6 @@ The chapter uses a five-level model:
 | **L4** | Concrete implementation | What exact code/tests/artifacts should exist? | Modules + tests + docs |
 
 A practical rule: **L2 is where “named ideas” live; L3 is where you force them to be real.** A system that stops at L2 is a slide deck; a system that reaches L3/L4 is an engineering artifact.
-
-### 0.3 Status legend
-
-- **Strong**: implemented + exercised by tests and/or a quality gate.
-- **Partial**: present but limited depth, hardening, or operational coverage.
-- **Missing**: not implemented yet.
-
-### 0.4 Scope split: Atlas vs Repo Map
-
-- `docs/agentic-engineering-atlas.md` (this file) is the **breadth atlas** of the field, with repo examples and recommended target modules.
-- `docs/agentic-engineering-map.md` is the **current repo implementation map** and should be treated as the source of truth for exact present-state coverage.
 
 ---
 
@@ -179,39 +167,6 @@ L4 is the ground truth: the actual modules, tests, scripts, and docs. L4 should 
 
 ---
 
-## 4. Repository coverage overview
-
-This chapter assumes an existing codebase (a proof-of-concept and learning environment). Paths below are either:
-- current modules that exist now, or
-- recommended target modules for missing capabilities.
-
-### 4.1 L0 field map and current coverage
-
-| L0 Field | Coverage in this repo |
-| --- | --- |
-| Strategy and Planning | Strong |
-| State and Memory | Strong |
-| Tooling and Execution Runtime | Strong |
-| Reliability and Safety | Strong |
-| Evaluation and Quality Engineering | Strong |
-| Observability and Operations | Partial |
-| Human Interface and Product Control | Partial |
-| **Security, Privacy, and Governance** | Missing (explicitly modeled) |
-
-The final field (security/privacy/governance) is called out separately because many PoCs implicitly assume trust. In production, trust must be engineered.
-
-### 4.2 What “coverage” means (engineering definition)
-
-Coverage does not mean “feature exists.” It means:
-
-- **A contract exists** (types/schemas).
-- **Failure modes are handled** (typed errors, idempotency, retries).
-- **Behavior is verified** (tests/evals).
-- **Operations are feasible** (logs/metrics/runbooks).
-- **Users are protected** (policy and control surfaces).
-
----
-
 # Part I — Field chapters (L0) with method maps (L1–L4)
 
 ## 5. L0: Strategy and Planning
@@ -231,23 +186,23 @@ A planning subsystem should make the following invariants true:
 
 ### 5.3 L1–L4 breakdown
 
-| L1 Method family | L2 Technique/pattern | L3 Implementation primitives | L4 Concrete implementation in this repo | Status | Search terms |
-| --- | --- | --- | --- | --- | --- |
-| Deterministic curriculum decomposition | Constraint-aware planning | Constraint model, deterministic node target calculator, title seeding | `learning_compiler/agent/spec.py` (`target_nodes`, `target_minutes`, `seed_titles`) | Strong | `constraint-aware planning deterministic` |
-| Dependency-aware sequencing | DAG topological ordering | Node map, indegree tracking, stable ordering rules | `learning_compiler/orchestration/planning.py` (`topological_order`) | Strong | `topological sort planning dag` |
-| Schedule estimation | Critical path analysis | Duration model, longest-path reconstruction | `learning_compiler/orchestration/planning.py` (`compute_critical_path`) | Strong | `critical path method dag` |
-| Iterative curriculum optimization | Propose -> Critique -> Judge -> Repair | Loop controller, critic diagnostics, deterministic acceptance, typed repair actions | `learning_compiler/agent/optimizer.py`, `pedagogy_critic.py`, `quality_model.py`, `repair_planner.py`, `repair_executor.py` | Strong | `iterative dag optimization llm critic judge` |
-| Agent loop control | ReAct | Loop state, tool selection policy, stop criteria | Not implemented (current flow is staged pipeline, not a live loop) | Missing | `ReAct prompting` `reason act observe loop` |
-| Agent loop control | Plan-and-Execute | Separate planner/executor modules, plan artifact, execution cursor | Partially represented by `generate → validate → plan → iterate` pipeline | Partial | `plan and execute agents` |
-| Self-correction | Reflexion / critic loop | Critique pass, repair action planning, bounded iteration stop rule | `learning_compiler/agent/pedagogy_critic.py`, `learning_compiler/agent/repair_planner.py`, `learning_compiler/agent/optimizer.py` | Strong | `Reflexion agent` `self critique llm` |
-| Search-based planning | Tree/Graph of Thought | Branching plan candidates, scoring, pruning, budget | Not implemented | Missing | `tree of thought` `graph of thought` |
-| Formal planning | HTN / symbolic planners | Task schemas, preconditions/effects, planner interface | Not implemented | Missing | `hierarchical task network planning` |
-| Constraint solving | SAT/SMT-backed planning | Constraint encoding, solver adapter, unsat cores | Not implemented | Missing | `SMT solver scheduling` |
+| L1 Method family | L2 Technique/pattern | L3 Implementation primitives | Search terms |
+| --- | --- | --- | --- |
+| Deterministic curriculum decomposition | Constraint-aware planning | Constraint model, deterministic node target calculator, title seeding | `constraint-aware planning deterministic` |
+| Dependency-aware sequencing | DAG topological ordering | Node map, indegree tracking, stable ordering rules | `topological sort planning dag` |
+| Schedule estimation | Critical path analysis | Duration model, longest-path reconstruction | `critical path method dag` |
+| Iterative curriculum optimization | Propose -> Critique -> Judge -> Repair | Loop controller, critic diagnostics, deterministic acceptance, typed repair actions | `iterative dag optimization llm critic judge` |
+| Agent loop control | ReAct | Loop state, tool selection policy, stop criteria | `ReAct prompting` `reason act observe loop` |
+| Agent loop control | Plan-and-Execute | Separate planner/executor modules, plan artifact, execution cursor | `plan and execute agents` |
+| Self-correction | Reflexion / critic loop | Critique pass, repair action planning, bounded iteration stop rule | `Reflexion agent` `self critique llm` |
+| Search-based planning | Tree/Graph of Thought | Branching plan candidates, scoring, pruning, budget | `tree of thought` `graph of thought` |
+| Formal planning | HTN / symbolic planners | Task schemas, preconditions/effects, planner interface | `hierarchical task network planning` |
+| Constraint solving | SAT/SMT-backed planning | Constraint encoding, solver adapter, unsat cores | `SMT solver scheduling` |
 
 ### 5.4 Implementation guidance for missing planning loops
 
 **ReAct (bounded) implementation sketch (L4):**
-- Add an explicit loop runner (e.g., `learning_compiler/agent/loop_react.py`) that owns:
+- Add an explicit loop runner that owns:
   - a `LoopState` dataclass (step index, tool budget, observation buffer, termination reason),
   - a `ToolPolicy` interface for selecting tools,
   - and a `StopPolicy` for termination conditions.
@@ -258,18 +213,6 @@ A planning subsystem should make the following invariants true:
 - Determinism test in “fixed seed mode” (same observations → same tool calls).
 - Budget enforcement tests (max steps and max tool calls).
 - Negative tests for invalid tool result schemas.
-
-### 5.5 Current competence map
-
-This repository already demonstrates:
-
-- Deterministic planning under constraints.
-- DAG planning and critical-path reasoning.
-- Plans as stable artifacts.
-
-The next step is to incorporate **dynamic loop strategies** while preserving determinism under test configurations.
-
----
 
 ## 6. L0: State, Memory, and Knowledge Management
 
@@ -286,17 +229,17 @@ State is the “physics” of the system: what is true between steps. Memory ext
 
 ### 6.3 L1–L4 breakdown
 
-| L1 Method family | L2 Technique/pattern | L3 Implementation primitives | L4 Concrete implementation in this repo | Status | Search terms |
-| --- | --- | --- | --- | --- | --- |
-| Workflow state control | Explicit state machine | Stage enum, stage order, stage sync rules | `learning_compiler/orchestration/types.py`, `learning_compiler/orchestration/stage.py` | Strong | `state machine workflow orchestration` |
-| Artifact consistency | Freshness/marker checks | Marker files, dependency mtime checks | `validation_is_current`, `plan_is_current`, `diff_is_current` in `learning_compiler/orchestration/stage.py` | Strong | `artifact freshness check` |
-| Metadata contracts | Strict typed run metadata | Typed model, schema validation, fail-fast parse | `learning_compiler/orchestration/meta.py`, `learning_compiler/orchestration/fs.py` | Strong | `typed metadata schema validation` |
-| Persistence strategy | Fresh-run contract | Re-init policy for incompatible local artifacts | Documented in `AGENTS.md` + strict run metadata load errors | Strong | `poc fresh-run contract` |
-| Long-term semantic memory | Retrieval memory (RAG) | Embeddings/index, retrieval policy, memory write/read API | Not implemented | Missing | `agent long term memory retrieval` |
-| Long-term episodic memory | Interaction summaries | Summarizer, temporal index, provenance fields | Not implemented | Missing | `episodic memory llm agents` |
-| Checkpointing/rollback | Execution checkpoint model | Snapshot protocol, resume cursor, rollback procedure | Not implemented | Missing | `workflow checkpoint rollback` |
-| Consistency models | Versioned state | Content-addressed artifacts, DAG of artifacts | Not implemented | Missing | `content addressed storage artifacts` |
-| Semantic caching | Cache for model/tool results | Cache key design, TTL, invalidation rules | Not implemented | Missing | `semantic cache llm` |
+| L1 Method family | L2 Technique/pattern | L3 Implementation primitives | Search terms |
+| --- | --- | --- | --- |
+| Workflow state control | Explicit state machine | Stage enum, stage order, stage sync rules | `state machine workflow orchestration` |
+| Artifact consistency | Freshness/marker checks | Marker files, dependency mtime checks | `artifact freshness check` |
+| Metadata contracts | Strict typed run metadata | Typed model, schema validation, fail-fast parse | `typed metadata schema validation` |
+| Persistence strategy | Fresh-run contract | Re-init policy for incompatible local artifacts | `poc fresh-run contract` |
+| Long-term semantic memory | Retrieval memory (RAG) | Embeddings/index, retrieval policy, memory write/read API | `agent long term memory retrieval` |
+| Long-term episodic memory | Interaction summaries | Summarizer, temporal index, provenance fields | `episodic memory llm agents` |
+| Checkpointing/rollback | Execution checkpoint model | Snapshot protocol, resume cursor, rollback procedure | `workflow checkpoint rollback` |
+| Consistency models | Versioned state | Content-addressed artifacts, DAG of artifacts | `content addressed storage artifacts` |
+| Semantic caching | Cache for model/tool results | Cache key design, TTL, invalidation rules | `semantic cache llm` |
 
 ### 6.4 Implementation guidance for semantic memory (RAG)
 
@@ -329,18 +272,18 @@ The runtime is the “operating system” of the agent: it determines how plans 
 
 ### 7.3 L1–L4 breakdown
 
-| L1 Method family | L2 Technique/pattern | L3 Implementation primitives | L4 Concrete implementation in this repo | Status | Search terms |
-| --- | --- | --- | --- | --- | --- |
-| Command orchestration | Thin CLI / rich core | Parser dispatch + module handlers | `learning_compiler/orchestration/cli.py`, `commands_basic.py`, `commands_pipeline.py` | Strong | `thin cli rich core` |
-| Tool abstraction | Dependency injection via protocol | Generator contract interface | `learning_compiler/agent/contracts.py` + orchestration usage | Strong | `python protocol dependency injection` |
-| Provider runtime modes | Strategy selection (`internal`, `coding_agent`) | Policy model, provider selection, structured client factory | `learning_compiler/agent/model_policy.py`, `learning_compiler/agent/llm_client.py`, `learning_compiler/config.py` | Strong | `model provider strategy pattern` |
-| Safe command inputs | Input contract hardening | `run_id` regex + path containment checks | `learning_compiler/orchestration/command_utils.py`, `learning_compiler/orchestration/fs.py` | Strong | `path traversal prevention pathlib` |
-| Idempotent progression | Repeat-safe command behavior | Stage sync + marker validation before actions | `sync_stage` + pipeline command flow | Partial | `idempotent orchestration commands` |
-| Failure semantics | Typed error propagation | Domain error taxonomy + stable exit codes | `learning_compiler/errors.py` | Strong | `typed error taxonomy cli` |
-| Resilience controls | Timeout + retry budget | timeout seconds, retry budget, stage-specific failure handling | `learning_compiler/agent/model_policy.py`, `learning_compiler/agent/llm_client.py` | Partial | `timeout retry budget llm pipeline` |
-| Runtime isolation | Circuit breaker / bulkhead | Failure counters, open/half-open states | Not implemented | Missing | `circuit breaker pattern` |
-| Concurrency control | Work queues | Task queue, leases, cancellation | Not implemented | Missing | `task queue lease cancellation` |
-| Sandboxing | Restricted execution environment | Permissions, resource limits, syscall controls | Not implemented | Missing | `sandboxed execution python` |
+| L1 Method family | L2 Technique/pattern | L3 Implementation primitives | Search terms |
+| --- | --- | --- | --- |
+| Command orchestration | Thin CLI / rich core | Parser dispatch + module handlers | `thin cli rich core` |
+| Tool abstraction | Dependency injection via protocol | Generator contract interface | `python protocol dependency injection` |
+| Provider runtime modes | Strategy selection (`internal`, `coding_agent`) | Policy model, provider selection, structured client factory | `model provider strategy pattern` |
+| Safe command inputs | Input contract hardening | `run_id` regex + path containment checks | `path traversal prevention pathlib` |
+| Idempotent progression | Repeat-safe command behavior | Stage sync + marker validation before actions | `idempotent orchestration commands` |
+| Failure semantics | Typed error propagation | Domain error taxonomy + stable exit codes | `typed error taxonomy cli` |
+| Resilience controls | Timeout + retry budget | timeout seconds, retry budget, stage-specific failure handling | `timeout retry budget llm pipeline` |
+| Runtime isolation | Circuit breaker / bulkhead | Failure counters, open/half-open states | `circuit breaker pattern` |
+| Concurrency control | Work queues | Task queue, leases, cancellation | `task queue lease cancellation` |
+| Sandboxing | Restricted execution environment | Permissions, resource limits, syscall controls | `sandboxed execution python` |
 
 ### 7.4 Implementation guidance for retries and idempotency
 
@@ -373,17 +316,17 @@ Reliability and safety constrain what the system is allowed to do, and how it be
 
 ### 8.3 L1–L4 breakdown
 
-| L1 Method family | L2 Technique/pattern | L3 Implementation primitives | L4 Concrete implementation in this repo | Status | Search terms |
-| --- | --- | --- | --- | --- | --- |
-| Contract-first validation | Layered validator architecture | Separate schema/graph/evidence/quality modules | `learning_compiler/validator/*` split by responsibility | Strong | `layered validation architecture` |
-| Structural safety | Schema and DAG guards | Required keys, ID checks, cycle/reachability checks | `curriculum_schema.py`, `curriculum_graph.py` | Strong | `dag validation cycle detection` |
-| Evidence safety | Evidence strictness profiles | Mode-driven evidence requirements | `curriculum_evidence.py` + `EvidenceMode` | Strong | `evidence mode validation` |
-| Failure taxonomy | Stable typed errors | Error enum + exit mapping + details | `learning_compiler/errors.py` | Strong | `domain errors exit codes` |
-| Runtime hardening | Fail-safe orchestration | Catch conversion/type failures and return typed errors | `learning_compiler/orchestration/commands_pipeline.py` | Strong | `fail safe orchestration` |
-| Policy enforcement | Policy engine | Declarative risk rules, policy DSL/config | Not implemented | Missing | `policy engine guardrails` |
-| Adversarial hardening | Fuzzing / hostile input tests | Randomized malformed inputs and assertions | Not implemented | Missing | `property based testing fuzzing python` |
-| Tool safety | Output shielding | Output filtering, schema enforcement, prompt injection defense | Not implemented | Missing | `prompt injection tool security` |
-| Safety gating | Human-in-the-loop approvals | Approval protocol, decision logs | Not implemented | Missing | `human approval gate workflow` |
+| L1 Method family | L2 Technique/pattern | L3 Implementation primitives | Search terms |
+| --- | --- | --- | --- |
+| Contract-first validation | Layered validator architecture | Separate schema/graph/evidence/quality modules | `layered validation architecture` |
+| Structural safety | Schema and DAG guards | Required keys, ID checks, cycle/reachability checks | `dag validation cycle detection` |
+| Evidence safety | Evidence strictness profiles | Mode-driven evidence requirements | `evidence mode validation` |
+| Failure taxonomy | Stable typed errors | Error enum + exit mapping + details | `domain errors exit codes` |
+| Runtime hardening | Fail-safe orchestration | Catch conversion/type failures and return typed errors | `fail safe orchestration` |
+| Policy enforcement | Policy engine | Declarative risk rules, policy DSL/config | `policy engine guardrails` |
+| Adversarial hardening | Fuzzing / hostile input tests | Randomized malformed inputs and assertions | `property based testing fuzzing python` |
+| Tool safety | Output shielding | Output filtering, schema enforcement, prompt injection defense | `prompt injection tool security` |
+| Safety gating | Human-in-the-loop approvals | Approval protocol, decision logs | `human approval gate workflow` |
 
 ### 8.4 Implementation guidance: policy as code
 
@@ -416,16 +359,16 @@ Agentic systems do not fail like deterministic programs. They fail like systems 
 
 ### 9.3 L1–L4 breakdown
 
-| L1 Method family | L2 Technique/pattern | L3 Implementation primitives | L4 Concrete implementation in this repo | Status | Search terms |
-| --- | --- | --- | --- | --- | --- |
-| Regression quality | Fixture-based tests | Canonical sample artifacts | `tests/fixtures/curriculum.json`, `tests/test_curriculum_fixture.py` | Strong | `golden file testing` |
-| Reproducibility assurance | Determinism tests | Repeat generation equality checks | `tests/test_agent_determinism.py`, `docs/determinism.md` | Strong | `deterministic test strategy` |
-| Architectural quality | Static boundary checks | Import graph constraints | `scripts/static_checks.py`, `tests/test_architecture_boundaries.py` | Strong | `architecture boundary tests` |
-| Gate automation | Quality gate script | syntax + static + validate + tests + coverage | `scripts/gate.sh`, `make gate` | Strong | `quality gate ci pipeline` |
-| Incident-to-test loop | Regression capture | Tests added for discovered runtime bugs | `tests/test_orchestration_cli.py` additions | Strong | `bug regression test workflow` |
-| Evals at scale | Scenario benchmark suite | Versioned eval datasets + score tracking | Not implemented | Missing | `llm eval harness regression` |
-| Fault injection | Chaos/adversarial tests | Synthetic failures in runtime paths | Not implemented | Missing | `chaos testing workflow engine` |
-| Oracle design | Proposer/Judge evals | Independent verifier (rule-based or model-based) | Partially present via generator/validator split | Partial | `proposer judge pattern` |
+| L1 Method family | L2 Technique/pattern | L3 Implementation primitives | Search terms |
+| --- | --- | --- | --- |
+| Regression quality | Fixture-based tests | Canonical sample artifacts | `golden file testing` |
+| Reproducibility assurance | Determinism tests | Repeat generation equality checks | `deterministic test strategy` |
+| Architectural quality | Static boundary checks | Import graph constraints | `architecture boundary tests` |
+| Gate automation | Quality gate script | syntax + static + validate + tests + coverage | `quality gate ci pipeline` |
+| Incident-to-test loop | Regression capture | Tests added for discovered runtime bugs | `bug regression test workflow` |
+| Evals at scale | Scenario benchmark suite | Versioned eval datasets + score tracking | `llm eval harness regression` |
+| Fault injection | Chaos/adversarial tests | Synthetic failures in runtime paths | `chaos testing workflow engine` |
+| Oracle design | Proposer/Judge evals | Independent verifier (rule-based or model-based) | `proposer judge pattern` |
 
 ### 9.4 Implementation guidance: eval harness architecture
 
@@ -436,7 +379,7 @@ A scalable eval harness tends to require:
 - **Scoring**: rule-based checks + optional model-graded checks (with calibration).
 - **Reporting**: trend charts, regressions, and per-scenario diffs.
 
-A strong engineering stance: **make evals executable artifacts** in the repo, not spreadsheets.
+A strong engineering stance: **make evals executable artifacts**, not spreadsheets.
 
 ---
 
@@ -455,15 +398,15 @@ Observability answers: “What happened? Why did it happen? How do we prevent it
 
 ### 10.3 L1–L4 breakdown
 
-| L1 Method family | L2 Technique/pattern | L3 Implementation primitives | L4 Concrete implementation in this repo | Status | Search terms |
-| --- | --- | --- | --- | --- | --- |
-| Transition logging | Structured run events | Standard event schema with metadata | `learning_compiler/orchestration/events.py`, `stage.py` | Strong | `structured event logging` |
-| Run audit trail | Append-only history | Persisted run history in `run.json` and logs | `learning_compiler/orchestration/meta.py`, `runs/*/logs/events.jsonl` | Strong | `append only audit log` |
-| Diagnostics | Error details payloads | Contextual details in typed errors | `learning_compiler/errors.py`, orchestration errors | Partial | `context rich error handling` |
-| Operational metrics | Reliability/cost/latency metrics | Metric collector + summary artifact | Not implemented | Missing | `sli slo metrics pipeline` |
-| Tracing | Distributed spans | Trace IDs, span boundaries | Not implemented | Missing | `opentelemetry python tracing` |
-| Incident workflow | Runbooks/postmortems | Failure taxonomy + standard response docs | Not implemented | Missing | `incident runbook postmortem` |
-| Cost control | Budgeting | Per-run cost caps, per-tool budgets | Not implemented | Missing | `cost budget llm tools` |
+| L1 Method family | L2 Technique/pattern | L3 Implementation primitives | Search terms |
+| --- | --- | --- | --- |
+| Transition logging | Structured run events | Standard event schema with metadata | `structured event logging` |
+| Run audit trail | Append-only history | Persisted run history and logs | `append only audit log` |
+| Diagnostics | Error details payloads | Contextual details in typed errors | `context rich error handling` |
+| Operational metrics | Reliability/cost/latency metrics | Metric collector + summary artifact | `sli slo metrics pipeline` |
+| Tracing | Distributed spans | Trace IDs, span boundaries | `opentelemetry python tracing` |
+| Incident workflow | Runbooks/postmortems | Failure taxonomy + standard response docs | `incident runbook postmortem` |
+| Cost control | Budgeting | Per-run cost caps, per-tool budgets | `cost budget llm tools` |
 
 ### 10.4 Implementation guidance: minimum viable ops layer
 
@@ -490,15 +433,15 @@ Human control is not an afterthought; it is the antidote to the unpredictability
 
 ### 11.3 L1–L4 breakdown
 
-| L1 Method family | L2 Technique/pattern | L3 Implementation primitives | L4 Concrete implementation in this repo | Status | Search terms |
-| --- | --- | --- | --- | --- | --- |
-| Operator guidance | Next-action hints | Stage→action mapping | `cmd_next` in `learning_compiler/orchestration/commands_basic.py` | Strong | `operator guidance workflow cli` |
-| State transparency | Status dashboard command | Stage + artifact summary output | `cmd_status` in `learning_compiler/orchestration/commands_basic.py` | Strong | `status command design` |
-| Visual inspection | DAG explorer UI | Graph render, node details, filters | `app/index.html`, `app/main.js`, `app/styles.css` | Strong | `curriculum dag inspector` |
-| Safe rendering | HTML escaping for loaded JSON | Escape untrusted fields before `innerHTML` | `escapeHtml` usage in `app/main.js` | Strong | `xss escaping innerhtml` |
-| Human approval loops | Approval checkpoints | Confirm-before-transition gates | Not implemented | Missing | `human in the loop approval workflow` |
-| Guided remediation | Failure playbook UX | Actionable remediation flows in CLI/UI | Not implemented | Missing | `error remediation ux` |
-| Explainability | Evidence-backed explanations | Explanation schema, citations/provenance fields | Partially present via evidence validation | Partial | `provenance explanation schema` |
+| L1 Method family | L2 Technique/pattern | L3 Implementation primitives | Search terms |
+| --- | --- | --- | --- |
+| Operator guidance | Next-action hints | Stage→action mapping | `operator guidance workflow cli` |
+| State transparency | Status dashboard command | Stage + artifact summary output | `status command design` |
+| Visual inspection | DAG explorer UI | Graph render, node details, filters | `curriculum dag inspector` |
+| Safe rendering | HTML escaping for loaded JSON | Escape untrusted fields before `innerHTML` | `xss escaping innerhtml` |
+| Human approval loops | Approval checkpoints | Confirm-before-transition gates | `human in the loop approval workflow` |
+| Guided remediation | Failure playbook UX | Actionable remediation flows in CLI/UI | `error remediation ux` |
+| Explainability | Evidence-backed explanations | Explanation schema, citations/provenance fields | `provenance explanation schema` |
 
 ### 11.4 Implementation guidance: approval gates
 
@@ -531,16 +474,16 @@ Security and governance constrain what the system may access and do, and how it 
 - **Separation of duties**: high-risk actions require separate approval.
 - **Privacy compliance**: memory does not become an unbounded data sink.
 
-### 12.3 L1–L4 breakdown (recommended additions)
+### 12.3 L1–L4 breakdown
 
-| L1 Method family | L2 Technique/pattern | L3 Implementation primitives | L4 Concrete implementation (recommended) | Status | Search terms |
-| --- | --- | --- | --- | --- | --- |
-| Access control | Capability-based tools | Tool scopes, permission model, allowlists | `security/capabilities.py`, `tool_registry.py` with per-tool scopes | Missing | `capability based security` |
-| Prompt injection defense | Tool input sandboxing | Tool schema enforcement, content filters, denylists | `security/prompt_injection.py`, validators on tool args | Missing | `prompt injection tool defense` |
-| Data governance | Memory retention/TTL | Retention policies, redaction, deletion protocol | `memory/retention.py` + tests | Missing | `data retention policy ttl` |
-| Audit and compliance | Immutable audit log | Append-only logs, tamper detection | Extend `events.jsonl` with hash chaining | Missing | `audit log hash chain` |
-| Secrets handling | Secret isolation | Secret store adapter, no secrets in prompts | `security/secrets.py` + CI checks | Missing | `secret scanning ci` |
-| Abuse prevention | Rate limiting | Tool usage quotas, per-run budgets | `runtime/budgets.py` | Missing | `rate limit quota enforcement` |
+| L1 Method family | L2 Technique/pattern | L3 Implementation primitives | Search terms |
+| --- | --- | --- | --- |
+| Access control | Capability-based tools | Tool scopes, permission model, allowlists | `capability based security` |
+| Prompt injection defense | Tool input sandboxing | Tool schema enforcement, content filters, denylists | `prompt injection tool defense` |
+| Data governance | Memory retention/TTL | Retention policies, redaction, deletion protocol | `data retention policy ttl` |
+| Audit and compliance | Immutable audit log | Append-only logs, tamper detection | `audit log hash chain` |
+| Secrets handling | Secret isolation | Secret store adapter, no secrets in prompts | `secret scanning ci` |
+| Abuse prevention | Rate limiting | Tool usage quotas, per-run budgets | `rate limit quota enforcement` |
 
 This field is intentionally listed as a first-class L0 domain. In production, leaving it implicit is a design bug.
 
@@ -552,17 +495,17 @@ This field is intentionally listed as a first-class L0 domain. In production, le
 
 This section answers: **which named loop patterns exist, and what do they require to implement safely?**
 
-| Pattern | Core idea | Typical failure mode | Present in this repo |
-| --- | --- | --- | --- |
-| **ReAct** | Iterative reason→act→observe loop with tool calls | Unbounded loops; unsafe tool choices | Missing |
-| **Plan-and-Execute** | Produce a plan artifact; execute with a cursor | Planner/executor mismatch; stale plans | Partial (staged pipeline) |
-| **Reflexion** | Self-critique and repair passes | Over-correction; endless self-review | Strong (critic + planner + repair loop) |
-| **Proposer/Judge** | Generation separated from validation | Judge bottleneck or weak oracle | Strong |
-| **Tree/Graph of Thought** | Branching reasoning exploration | Cost blow-up; selection bias | Missing |
-| **Self-Ask** | Ask sub-questions; answer them iteratively | Sub-question drift | Missing |
-| **Multi-agent debate** | Multiple agents propose/criticize | Groupthink; cost blow-up | Missing |
-| **Toolformer-style tool use** | Model learns when to call tools | Tool misuse; schema mismatch | Missing |
-| **Compiler pattern** | Model writes structured IR; runtime executes | IR drift; validator gaps | Strong (curriculum/plan artifacts) |
+| Pattern | Core idea | Typical failure mode |
+| --- | --- | --- |
+| **ReAct** | Iterative reason→act→observe loop with tool calls | Unbounded loops; unsafe tool choices |
+| **Plan-and-Execute** | Produce a plan artifact; execute with a cursor | Planner/executor mismatch; stale plans |
+| **Reflexion** | Self-critique and repair passes | Over-correction; endless self-review |
+| **Proposer/Judge** | Generation separated from validation | Judge bottleneck or weak oracle |
+| **Tree/Graph of Thought** | Branching reasoning exploration | Cost blow-up; selection bias |
+| **Self-Ask** | Ask sub-questions; answer them iteratively | Sub-question drift |
+| **Multi-agent debate** | Multiple agents propose/criticize | Groupthink; cost blow-up |
+| **Toolformer-style tool use** | Model learns when to call tools | Tool misuse; schema mismatch |
+| **Compiler pattern** | Model writes structured IR; runtime executes | IR drift; validator gaps |
 
 ### Engineering note: bounded autonomy
 
@@ -607,140 +550,6 @@ This section lists the most reusable implementation primitives across fields. Th
 - Termination reasons: `Success`, `FailedValidation`, `ExceededBudget`, `PolicyDenied`, `ToolFailure`.
 
 These taxonomies are not bureaucracy; they are what makes retries, runbooks, and metrics possible.
-
----
-
-# Part III — Concrete roadmap: from PoC to production
-
-## 15. Capability maturity model
-
-A simple maturity model helps prevent premature complexity:
-
-### 15.1 Phase 0 — Educational PoC
-
-- Artifact-based pipeline (generate/validate/plan).
-- Deterministic test mode.
-- Typed errors and basic logs.
-
-### 15.2 Phase 1 — Controlled autonomy (MVP)
-
-- Add bounded ReAct for a sub-workflow.
-- Add basic retries/timeouts.
-- Add per-run metrics (`metrics.json`).
-- Add policy engine with a small rule set.
-- Add approval gate for high-impact tool calls.
-
-### 15.3 Phase 2 — Production-grade autonomy
-
-- Distributed tracing and correlation IDs.
-- Scenario eval harness with trend tracking.
-- Fault injection tests (simulated tool failures).
-- Semantic memory with privacy policies and provenance.
-- Runbooks and incident workflows.
-
-### 15.4 Phase 3 — Scale and governance
-
-- Multi-tenant isolation (if applicable).
-- Formal policy bundles; review workflows.
-- Compliance artifacts: retention, audit, access control.
-- Cost optimization and caching.
-
----
-
-## 16. Gap map: what is implemented versus what is next
-
-| Domain | Implemented now (from this repo) | Recommended next capability |
-| --- | --- | --- |
-| Planning | Deterministic DAG and schedule planning | Dynamic action loops (`ReAct`, bounded search) |
-| Runtime | Command orchestration and typed failures | Retries/backoff/timeouts/circuit breakers |
-| State | Strict run metadata and stage sync | Checkpoints, rollback, semantic memory |
-| Reliability | Layered validators and fail-fast contracts | Policy engines, fuzz/adversarial validation |
-| Quality | Tests + gate + determinism checks | Eval harnesses, fault-injection testing |
-| Ops | Structured run events/history | Metrics, tracing, SLOs, incident runbooks |
-| Human control | Status/next + visual inspector | Approval gates and guided remediation |
-| Security/governance | Not first-class yet | Capability controls, retention, audit hardening |
-
----
-
-## 17. Suggested learning and implementation sequence (high leverage)
-
-1. **Runtime resilience first**  
-   Implement retries/backoff/timeouts, then a circuit breaker.  
-   Rationale: tool instability is a dominant failure class and blocks adoption.
-
-2. **Add one dynamic loop pattern (bounded)**  
-   Implement ReAct within a constrained sub-workflow.  
-   Rationale: closes the feedback loop while keeping blast radius small.
-
-3. **Operationalize the system**  
-   Add per-run metrics, basic tracing IDs, and runbooks.  
-   Rationale: “we can run it” becomes true.
-
-4. **Add human control maturity**  
-   Add approval checkpoints before high-impact transitions.  
-   Rationale: converts autonomy into “supervised autonomy.”
-
-Every step should include:
-- implementation changes,
-- regression tests,
-- an update to this chapter,
-- and a passing `make gate` run.
-
----
-
-## 18. Focused Track: Single-Agent Staff Path (No Multi-Agent/Scale Yet)
-
-This section defines a high-leverage path when you intentionally defer:
-- multi-agent architectures,
-- distributed scale concerns,
-- and multi-tenant complexity.
-
-The objective is to reach **staff-level single-agent engineering rigor** first, then expand scope.
-
-### 18.1 Scope constraints (intentional)
-
-For this track:
-
-- one agent loop/controller,
-- bounded autonomy,
-- deterministic acceptance gate,
-- local/run-oriented artifact lifecycle.
-
-Anything requiring multi-agent coordination or scale orchestration is explicitly out-of-scope for this phase.
-
-### 18.2 Prioritized capability additions (L2 -> L4)
-
-| Priority | Capability | L2 pattern | L3 primitives | L4 concrete implementation (recommended) | Acceptance evidence |
-| --- | --- | --- | --- | --- | --- |
-| P1 | Bounded loop runtime | Bounded autonomy | `LoopBudget`, `StopPolicy`, `TerminationReason` | Extend optimizer loop controls in `learning_compiler/agent/optimizer.py` and model policy in `learning_compiler/agent/model_policy.py` | Tests proving step/tool/time budgets hard-stop correctly |
-| P1 | Policy gate before side effects | Policy-as-code gate | `PolicyInput`, `PolicyDecision`, deterministic `PolicyRule` interface | Add `learning_compiler/policy/engine.py` and enforce decision in tool-execution paths | Tests for allow/deny/require-approval outcomes |
-| P1 | Retry + idempotency discipline | Typed retry policy | Error classifier (`Transient`/`Permanent`), idempotency key contract | Add retry classifier in runtime/LLM client paths and idempotency markers for side-effecting actions | Tests proving transient retries and permanent no-retry behavior |
-| P2 | Scenario eval harness | Scenario-based evals | `Scenario`, `EvalRunner`, `EvalReport` | Add `learning_compiler/evals/runner.py` + versioned scenario fixtures under `tests/evals/` | Per-scenario report artifact + regression diffs |
-| P2 | Fault-injection tests | Chaos/failure simulation | Fault plan model, injectable failure hooks | Add injected failure paths for timeout/malformed output/policy denial in tests | Tests proving safe failure and typed error surfaces |
-| P2 | Operational metrics artifact | Run metrics baseline | `MetricsRecord`, counters/histograms, run summary | Emit `metrics.json` in `runs/<run_id>/outputs/reviews/` | Metrics file includes retries, failures, duration, termination reason |
-| P3 | Trace correlation IDs | End-to-end traceability | `trace_id`, per-step correlation fields | Propagate `trace_id` through optimizer iterations, validator reports, and runtime events | Traceability tests (same run has stable correlation chain) |
-| P3 | Human approval protocol | Supervised autonomy | `ApprovalRequest`, `ApprovalDecision`, persisted markers | Add approval artifacts + CLI commands in orchestration layer | Risky action is blocked until explicit approval marker exists |
-| P3 | Security baseline at tool boundaries | Tool schema hardening | strict schema checks, prompt-injection guard predicates | Add schema enforcement/guard modules in runtime/tool boundary layer | Tests for blocked malformed/injected tool requests |
-
-### 18.3 Execution order (30-60 day practical plan)
-
-1. Complete all P1 items first.
-2. Add P2 eval + fault + metrics as one reliability bundle.
-3. Add P3 trace + approval + security baseline.
-4. Re-run and compare artifacts after each bundle:
-   - `curriculum.json`
-   - `optimization_trace.json`
-   - `validation_report.md`
-   - `metrics.json` (once added)
-
-### 18.4 “Staff-level for this scope” definition
-
-For this constrained scope, staff-level capability means:
-
-- you can explain and defend loop/policy/runtime tradeoffs,
-- you can predict likely failures before running,
-- you can harden behavior with tests and gates (not ad-hoc patching),
-- and you can improve quality without regressing reliability.
 
 ---
 
@@ -791,7 +600,7 @@ A runtime claim is only meaningful when its trust boundary is explicit. At minim
 Minimum implementation expectation:
 
 - Boundary diagram in docs.
-- Machine-readable assumption manifest in the repo.
+- Machine-readable assumption manifest.
 - Tests that fail if an alternate execution path bypasses mediation in the evaluated architecture.
 
 ### 19.5 Tool effect taxonomy and commitment semantics
@@ -925,47 +734,6 @@ A conformance artifact should summarize:
 - diagnostic counters for blocked actions, violation types, and recovery actions.
 
 This pattern turns governance from narrative claims into executable evidence.
-
----
-
-# Appendix — Practical checklists (L3/L4 emphasis)
-
-## A.1 Implementation checklist by granularity level
-
-### L0–L1 (field and method understanding)
-
-- Explain each field boundary and why it matters.
-- Map method families to fields without overlap confusion.
-- Identify cross-cutting constraints (security, cost, policy).
-
-### L2 (technique/pattern competency)
-
-- Implement at least one new named technique per quarter.
-- Define success/failure/stop conditions for every loop.
-- Add tests proving behavior change and failure handling.
-
-### L3 (implementation primitives)
-
-- Define typed contracts before adding new behavior.
-- Add explicit error semantics for each new primitive.
-- Add structured events for all state transitions and tool calls.
-
-### L4 (concrete shipping behavior)
-
-- Update code, tests, and docs together.
-- Add fixtures for new artifact formats.
-- Run `make gate` before handoff.
-
-## A.2 “Definition of Done” for adding a new capability
-
-A capability is “done” when:
-
-- A typed interface exists (protocol/model/schema).
-- A validator exists (schema + semantic checks).
-- Failure modes are classified and tested.
-- Traces/logs exist for debugging.
-- A regression test prevents backsliding.
-- The chapter map is updated.
 
 ---
 
