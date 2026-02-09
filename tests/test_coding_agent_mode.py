@@ -11,6 +11,7 @@ from learning_compiler.agent.llm_client import (
     CodexExecLLMClient,
     LLMRequest,
     RemoteLLMClient,
+    _schema_for,
     build_llm_client,
 )
 from learning_compiler.errors import ErrorCode, LearningCompilerError
@@ -19,6 +20,14 @@ from learning_compiler.config import reset_config_cache
 
 
 class CodingAgentModeTests(unittest.TestCase):
+    def test_curriculum_schema_defines_node_items_for_codex_structured_output(self) -> None:
+        schema = _schema_for("proposer_curriculum_v1")
+        curriculum = schema["properties"]["curriculum"]
+        nodes = curriculum["properties"]["nodes"]
+        self.assertEqual("array", nodes["type"])
+        self.assertIn("items", nodes)
+        self.assertEqual("object", nodes["items"]["type"])
+
     def test_default_model_policy_uses_codex_exec_provider(self) -> None:
         previous = os.environ.pop("AGENT_PROVIDER", None)
         reset_config_cache()
@@ -50,6 +59,28 @@ class CodingAgentModeTests(unittest.TestCase):
             reset_config_cache()
         self.assertEqual(ModelProvider.CODEX_EXEC, policy.provider)
         self.assertEqual("codex", policy.model_id)
+
+    def test_default_model_policy_leaves_codex_exec_model_unset(self) -> None:
+        previous_provider = os.environ.get("AGENT_PROVIDER")
+        previous_model = os.environ.get("AGENT_MODEL")
+        os.environ["AGENT_PROVIDER"] = "codex_exec"
+        os.environ.pop("AGENT_MODEL", None)
+        reset_config_cache()
+        try:
+            policy = default_model_policy()
+        finally:
+            if previous_provider is None:
+                os.environ.pop("AGENT_PROVIDER", None)
+            else:
+                os.environ["AGENT_PROVIDER"] = previous_provider
+            if previous_model is None:
+                os.environ.pop("AGENT_MODEL", None)
+            else:
+                os.environ["AGENT_MODEL"] = previous_model
+            reset_config_cache()
+        self.assertEqual(ModelProvider.CODEX_EXEC, policy.provider)
+        self.assertEqual("", policy.model_id)
+        self.assertEqual(300, policy.timeout_seconds)
 
     def test_codex_exec_client_accepts_structured_json_from_stub_command(self) -> None:
         with tempfile.TemporaryDirectory() as tmp_dir:
@@ -94,6 +125,45 @@ class CodingAgentModeTests(unittest.TestCase):
 
             self.assertIn("curriculum", response)
             self.assertEqual("stub", response["curriculum"]["topic"])
+
+    def test_codex_exec_reports_config_error_for_chatgpt_unsupported_model(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            tmp = Path(tmp_dir)
+            stub = tmp / "stub_coding_agent_error.py"
+            stub.write_text(
+                (
+                    "import sys\n"
+                    "sys.stderr.write('{\"detail\":\"The \\'codex\\' model is not supported when using Codex with a ChatGPT account.\"}')\n"
+                    "raise SystemExit(1)\n"
+                ),
+                encoding="utf-8",
+            )
+            client = CodexExecLLMClient(
+                command=("python3.11", str(stub)),
+                workdir=tmp,
+            )
+            policy = ModelPolicy(
+                provider=ModelProvider.CODEX_EXEC,
+                model_id="codex",
+                temperature=0.0,
+                max_iterations=2,
+                max_actions_per_iteration=2,
+                target_score=80,
+                timeout_seconds=10,
+                retry_budget=1,
+                schema_version="1.0",
+            )
+
+            with self.assertRaises(LearningCompilerError) as raised:
+                client.run_json(
+                    LLMRequest(
+                        stage="proposer",
+                        schema_name="proposer_curriculum_v1",
+                        payload={"draft_curriculum": {"topic": "x", "nodes": []}},
+                    ),
+                    policy,
+                )
+            self.assertEqual(ErrorCode.CONFIG_ERROR, raised.exception.code)
 
     def test_build_llm_client_uses_codex_exec_when_provider_selected(self) -> None:
         previous_provider = os.environ.get("AGENT_PROVIDER")

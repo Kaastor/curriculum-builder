@@ -67,9 +67,10 @@ def default_model_policy() -> ModelPolicy:
     elif provider == ModelProvider.REMOTE_LLM:
         model_id = "gpt-4.1-mini"
     elif provider == ModelProvider.CODEX_EXEC:
-        model_id = "codex"
+        model_id = ""
     else:
         model_id = "internal-heuristic-v1"
+    timeout_default = "300" if provider == ModelProvider.CODEX_EXEC else "30"
 
     return ModelPolicy(
         provider=provider,
@@ -80,7 +81,10 @@ def default_model_policy() -> ModelPolicy:
             os.environ.get("AGENT_MAX_ACTIONS_PER_ITERATION", "4"), 4
         ),
         target_score=_env_int(os.environ.get("AGENT_TARGET_SCORE", "82"), 82),
-        timeout_seconds=_env_int(os.environ.get("AGENT_TIMEOUT_SECONDS", "30"), 30),
+        timeout_seconds=_env_int(
+            os.environ.get("AGENT_TIMEOUT_SECONDS", timeout_default),
+            int(timeout_default),
+        ),
         retry_budget=_env_int(os.environ.get("AGENT_RETRY_BUDGET", "1"), 1),
         schema_version="1.0",
     )

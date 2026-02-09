@@ -117,7 +117,7 @@ Generation provider is configurable:
 
 Related env vars:
 - `AGENT_PROVIDER`
-- `AGENT_MODEL` (for example `gpt-4.1-mini` in `remote_llm`, or `codex` in `codex_exec`)
+- `AGENT_MODEL` (for example `gpt-4.1-mini` in `remote_llm`; optional in `codex_exec`)
 - `CODING_AGENT_CMD` (defaults to `codex`)
 - `OPENAI_API_KEY` (required for `remote_llm`)
 - `OPENAI_BASE_URL` (optional, defaults to `https://api.openai.com/v1`)
@@ -127,11 +127,14 @@ Related env vars:
 - `AGENT_TIMEOUT_SECONDS`
 - `AGENT_RETRY_BUDGET`
 
+Default timeout behavior:
+- `codex_exec`: 300s
+- `remote_llm` / `internal`: 30s
+
 Examples:
 
 ```bash
 AGENT_PROVIDER=codex_exec \
-AGENT_MODEL=codex \
 CODING_AGENT_CMD=codex \
 python3.11 scripts/orchestration.py run <run_id>
 ```
