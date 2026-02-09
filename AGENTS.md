@@ -12,6 +12,10 @@
 - Prefer small, reviewable changes. If a change is broad, propose a plan first.
 - Ask before adding new production dependencies.
 - After making changes, update documentation (`README.md` and related `docs/`) in the same change set.
+- Documentation quality bar is staff-level: documents should explain architecture, design rationale/tradeoffs, contracts/invariants, and operational behavior clearly.
+- Document all flows with Mermaid diagrams to provide comprehensive end-to-end flow understanding (happy path, alternate paths, and failure/recovery paths where applicable).
+- Before handoff, validate that every Mermaid diagram introduced or modified in the change set compiles successfully.
+- Canonical home for detailed technical documentation is `docs/`; keep `README.md` concise as an entrypoint and doc index.
 - After making changes, remove dead paths, dead code, and unnecessary code introduced or revealed by the change.
 - Do not edit `.env` / secrets files.
 - Do not run destructive git operations unless explicitly requested.
