@@ -9,6 +9,10 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 
+DISALLOWED_IMPORT_REDIRECTS: dict[str, str] = {
+    "learning_compiler.agent.llm_client": "learning_compiler.agent.llm.llm_client",
+}
+
 
 def _module_name(path: Path) -> str:
     return ".".join(path.with_suffix("").relative_to(ROOT).parts)
@@ -58,6 +62,16 @@ def _check_boundaries(module: str, imports: list[str], errors: list[str]) -> Non
             )
 
 
+def _check_forbidden_imports(module: str, imports: list[str], errors: list[str]) -> None:
+    for imported in imports:
+        replacement = DISALLOWED_IMPORT_REDIRECTS.get(imported)
+        if replacement is None:
+            continue
+        errors.append(
+            f"{module}: import '{imported}' is disallowed; use '{replacement}'"
+        )
+
+
 def run() -> int:
     errors: list[str] = []
     for path in sorted((ROOT / "learning_compiler").rglob("*.py")):
@@ -71,6 +85,7 @@ def run() -> int:
 
         _check_no_wildcard_imports(path, tree, errors)
         _check_boundaries(module, imports, errors)
+        _check_forbidden_imports(module, imports, errors)
 
     if errors:
         print("static-checks: FAIL")

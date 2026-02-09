@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import importlib.util
 import subprocess
 import sys
 import unittest
@@ -20,6 +21,24 @@ class StaticChecksScriptTests(unittest.TestCase):
             check=False,
         )
         self.assertEqual(0, proc.returncode, msg=proc.stdout + "\n" + proc.stderr)
+
+    def test_forbidden_imports_check_flags_disallowed_paths(self) -> None:
+        spec = importlib.util.spec_from_file_location("static_checks_module", SCRIPT)
+        self.assertIsNotNone(spec)
+        module = importlib.util.module_from_spec(spec)
+        assert spec is not None and spec.loader is not None
+        spec.loader.exec_module(module)
+
+        errors: list[str] = []
+        module._check_forbidden_imports(  # type: ignore[attr-defined]
+            "learning_compiler.agent.generator",
+            ["learning_compiler.agent.llm_client"],
+            errors,
+        )
+
+        self.assertEqual(1, len(errors))
+        self.assertIn("is disallowed", errors[0])
+        self.assertIn("learning_compiler.agent.llm.llm_client", errors[0])
 
 
 if __name__ == "__main__":
