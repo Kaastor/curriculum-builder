@@ -22,7 +22,11 @@ Optional selection controls:
 - `--scope-section <heading text>` (repeatable; required for `section` mode)
 
 Implementation:
-- `learning_compiler/orchestration/scope.py`
+- `learning_compiler/orchestration/scope_args.py`
+- `learning_compiler/orchestration/scope_selection.py`
+- `learning_compiler/orchestration/scope_topic_spec.py`
+- `learning_compiler/orchestration/scope_pipeline.py`
+- `learning_compiler/markdown_scope.py`
 
 ## 3. Selection Modes
 

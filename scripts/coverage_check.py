@@ -14,7 +14,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
-MIN_COVERAGE = float(os.environ.get("COVERAGE_MIN", "30"))
+MIN_COVERAGE = float(os.environ.get("COVERAGE_MIN", "50"))
 
 
 def _statement_lines(path: Path) -> set[int]:

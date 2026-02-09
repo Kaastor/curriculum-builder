@@ -4,11 +4,11 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-import re
 from typing import Any
 
 from learning_compiler.config import load_config
 from learning_compiler.domain import TopicSpec
+from learning_compiler.markdown_scope import markdown_phrase_candidates
 
 
 @dataclass(slots=True, frozen=True)
@@ -26,16 +26,6 @@ class GenerationSpec:
     scope_document_text: str | None
 
 
-def as_int(value: Any, default: int) -> int:
-    return value if isinstance(value, int) and not isinstance(value, bool) else default
-
-
-def as_float(value: Any, default: float) -> float:
-    if isinstance(value, (int, float)) and not isinstance(value, bool):
-        return float(value)
-    return default
-
-
 def normalize_evidence_mode(value: Any) -> str:
     mode = str(value or "minimal").strip().lower()
     if mode in {"minimal", "standard", "strict"}:
@@ -50,74 +40,13 @@ def derive_topic_label(topic_spec: TopicSpec) -> str:
     return goal[:69].rstrip() + "..."
 
 
-def _normalize_scope_seed(raw: str) -> str:
-    value = raw.strip()
-    value = re.sub(r"\[([^\]]+)\]\([^)]+\)", r"\1", value)
-    value = value.replace("`", "")
-    value = re.sub(r"\s+", " ", value).strip(" -:;,.")
-    return value
-
-
 def _scope_titles_from_markdown(scope_text: str, max_titles: int) -> tuple[str, ...]:
-    heading_re = re.compile(r"^(#{1,6})\s+(.*?)\s*$")
-    bullet_re = re.compile(r"^\s*(?:[-*+]|\d+[.)])\s+(.*?)\s*$")
-    titles: list[str] = []
-
-    lines = scope_text.splitlines()
-    in_code = False
-    in_front_matter = bool(lines and lines[0].strip() == "---")
-    for index, raw_line in enumerate(lines):
-        line_no = index + 1
-        stripped = raw_line.strip()
-        if in_front_matter:
-            if line_no == 1:
-                continue
-            if stripped == "---":
-                in_front_matter = False
-            continue
-        if stripped.startswith("```"):
-            in_code = not in_code
-            continue
-        if in_code or not stripped:
-            continue
-
-        heading_match = heading_re.match(raw_line)
-        if heading_match:
-            depth = len(heading_match.group(1))
-            if depth <= 3:
-                heading = _normalize_scope_seed(heading_match.group(2))
-                if heading:
-                    titles.append(heading)
-            continue
-
-        bullet_match = bullet_re.match(raw_line)
-        if bullet_match:
-            bullet = _normalize_scope_seed(bullet_match.group(1))
-            if bullet:
-                titles.append(bullet)
-            if len(titles) >= max_titles:
-                break
-            continue
-
-        for fragment in re.split(r"[.!?;]+", stripped):
-            sentence = _normalize_scope_seed(fragment)
-            if not sentence:
-                continue
-            if len(sentence.split()) < 3:
-                continue
-            titles.append(sentence)
-        if len(titles) >= max_titles:
-            break
-
-    deduped: list[str] = []
-    seen: set[str] = set()
-    for title in titles:
-        key = title.lower()
-        if key in seen:
-            continue
-        seen.add(key)
-        deduped.append(title)
-    return tuple(deduped[:max_titles])
+    candidates = markdown_phrase_candidates(
+        scope_text,
+        max_heading_depth=3,
+        min_sentence_words=3,
+    )
+    return tuple(candidates[:max_titles])
 
 
 def _read_scope_document(topic_spec: TopicSpec) -> tuple[str | None, str | None]:

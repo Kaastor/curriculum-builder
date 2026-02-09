@@ -5,8 +5,6 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, Protocol
 
-from learning_compiler.agent.generator import generate_curriculum_file
-
 
 class CurriculumGenerator(Protocol):
     """Interface for curriculum generation engines."""
@@ -19,4 +17,6 @@ class DefaultCurriculumGenerator:
     """Default generator used by orchestration."""
 
     def generate_file(self, topic_spec_path: Path, curriculum_path: Path) -> dict[str, Any]:
+        from learning_compiler.agent.generator import generate_curriculum_file
+
         return generate_curriculum_file(topic_spec_path, curriculum_path)
