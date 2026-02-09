@@ -71,7 +71,7 @@ def _max_prereq_estimate(node: dict[str, Any], node_index: dict[str, dict[str, A
     return max(values) if values else 0.0
 
 
-class LLMCritic:
+class PedagogyCritic:
     """Deterministic critic for learner-path and pedagogy diagnostics."""
 
     def critique(
@@ -166,3 +166,7 @@ class LLMCritic:
             summary=summary,
             diagnostics=tuple(diagnostics),
         )
+
+
+# Backward-compatible alias used by older imports/tests.
+LLMCritic = PedagogyCritic

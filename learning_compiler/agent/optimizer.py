@@ -6,10 +6,10 @@ from copy import deepcopy
 from dataclasses import dataclass
 
 from learning_compiler.agent.model_policy import ModelPolicy
-from learning_compiler.agent.pedagogy_critic import LLMCritic
-from learning_compiler.agent.proposer import LLMProposer
+from learning_compiler.agent.pedagogy_critic import PedagogyCritic
+from learning_compiler.agent.proposer import Proposer
 from learning_compiler.agent.quality_model import DeterministicQualityJudge
-from learning_compiler.agent.repair_executor import LLMRepairExecutor
+from learning_compiler.agent.repair_executor import RepairExecutor
 from learning_compiler.agent.repair_planner import RepairPlanner
 from learning_compiler.agent.research import ResourceResolver
 from learning_compiler.agent.spec import GenerationSpec
@@ -27,11 +27,11 @@ class LoopController:
 
     def __init__(
         self,
-        proposer: LLMProposer,
-        critic: LLMCritic,
+        proposer: Proposer,
+        critic: PedagogyCritic,
         judge: DeterministicQualityJudge,
         planner: RepairPlanner,
-        repair: LLMRepairExecutor,
+        repair: RepairExecutor,
     ) -> None:
         self._proposer = proposer
         self._critic = critic

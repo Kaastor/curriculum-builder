@@ -9,10 +9,10 @@ from typing import Any
 from learning_compiler.agent.llm_client import build_llm_client
 from learning_compiler.agent.model_policy import ModelPolicy, default_model_policy
 from learning_compiler.agent.optimizer import LoopController
-from learning_compiler.agent.pedagogy_critic import LLMCritic
-from learning_compiler.agent.proposer import LLMProposer
+from learning_compiler.agent.pedagogy_critic import PedagogyCritic
+from learning_compiler.agent.proposer import Proposer
 from learning_compiler.agent.quality_model import DeterministicQualityJudge
-from learning_compiler.agent.repair_executor import LLMRepairExecutor
+from learning_compiler.agent.repair_executor import RepairExecutor
 from learning_compiler.agent.repair_planner import RepairPlanner
 from learning_compiler.agent.research import ResourceResolver, default_resource_resolver
 from learning_compiler.agent.spec import build_generation_spec
@@ -23,11 +23,11 @@ from learning_compiler.errors import ErrorCode, LearningCompilerError
 def _controller(policy: ModelPolicy) -> LoopController:
     client = build_llm_client(policy)
     return LoopController(
-        proposer=LLMProposer(client=client),
-        critic=LLMCritic(),
+        proposer=Proposer(client=client),
+        critic=PedagogyCritic(),
         judge=DeterministicQualityJudge(),
         planner=RepairPlanner(max_actions_per_iteration=policy.max_actions_per_iteration),
-        repair=LLMRepairExecutor(client=client),
+        repair=RepairExecutor(client=client),
     )
 
 
