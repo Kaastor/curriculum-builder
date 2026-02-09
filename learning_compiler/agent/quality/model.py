@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from learning_compiler.agent.quality.quality_content_rules import (
+from learning_compiler.agent.quality.content_rules import (
     score_effort_coherence,
     score_learner_coherence,
     score_mastery_actionability,
@@ -12,13 +12,13 @@ from learning_compiler.agent.quality.quality_content_rules import (
     score_resource_relevance,
 )
 from learning_compiler.agent.quality.pedagogy_critic import PedagogyCritique
-from learning_compiler.agent.quality.quality_rules import (
+from learning_compiler.agent.quality.rules import (
     score_atomicity,
     score_progression,
     score_structural,
     weighted_total,
 )
-from learning_compiler.agent.quality.quality_types import QualityDiagnostic, QualityReport
+from learning_compiler.agent.quality.types import QualityDiagnostic, QualityReport
 from learning_compiler.domain import TopicSpec
 
 

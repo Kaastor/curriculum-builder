@@ -53,13 +53,13 @@ Boundary rule:
   - constructs loop controller and persists curriculum + optimization trace.
 - `learning_compiler/agent/optimizer.py`
   - iterative controller (`propose -> critique -> judge -> repair`).
-- `learning_compiler/agent/llm/llm_client.py`
+- `learning_compiler/agent/llm/client.py`
   - public LLM facade + provider factory.
-- `learning_compiler/agent/llm/llm_remote.py`
+- `learning_compiler/agent/llm/remote.py`
   - remote Responses API provider implementation.
-- `learning_compiler/agent/llm/llm_codex.py`
+- `learning_compiler/agent/llm/codex.py`
   - `codex exec` provider implementation.
-- `learning_compiler/agent/llm/llm_schema.py` and `learning_compiler/agent/llm/llm_prompt.py`
+- `learning_compiler/agent/llm/schema.py` and `learning_compiler/agent/llm/prompt.py`
   - strict schema and prompt/parse helpers reused by providers.
 - `learning_compiler/validator/rules.py`
   - fixed registry of validation rules in deterministic order.
@@ -166,7 +166,7 @@ CLI entrypoints map them to stable exit codes for automation.
 Primary extension seams:
 - new generation provider:
   - add provider enum/policy support (`model_policy.py`)
-  - implement provider behavior (`llm_remote.py`/`llm_codex.py` or new adapter)
+  - implement provider behavior (`remote.py`/`codex.py` or new adapter)
   - add tests around retries/timeouts/schema parse
 - new validator rule:
   - implement check in `learning_compiler/validator/*`

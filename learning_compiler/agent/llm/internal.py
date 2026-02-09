@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from learning_compiler.agent.llm.llm_types import LLMRequest
+from learning_compiler.agent.llm.types import LLMRequest
 from learning_compiler.agent.model_policy import ModelPolicy
 
 

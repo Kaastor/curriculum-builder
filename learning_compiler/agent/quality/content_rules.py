@@ -7,7 +7,7 @@ import re
 from typing import Any
 
 from learning_compiler.agent.quality.pedagogy_critic import PedagogyCritique
-from learning_compiler.agent.quality.quality_types import QualityDiagnostic
+from learning_compiler.agent.quality.types import QualityDiagnostic
 from learning_compiler.domain import TopicSpec
 from learning_compiler.validator.helpers import is_number
 

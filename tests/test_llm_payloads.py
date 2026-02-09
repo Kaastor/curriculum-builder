@@ -3,7 +3,7 @@ from __future__ import annotations
 import os
 import unittest
 
-from learning_compiler.agent.llm.llm_payloads import (
+from learning_compiler.agent.llm.payloads import (
     compact_curriculum_for_llm,
     compact_topic_spec_for_llm,
     scope_document_payload,

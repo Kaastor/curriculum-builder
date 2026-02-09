@@ -40,7 +40,7 @@ Study in this order so concepts connect naturally:
 - Goal: understand stages, freshness checks, run lifecycle.
 
 2. **Generation loop**
-- Files: `learning_compiler/agent/optimizer.py`, `proposer.py`, `pedagogy_critic.py`, `quality_model.py`, `repair_*`
+- Files: `learning_compiler/agent/optimizer.py`, `learning_compiler/agent/planning/proposer.py`, `learning_compiler/agent/quality/pedagogy_critic.py`, `learning_compiler/agent/quality/model.py`, `learning_compiler/agent/quality/*`
 - Goal: understand `propose -> critique -> judge -> repair`.
 
 3. **Quality and validation gates**
@@ -48,7 +48,7 @@ Study in this order so concepts connect naturally:
 - Goal: understand deterministic acceptance and failure boundaries.
 
 4. **Resource and context relevance**
-- Files: `learning_compiler/agent/resources/research.py`, `learning_compiler/domain/models.py`
+- Files: `learning_compiler/agent/resources/resolver.py`, `learning_compiler/domain/models.py`
 - Goal: understand contextual grounding and evidence quality.
 
 5. **Reliability and operations**

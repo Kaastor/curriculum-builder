@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
-from learning_compiler.agent.quality.repair_actions import RepairAction
+from learning_compiler.agent.quality.actions import RepairAction
 
 
 @dataclass(slots=True, frozen=True)

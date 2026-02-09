@@ -19,7 +19,7 @@ Implemented in:
 - `learning_compiler/markdown_scope.py`
 - `learning_compiler/agent/planning/spec.py`
 - `learning_compiler/agent/planning/proposer.py`
-- `learning_compiler/agent/quality/repair_executor.py`
+- `learning_compiler/agent/quality/executor.py`
 
 ## Consequences
 

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import argparse
 
-from learning_compiler.orchestration.command_utils import run_id_from_args
+from learning_compiler.orchestration.commands.utils import run_id_from_args
 from learning_compiler.orchestration.pipeline import RunPipeline, ScopeRunOptions
 from learning_compiler.orchestration.scope.args import (
     scope_file_from_args,

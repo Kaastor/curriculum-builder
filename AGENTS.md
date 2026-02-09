@@ -48,22 +48,22 @@
 - `learning_compiler/agent/optimizer.py`: Iterative loop controller (`propose -> critique -> judge -> repair`).
 - `learning_compiler/agent/planning/proposer.py`: Draft curriculum proposer stage.
 - `learning_compiler/agent/quality/pedagogy_critic.py`: Pedagogical/learner-path critic diagnostics.
-- `learning_compiler/agent/quality/quality_model.py`: Deterministic acceptance judge and score aggregation.
-- `learning_compiler/agent/quality/quality_rules.py`: Graph-oriented deterministic quality rules.
-- `learning_compiler/agent/quality/quality_content_rules.py`: Content/actionability/relevance quality rules.
-- `learning_compiler/agent/quality/repair_actions.py`: Typed repair action contracts.
-- `learning_compiler/agent/quality/repair_planner.py`: Diagnostics-to-actions planner.
-- `learning_compiler/agent/quality/repair_executor.py`: Deterministic repair action executor.
+- `learning_compiler/agent/quality/model.py`: Deterministic acceptance judge and score aggregation.
+- `learning_compiler/agent/quality/rules.py`: Graph-oriented deterministic quality rules.
+- `learning_compiler/agent/quality/content_rules.py`: Content/actionability/relevance quality rules.
+- `learning_compiler/agent/quality/actions.py`: Typed repair action contracts.
+- `learning_compiler/agent/quality/planner.py`: Diagnostics-to-actions planner.
+- `learning_compiler/agent/quality/executor.py`: Deterministic repair action executor.
 - `learning_compiler/agent/model_policy.py`: Model/runtime policy controls for optimizer.
-- `learning_compiler/agent/llm/llm_client.py`: Stable LLM facade + provider factory.
-- `learning_compiler/agent/llm/llm_remote.py`: Remote LLM provider implementation (Responses API).
-- `learning_compiler/agent/llm/llm_codex.py`: `codex exec` provider implementation.
-- `learning_compiler/agent/llm/llm_schema.py` / `learning_compiler/agent/llm/llm_prompt.py`: Shared structured schema and prompt/parse helpers.
-- `learning_compiler/agent/llm/llm_types.py`: Shared LLM request/client type contracts.
+- `learning_compiler/agent/llm/client.py`: Stable LLM facade + provider factory.
+- `learning_compiler/agent/llm/remote.py`: Remote LLM provider implementation (Responses API).
+- `learning_compiler/agent/llm/codex.py`: `codex exec` provider implementation.
+- `learning_compiler/agent/llm/schema.py` / `learning_compiler/agent/llm/prompt.py`: Shared structured schema and prompt/parse helpers.
+- `learning_compiler/agent/llm/types.py`: Shared LLM request/client type contracts.
 - `learning_compiler/agent/quality/trace.py`: Optimization trace schema and serializer.
 - `learning_compiler/agent/planning/spec.py`: Topic-spec normalization and deterministic generation inputs.
 - `learning_compiler/agent/planning/node_builder.py`: Node-level curriculum content construction.
-- `learning_compiler/agent/resources/research.py`: Resource resolver interface + deterministic resolver implementation.
+- `learning_compiler/agent/resources/resolver.py`: Resource resolver interface + deterministic resolver implementation.
 - `learning_compiler/agent/contracts.py`: Generation protocol for dependency-injected generators.
 - `learning_compiler/domain/models.py`: Typed domain models for topic spec and curriculum artifacts.
 - `learning_compiler/api.py`: Stable public API facade for agent/validator/orchestration.
@@ -79,9 +79,9 @@
 - `learning_compiler/validator/types.py`: Validator enums, constants, and result/config types.
 - `learning_compiler/validator/helpers.py`: Primitive validator helper predicates.
 - `learning_compiler/orchestration/cli.py`: Orchestration parser and CLI dispatch.
-- `learning_compiler/orchestration/commands_basic.py`: Basic lifecycle commands (`init|status|next|list|archive`).
-- `learning_compiler/orchestration/commands_pipeline.py`: Pipeline commands (`validate|plan|iterate|run`).
-- `learning_compiler/orchestration/command_utils.py`: Shared command argument helpers.
+- `learning_compiler/orchestration/commands/basic.py`: Basic lifecycle commands (`init|status|next|list|archive`).
+- `learning_compiler/orchestration/commands/pipeline.py`: Pipeline commands (`validate|plan|iterate|run`).
+- `learning_compiler/orchestration/commands/utils.py`: Shared command argument helpers.
 - `learning_compiler/orchestration/scope/args.py`: Scope CLI argument parsing and mode validation helpers.
 - `learning_compiler/orchestration/scope/selection.py`: Scope file path resolution and selected-scope extraction.
 - `learning_compiler/orchestration/scope/topic_spec.py`: Scope text to `topic_spec` synthesis logic.

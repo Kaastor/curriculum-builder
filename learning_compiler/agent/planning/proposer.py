@@ -4,15 +4,15 @@ from __future__ import annotations
 
 from typing import Any
 
-from learning_compiler.agent.llm.llm_client import LLMClient, LLMRequest
-from learning_compiler.agent.llm.llm_payloads import (
+from learning_compiler.agent.llm.client import LLMClient, LLMRequest
+from learning_compiler.agent.llm.payloads import (
     compact_curriculum_for_llm,
     compact_topic_spec_for_llm,
     scope_document_payload,
 )
 from learning_compiler.agent.model_policy import ModelPolicy, ModelProvider
 from learning_compiler.agent.planning.node_builder import build_node
-from learning_compiler.agent.resources.research import ResourceResolver
+from learning_compiler.agent.resources.resolver import ResourceResolver
 from learning_compiler.agent.planning.spec import GenerationSpec
 from learning_compiler.domain import OpenQuestion
 from learning_compiler.errors import ErrorCode, LearningCompilerError

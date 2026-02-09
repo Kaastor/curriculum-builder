@@ -10,7 +10,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 
 DISALLOWED_IMPORT_REDIRECTS: dict[str, str] = {
-    "learning_compiler.agent.llm_client": "learning_compiler.agent.llm.llm_client",
+    "learning_compiler.agent.llm_client": "learning_compiler.agent.llm.client",
+    "learning_compiler.agent.llm.llm_client": "learning_compiler.agent.llm.client",
 }
 
 

@@ -8,9 +8,9 @@ from urllib import error as urllib_error
 from urllib.parse import urlparse
 from urllib import request as urllib_request
 
-from learning_compiler.agent.llm.llm_prompt import build_prompt, extract_remote_payload
-from learning_compiler.agent.llm.llm_schema import schema_for
-from learning_compiler.agent.llm.llm_types import LLMRequest
+from learning_compiler.agent.llm.prompt import build_prompt, extract_remote_payload
+from learning_compiler.agent.llm.schema import schema_for
+from learning_compiler.agent.llm.types import LLMRequest
 from learning_compiler.agent.model_policy import ModelPolicy
 from learning_compiler.errors import ErrorCode, LearningCompilerError
 

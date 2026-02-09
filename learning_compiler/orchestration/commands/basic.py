@@ -11,7 +11,7 @@ import tarfile
 
 from learning_compiler.agent import ScopeArtifactType, load_scope_artifact
 from learning_compiler.errors import ConfigError, LearningCompilerError
-from learning_compiler.orchestration.command_utils import run_id_from_args
+from learning_compiler.orchestration.commands.utils import run_id_from_args
 from learning_compiler.orchestration.events import stage_event
 from learning_compiler.orchestration.fs import (
     list_run_dirs,

@@ -17,7 +17,7 @@ Without a common structured contract, provider switching causes behavior drift a
 Define a provider-agnostic `LLMClient` contract returning structured JSON, with strict schema enforcement at provider boundaries.
 
 Implemented in:
-- `learning_compiler/agent/llm/llm_client.py`
+- `learning_compiler/agent/llm/client.py`
 - `learning_compiler/agent/model_policy.py`
 
 ## Consequences

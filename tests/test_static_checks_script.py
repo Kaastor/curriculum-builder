@@ -29,16 +29,17 @@ class StaticChecksScriptTests(unittest.TestCase):
         assert spec is not None and spec.loader is not None
         spec.loader.exec_module(module)
 
-        errors: list[str] = []
-        module._check_forbidden_imports(  # type: ignore[attr-defined]
-            "learning_compiler.agent.generator",
-            ["learning_compiler.agent.llm_client"],
-            errors,
-        )
+        for bad_path in ("learning_compiler.agent.llm_client", "learning_compiler.agent.llm.llm_client"):
+            errors: list[str] = []
+            module._check_forbidden_imports(  # type: ignore[attr-defined]
+                "learning_compiler.agent.generator",
+                [bad_path],
+                errors,
+            )
 
-        self.assertEqual(1, len(errors))
-        self.assertIn("is disallowed", errors[0])
-        self.assertIn("learning_compiler.agent.llm.llm_client", errors[0])
+            self.assertEqual(1, len(errors))
+            self.assertIn("is disallowed", errors[0])
+            self.assertIn("learning_compiler.agent.llm.client", errors[0])
 
 
 if __name__ == "__main__":

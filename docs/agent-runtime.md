@@ -14,19 +14,19 @@ This document describes generation runtime behavior, provider modes, and trouble
   - initial draft proposal stage.
 - `learning_compiler/agent/quality/pedagogy_critic.py`
   - deterministic learner-path critique.
-- `learning_compiler/agent/quality/quality_model.py`
+- `learning_compiler/agent/quality/model.py`
   - deterministic multi-dimension score model.
-- `learning_compiler/agent/quality/repair_planner.py`
+- `learning_compiler/agent/quality/planner.py`
   - diagnostics to repair actions.
-- `learning_compiler/agent/quality/repair_executor.py`
+- `learning_compiler/agent/quality/executor.py`
   - deterministic patches + provider-mediated repair pass.
-- `learning_compiler/agent/llm/llm_client.py`
+- `learning_compiler/agent/llm/client.py`
   - public facade and provider factory.
-- `learning_compiler/agent/llm/llm_remote.py`
+- `learning_compiler/agent/llm/remote.py`
   - remote Responses API provider implementation.
-- `learning_compiler/agent/llm/llm_codex.py`
+- `learning_compiler/agent/llm/codex.py`
   - `codex exec` provider implementation.
-- `learning_compiler/agent/llm/llm_schema.py` and `learning_compiler/agent/llm/llm_prompt.py`
+- `learning_compiler/agent/llm/schema.py` and `learning_compiler/agent/llm/prompt.py`
   - strict schema and prompt/parse helpers reused by provider adapters.
 
 ## 2. End-to-End Runtime Flow

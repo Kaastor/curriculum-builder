@@ -7,7 +7,7 @@ from unittest import mock
 from pathlib import Path
 from urllib import error as urllib_error
 
-from learning_compiler.agent.llm.llm_client import (
+from learning_compiler.agent.llm.client import (
     CodexExecLLMClient,
     LLMRequest,
     RemoteLLMClient,
@@ -280,7 +280,7 @@ class CodingAgentModeTests(unittest.TestCase):
             if previous_key is not None:
                 os.environ["OPENAI_API_KEY"] = previous_key
 
-    @mock.patch("learning_compiler.agent.llm.llm_client.urllib_request.urlopen")
+    @mock.patch("learning_compiler.agent.llm.client.urllib_request.urlopen")
     def test_remote_llm_client_parses_output_text_json(self, mock_urlopen: mock.MagicMock) -> None:
         previous_key = os.environ.get("OPENAI_API_KEY")
         os.environ["OPENAI_API_KEY"] = "test-key"
@@ -318,7 +318,7 @@ class CodingAgentModeTests(unittest.TestCase):
             else:
                 os.environ["OPENAI_API_KEY"] = previous_key
 
-    @mock.patch("learning_compiler.agent.llm.llm_client.urllib_request.urlopen")
+    @mock.patch("learning_compiler.agent.llm.client.urllib_request.urlopen")
     def test_remote_llm_client_retries_urlerror_with_retry_budget(
         self,
         mock_urlopen: mock.MagicMock,

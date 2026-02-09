@@ -8,10 +8,10 @@ from dataclasses import dataclass
 from learning_compiler.agent.model_policy import ModelPolicy
 from learning_compiler.agent.quality.pedagogy_critic import PedagogyCritic
 from learning_compiler.agent.planning.proposer import Proposer
-from learning_compiler.agent.quality.quality_model import DeterministicQualityJudge
-from learning_compiler.agent.quality.repair_executor import RepairExecutor
-from learning_compiler.agent.quality.repair_planner import RepairPlanner
-from learning_compiler.agent.resources.research import ResourceResolver
+from learning_compiler.agent.quality.model import DeterministicQualityJudge
+from learning_compiler.agent.quality.executor import RepairExecutor
+from learning_compiler.agent.quality.planner import RepairPlanner
+from learning_compiler.agent.resources.resolver import ResourceResolver
 from learning_compiler.agent.planning.spec import GenerationSpec
 from learning_compiler.agent.quality.trace import IterationTrace, OptimizationTrace
 

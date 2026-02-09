@@ -12,9 +12,9 @@ LLM-only acceptance decisions are high variance and hard to debug. This project 
 Use LLM-assisted proposal and repair, but make final acceptance deterministic through rule-based scoring and hard-fail diagnostics.
 
 Implemented in:
-- `learning_compiler/agent/quality/quality_model.py`
-- `learning_compiler/agent/quality/quality_rules.py`
-- `learning_compiler/agent/quality/quality_content_rules.py`
+- `learning_compiler/agent/quality/model.py`
+- `learning_compiler/agent/quality/rules.py`
+- `learning_compiler/agent/quality/content_rules.py`
 
 ## Consequences
 

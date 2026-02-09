@@ -4,8 +4,8 @@ import unittest
 
 from learning_compiler.agent.model_policy import default_model_policy
 from learning_compiler.agent.quality.pedagogy_critic import LLMCritic
-from learning_compiler.agent.quality.quality_content_rules import score_effort_coherence
-from learning_compiler.agent.quality.quality_types import QualityDiagnostic
+from learning_compiler.agent.quality.content_rules import score_effort_coherence
+from learning_compiler.agent.quality.types import QualityDiagnostic
 from learning_compiler.domain import parse_topic_spec
 
 

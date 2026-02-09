@@ -5,14 +5,14 @@ from __future__ import annotations
 import argparse
 from typing import Callable, cast
 
-from learning_compiler.orchestration.commands_basic import (
+from learning_compiler.orchestration.commands.basic import (
     cmd_archive,
     cmd_init,
     cmd_list,
     cmd_next,
     cmd_status,
 )
-from learning_compiler.orchestration.commands_pipeline import (
+from learning_compiler.orchestration.commands.pipeline import (
     cmd_iterate,
     cmd_plan,
     cmd_run,
