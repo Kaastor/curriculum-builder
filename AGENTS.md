@@ -55,7 +55,11 @@
 - `learning_compiler/agent/repair_planner.py`: Diagnostics-to-actions planner.
 - `learning_compiler/agent/repair_executor.py`: Deterministic repair action executor.
 - `learning_compiler/agent/model_policy.py`: Model/runtime policy controls for optimizer.
-- `learning_compiler/agent/llm_client.py`: Structured LLM client contract + internal deterministic mode.
+- `learning_compiler/agent/llm_client.py`: Stable LLM facade + provider factory.
+- `learning_compiler/agent/llm_remote.py`: Remote LLM provider implementation (Responses API).
+- `learning_compiler/agent/llm_codex.py`: `codex exec` provider implementation.
+- `learning_compiler/agent/llm_schema.py` / `learning_compiler/agent/llm_prompt.py`: Shared structured schema and prompt/parse helpers.
+- `learning_compiler/agent/llm_types.py`: Shared LLM request/client type contracts.
 - `learning_compiler/agent/trace.py`: Optimization trace schema and serializer.
 - `learning_compiler/agent/spec.py`: Topic-spec normalization and deterministic generation inputs.
 - `learning_compiler/agent/node_builder.py`: Node-level curriculum content construction.

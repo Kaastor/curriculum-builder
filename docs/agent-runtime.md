@@ -21,7 +21,13 @@ This document describes generation runtime behavior, provider modes, and trouble
 - `learning_compiler/agent/repair_executor.py`
   - deterministic patches + provider-mediated repair pass.
 - `learning_compiler/agent/llm_client.py`
-  - provider adapters and strict JSON handling.
+  - public facade and provider factory.
+- `learning_compiler/agent/llm_remote.py`
+  - remote Responses API provider implementation.
+- `learning_compiler/agent/llm_codex.py`
+  - `codex exec` provider implementation.
+- `learning_compiler/agent/llm_schema.py` and `learning_compiler/agent/llm_prompt.py`
+  - strict schema and prompt/parse helpers reused by provider adapters.
 
 ## 2. End-to-End Runtime Flow
 

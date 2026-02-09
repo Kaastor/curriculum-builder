@@ -54,7 +54,13 @@ Boundary rule:
 - `learning_compiler/agent/optimizer.py`
   - iterative controller (`propose -> critique -> judge -> repair`).
 - `learning_compiler/agent/llm_client.py`
-  - provider adapters: `InternalLLMClient`, `CodexExecLLMClient`, `RemoteLLMClient`.
+  - public LLM facade + provider factory.
+- `learning_compiler/agent/llm_remote.py`
+  - remote Responses API provider implementation.
+- `learning_compiler/agent/llm_codex.py`
+  - `codex exec` provider implementation.
+- `learning_compiler/agent/llm_schema.py` and `learning_compiler/agent/llm_prompt.py`
+  - strict schema and prompt/parse helpers reused by providers.
 - `learning_compiler/validator/rules.py`
   - fixed registry of validation rules in deterministic order.
 - `learning_compiler/orchestration/planning.py`
@@ -160,7 +166,7 @@ CLI entrypoints map them to stable exit codes for automation.
 Primary extension seams:
 - new generation provider:
   - add provider enum/policy support (`model_policy.py`)
-  - implement `LLMClient` behavior (`llm_client.py`)
+  - implement provider behavior (`llm_remote.py`/`llm_codex.py` or new adapter)
   - add tests around retries/timeouts/schema parse
 - new validator rule:
   - implement check in `learning_compiler/validator/*`
