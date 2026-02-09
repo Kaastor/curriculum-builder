@@ -4,7 +4,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from learning_compiler.agent.spec import build_generation_spec
+from learning_compiler.agent.planning.spec import build_generation_spec
 
 
 def _topic_spec_with_scope(scope_path: Path) -> dict[str, object]:

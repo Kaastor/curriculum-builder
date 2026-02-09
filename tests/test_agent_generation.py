@@ -7,7 +7,7 @@ import unittest
 from pathlib import Path
 
 from learning_compiler.agent.generator import generate_curriculum, generate_curriculum_file
-from learning_compiler.agent.research import ResourceRequest
+from learning_compiler.agent.resources.research import ResourceRequest
 
 
 class StubResolver:

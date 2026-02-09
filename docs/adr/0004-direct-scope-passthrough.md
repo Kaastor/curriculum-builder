@@ -13,9 +13,9 @@ Scope ingestion selects content (`full|section|seed-list`), synthesizes a valid 
 
 Implemented in:
 - `learning_compiler/orchestration/scope.py`
-- `learning_compiler/agent/spec.py`
-- `learning_compiler/agent/proposer.py`
-- `learning_compiler/agent/repair_executor.py`
+- `learning_compiler/agent/planning/spec.py`
+- `learning_compiler/agent/planning/proposer.py`
+- `learning_compiler/agent/quality/repair_executor.py`
 
 ## Consequences
 

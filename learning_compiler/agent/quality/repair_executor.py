@@ -5,23 +5,23 @@ from __future__ import annotations
 from copy import deepcopy
 from typing import Any
 
-from learning_compiler.agent.llm_client import LLMClient, LLMRequest
-from learning_compiler.agent.llm_payloads import (
+from learning_compiler.agent.llm.llm_client import LLMClient, LLMRequest
+from learning_compiler.agent.llm.llm_payloads import (
     compact_curriculum_for_llm,
     compact_topic_spec_for_llm,
     scope_document_payload,
 )
 from learning_compiler.agent.model_policy import ModelPolicy, ModelProvider
-from learning_compiler.agent.node_builder import (
+from learning_compiler.agent.planning.node_builder import (
     NodeStage,
     node_core_ideas,
     node_mastery,
     node_pitfalls,
     node_prerequisites,
 )
-from learning_compiler.agent.repair_actions import RepairAction, RepairActionType
-from learning_compiler.agent.research import ResourceRequest, ResourceResolver
-from learning_compiler.agent.spec import GenerationSpec
+from learning_compiler.agent.quality.repair_actions import RepairAction, RepairActionType
+from learning_compiler.agent.resources.research import ResourceRequest, ResourceResolver
+from learning_compiler.agent.planning.spec import GenerationSpec
 from learning_compiler.domain import Resource
 from learning_compiler.errors import ErrorCode, LearningCompilerError
 

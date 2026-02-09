@@ -72,13 +72,13 @@ flowchart TB
 
 | L1 Method family | L2 Technique/pattern | L3 Implementation primitives | L4 Concrete implementation in this repo | Status | Search terms |
 | --- | --- | --- | --- | --- | --- |
-| Deterministic curriculum decomposition | Constraint-aware planning | Constraint model, deterministic node target calculator, contextual title seeding, weighted minute allocation | `learning_compiler/agent/spec.py` (`target_nodes`, `target_minutes`, `seed_titles`) | Strong | `constraint-aware planning deterministic` |
+| Deterministic curriculum decomposition | Constraint-aware planning | Constraint model, deterministic node target calculator, contextual title seeding, weighted minute allocation | `learning_compiler/agent/planning/spec.py` (`target_nodes`, `target_minutes`, `seed_titles`) | Strong | `constraint-aware planning deterministic` |
 | Dependency-aware sequencing | DAG topological ordering | Node map, indegree tracking, stable ordering rules | `learning_compiler/orchestration/planning.py` (`topological_order`) | Strong | `topological sort planning dag` |
 | Schedule estimation | Critical path analysis | Duration model, longest-path reconstruction | `learning_compiler/orchestration/planning.py` (`compute_critical_path`) | Strong | `critical path method dag` |
 | Iterative curriculum optimization | Propose -> Critique -> Judge -> Repair | Loop controller, critic diagnostics, deterministic acceptance, typed repair actions | `learning_compiler/agent/optimizer.py`, `pedagogy_critic.py`, `quality_model.py`, `repair_planner.py`, `repair_executor.py` | Strong | `iterative dag optimization llm critic judge` |
 | Agent loop control | ReAct | Thought/action/observation loop state, tool selection policy, stop criteria | Not implemented (current flow is staged pipeline, not live loop) | Missing | `ReAct prompting`, `reason act observe loop` |
 | Agent loop control | Plan-and-Execute | Separate planner and executor modules, plan artifact, execution cursor | Partially represented by `generate -> validate -> plan -> iterate` pipeline | Partial | `plan and execute agents` |
-| Self-correction | Reflexion / critic loop | Critique pass, repair action planning, bounded iteration stop rule | `learning_compiler/agent/pedagogy_critic.py`, `learning_compiler/agent/repair_planner.py`, `learning_compiler/agent/optimizer.py` | Strong | `Reflexion agent`, `self critique llm` |
+| Self-correction | Reflexion / critic loop | Critique pass, repair action planning, bounded iteration stop rule | `learning_compiler/agent/quality/pedagogy_critic.py`, `learning_compiler/agent/quality/repair_planner.py`, `learning_compiler/agent/optimizer.py` | Strong | `Reflexion agent`, `self critique llm` |
 
 ### What you know now
 
@@ -123,12 +123,12 @@ flowchart TB
 | --- | --- | --- | --- | --- | --- |
 | Command orchestration | Thin CLI / rich core | Parser dispatch + module handlers | `learning_compiler/orchestration/cli.py`, `commands_basic.py`, `commands_pipeline.py` | Strong | `thin cli rich core` |
 | Tool abstraction | Dependency injection via protocol | Generator contract interface | `learning_compiler/agent/contracts.py` + orchestration usage | Strong | `python protocol dependency injection` |
-| Provider runtime modes | Strategy selection (`internal`, `remote_llm`, `codex_exec`) | Policy model, provider selection, client factory | `learning_compiler/agent/model_policy.py`, `learning_compiler/agent/llm_client.py`, `learning_compiler/config.py` | Strong | `model provider strategy pattern` |
-| Context-aware retrieval | Resolver composition | Context pack contract, repo-local resolver, fallback chain | `learning_compiler/agent/research.py` (`RepoLocalResolver`, `CompositeResourceResolver`, `default_resource_resolver`) | Strong | `resolver composition fallback` |
+| Provider runtime modes | Strategy selection (`internal`, `remote_llm`, `codex_exec`) | Policy model, provider selection, client factory | `learning_compiler/agent/model_policy.py`, `learning_compiler/agent/llm/llm_client.py`, `learning_compiler/config.py` | Strong | `model provider strategy pattern` |
+| Context-aware retrieval | Resolver composition | Context pack contract, repo-local resolver, fallback chain | `learning_compiler/agent/resources/research.py` (`RepoLocalResolver`, `CompositeResourceResolver`, `default_resource_resolver`) | Strong | `resolver composition fallback` |
 | Safe command inputs | Input contract hardening | `run_id` regex + path containment checks | `learning_compiler/orchestration/command_utils.py`, `learning_compiler/orchestration/fs.py` | Strong | `path traversal prevention pathlib` |
 | Idempotent progression | Repeat-safe command behavior | Stage sync + marker validation before actions | `sync_stage` + pipeline command flow | Partial | `idempotent orchestration commands` |
 | Failure semantics | Typed error propagation | Domain error taxonomy + stable exit codes | `learning_compiler/errors.py` | Strong | `typed error taxonomy cli` |
-| Resilience controls | Timeout + retry budget | timeout seconds, retry budget, stage-specific failure handling | `learning_compiler/agent/model_policy.py`, `learning_compiler/agent/llm_client.py` | Partial | `timeout retry budget llm pipeline` |
+| Resilience controls | Timeout + retry budget | timeout seconds, retry budget, stage-specific failure handling | `learning_compiler/agent/model_policy.py`, `learning_compiler/agent/llm/llm_client.py` | Partial | `timeout retry budget llm pipeline` |
 | Runtime isolation | Circuit breaker / bulkhead | Failure counters, open/half-open states | Not implemented | Missing | `circuit breaker pattern` |
 
 ### What you know now
@@ -154,7 +154,7 @@ flowchart TB
 | Evidence safety | Evidence strictness profiles | Mode-driven evidence requirements | `curriculum_evidence.py` + `EvidenceMode` | Strong | `evidence mode validation` |
 | Failure taxonomy | Stable typed errors | Error enum + exit mapping + details | `learning_compiler/errors.py` | Strong | `domain errors exit codes` |
 | Runtime hardening | Fail-safe orchestration | Catch conversion/type failures and return typed errors | `learning_compiler/orchestration/commands_pipeline.py` | Strong | `fail safe orchestration` |
-| Structured LLM output safety | Schema-constrained model outputs | JSON schema file, output parsing, fail-closed behavior | `learning_compiler/agent/llm_client.py` (`--output-schema`, strict JSON parse) | Strong | `structured outputs json schema` |
+| Structured LLM output safety | Schema-constrained model outputs | JSON schema file, output parsing, fail-closed behavior | `learning_compiler/agent/llm/llm_client.py` (`--output-schema`, strict JSON parse) | Strong | `structured outputs json schema` |
 | Policy enforcement | Policy engine | Declarative risk rules, policy DSL/config | Not implemented | Missing | `policy engine guardrails` |
 | Adversarial hardening | Fuzzing / hostile input tests | Randomized malformed inputs and assertions | Not implemented | Missing | `property based testing fuzzing python` |
 
@@ -176,7 +176,7 @@ flowchart TB
 | --- | --- | --- | --- | --- | --- |
 | Regression quality | Fixture-based tests | Canonical sample artifacts | `tests/fixtures/curriculum.json`, `tests/test_curriculum_fixture.py` | Strong | `golden file testing` |
 | Instructional quality safeguards | Actionability/repetition/relevance checks | mastery verb checks, repetition thresholds, topic-resource keyword overlap | `learning_compiler/validator/curriculum_quality.py`, `tests/test_curriculum_quality_validator.py` | Strong | `instructional quality validator` |
-| Iterative quality optimization | Critic + deterministic judge + repairs | pedagogy diagnostics, weighted quality dimensions, repair action planner/executor | `learning_compiler/agent/pedagogy_critic.py`, `quality_model.py`, `repair_planner.py`, `repair_executor.py` | Strong | `critic judge repair loop` |
+| Iterative quality optimization | Critic + deterministic judge + repairs | pedagogy diagnostics, weighted quality dimensions, repair action planner/executor | `learning_compiler/agent/quality/pedagogy_critic.py`, `quality_model.py`, `repair_planner.py`, `repair_executor.py` | Strong | `critic judge repair loop` |
 | Reproducibility assurance | Determinism tests | Repeat generation equality checks | `tests/test_agent_determinism.py`, `docs/determinism.md` | Strong | `deterministic test strategy` |
 | Architectural quality | Static boundary checks | Import graph constraints | `scripts/static_checks.py`, `tests/test_architecture_boundaries.py` | Strong | `architecture boundary tests` |
 | Gate automation | Quality gate script | syntax + static + validate + tests + coverage | `scripts/gate.sh`, `make gate` | Strong | `quality gate ci pipeline` |
@@ -203,7 +203,7 @@ flowchart TB
 | Transition logging | Structured run events | Standard event schema with metadata | `learning_compiler/orchestration/events.py`, `stage.py` | Strong | `structured event logging` |
 | Run audit trail | Append-only history | Persisted run history in `run.json` and logs | `learning_compiler/orchestration/meta.py`, `runs/*/logs/events.jsonl` | Strong | `append only audit log` |
 | Diagnostics | Error details payloads | contextual details in typed errors | `learning_compiler/errors.py`, orchestration errors | Strong | `context rich error handling` |
-| Optimization traceability | Iteration trace artifact | per-iteration policy snapshot, diagnostics, actions, post-score | `learning_compiler/agent/trace.py`, `runs/*/outputs/reviews/optimization_trace.json` | Strong | `optimization trace artifact` |
+| Optimization traceability | Iteration trace artifact | per-iteration policy snapshot, diagnostics, actions, post-score | `learning_compiler/agent/quality/trace.py`, `runs/*/outputs/reviews/optimization_trace.json` | Strong | `optimization trace artifact` |
 | Operational metrics | Reliability/cost/latency metrics | metric collector + summary artifact | Not implemented | Missing | `sli slo metrics pipeline` |
 | Tracing | Distributed spans | trace IDs, span boundaries | Not implemented | Missing | `opentelemetry python tracing` |
 | Incident workflow | Runbooks/postmortems | failure taxonomy + standard response docs | Not implemented | Missing | `incident runbook postmortem` |

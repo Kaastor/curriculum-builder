@@ -8,9 +8,9 @@ from pathlib import Path
 import subprocess
 import tempfile
 
-from learning_compiler.agent.llm_prompt import build_prompt
-from learning_compiler.agent.llm_schema import schema_for
-from learning_compiler.agent.llm_types import LLMRequest
+from learning_compiler.agent.llm.llm_prompt import build_prompt
+from learning_compiler.agent.llm.llm_schema import schema_for
+from learning_compiler.agent.llm.llm_types import LLMRequest
 from learning_compiler.agent.model_policy import ModelPolicy
 from learning_compiler.errors import ErrorCode, LearningCompilerError
 

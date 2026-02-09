@@ -4,9 +4,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from learning_compiler.agent.pedagogy_critic import CriticDiagnostic, PedagogyCritique
-from learning_compiler.agent.quality_types import QualityDiagnostic, QualityReport
-from learning_compiler.agent.repair_actions import (
+from learning_compiler.agent.quality.pedagogy_critic import CriticDiagnostic, PedagogyCritique
+from learning_compiler.agent.quality.quality_types import QualityDiagnostic, QualityReport
+from learning_compiler.agent.quality.repair_actions import (
     ActionSeverity,
     RepairAction,
     RepairActionType,

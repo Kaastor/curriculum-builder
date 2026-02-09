@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Protocol
 
-from learning_compiler.agent.resource_catalog import resource_pool_for_corpus
+from learning_compiler.agent.resources.resource_catalog import resource_pool_for_corpus
 from learning_compiler.domain import TopicSpec
 
 

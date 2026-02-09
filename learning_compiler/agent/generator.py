@@ -6,17 +6,17 @@ import json
 from pathlib import Path
 from typing import Any
 
-from learning_compiler.agent.llm_client import build_llm_client
+from learning_compiler.agent.llm.llm_client import build_llm_client
 from learning_compiler.agent.model_policy import ModelPolicy, default_model_policy
 from learning_compiler.agent.optimizer import LoopController
-from learning_compiler.agent.pedagogy_critic import PedagogyCritic
-from learning_compiler.agent.proposer import Proposer
-from learning_compiler.agent.quality_model import DeterministicQualityJudge
-from learning_compiler.agent.repair_executor import RepairExecutor
-from learning_compiler.agent.repair_planner import RepairPlanner
-from learning_compiler.agent.research import ResourceResolver, default_resource_resolver
-from learning_compiler.agent.spec import build_generation_spec
-from learning_compiler.agent.trace import OptimizationTrace
+from learning_compiler.agent.quality.pedagogy_critic import PedagogyCritic
+from learning_compiler.agent.planning.proposer import Proposer
+from learning_compiler.agent.quality.quality_model import DeterministicQualityJudge
+from learning_compiler.agent.quality.repair_executor import RepairExecutor
+from learning_compiler.agent.quality.repair_planner import RepairPlanner
+from learning_compiler.agent.resources.research import ResourceResolver, default_resource_resolver
+from learning_compiler.agent.planning.spec import build_generation_spec
+from learning_compiler.agent.quality.trace import OptimizationTrace
 from learning_compiler.errors import ErrorCode, LearningCompilerError
 
 

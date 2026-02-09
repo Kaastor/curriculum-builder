@@ -5,8 +5,8 @@ from __future__ import annotations
 import re
 from enum import Enum
 
-from learning_compiler.agent.research import ResourceRequest, ResourceResolver
-from learning_compiler.agent.spec import GenerationSpec
+from learning_compiler.agent.resources.research import ResourceRequest, ResourceResolver
+from learning_compiler.agent.planning.spec import GenerationSpec
 from learning_compiler.domain import CurriculumNode, MasteryCheck, Resource
 
 

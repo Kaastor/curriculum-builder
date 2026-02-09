@@ -2,8 +2,8 @@
 
 from learning_compiler.agent.contracts import CurriculumGenerator, DefaultCurriculumGenerator
 from learning_compiler.agent.generator import generate_curriculum, generate_curriculum_file
-from learning_compiler.agent.scope_contracts import ScopeArtifactType, ScopeIngestMode
-from learning_compiler.agent.scope_artifacts import (
+from learning_compiler.agent.scope.scope_contracts import ScopeArtifactType, ScopeIngestMode
+from learning_compiler.agent.scope.scope_artifacts import (
     build_scope_artifact,
     load_scope_artifact,
     parse_scope_artifact,

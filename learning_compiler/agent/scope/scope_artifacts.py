@@ -6,7 +6,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from learning_compiler.agent.scope_contracts import (
+from learning_compiler.agent.scope.scope_contracts import (
     ScopeArtifactEnvelope,
     ScopeArtifactType,
     ScopeIngestMode,

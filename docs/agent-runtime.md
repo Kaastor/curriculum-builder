@@ -6,27 +6,27 @@ This document describes generation runtime behavior, provider modes, and trouble
 
 - `learning_compiler/agent/generator.py`
   - entrypoint for curriculum generation and trace persistence.
-- `learning_compiler/agent/spec.py`
+- `learning_compiler/agent/planning/spec.py`
   - normalization from raw topic spec to `GenerationSpec`.
 - `learning_compiler/agent/optimizer.py`
   - loop controller for iterative optimization.
-- `learning_compiler/agent/proposer.py`
+- `learning_compiler/agent/planning/proposer.py`
   - initial draft proposal stage.
-- `learning_compiler/agent/pedagogy_critic.py`
+- `learning_compiler/agent/quality/pedagogy_critic.py`
   - deterministic learner-path critique.
-- `learning_compiler/agent/quality_model.py`
+- `learning_compiler/agent/quality/quality_model.py`
   - deterministic multi-dimension score model.
-- `learning_compiler/agent/repair_planner.py`
+- `learning_compiler/agent/quality/repair_planner.py`
   - diagnostics to repair actions.
-- `learning_compiler/agent/repair_executor.py`
+- `learning_compiler/agent/quality/repair_executor.py`
   - deterministic patches + provider-mediated repair pass.
-- `learning_compiler/agent/llm_client.py`
+- `learning_compiler/agent/llm/llm_client.py`
   - public facade and provider factory.
-- `learning_compiler/agent/llm_remote.py`
+- `learning_compiler/agent/llm/llm_remote.py`
   - remote Responses API provider implementation.
-- `learning_compiler/agent/llm_codex.py`
+- `learning_compiler/agent/llm/llm_codex.py`
   - `codex exec` provider implementation.
-- `learning_compiler/agent/llm_schema.py` and `learning_compiler/agent/llm_prompt.py`
+- `learning_compiler/agent/llm/llm_schema.py` and `learning_compiler/agent/llm/llm_prompt.py`
   - strict schema and prompt/parse helpers reused by provider adapters.
 
 ## 2. End-to-End Runtime Flow

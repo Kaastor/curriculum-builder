@@ -1,7 +1,7 @@
 """Backward-compatible facade for resource resolver contracts."""
 
-from learning_compiler.agent.resource_catalog import ResourceSpec
-from learning_compiler.agent.resource_resolvers import (
+from learning_compiler.agent.resources.resource_catalog import ResourceSpec
+from learning_compiler.agent.resources.resource_resolvers import (
     CompositeResourceResolver,
     DeterministicResourceResolver,
     RepoLocalResolver,

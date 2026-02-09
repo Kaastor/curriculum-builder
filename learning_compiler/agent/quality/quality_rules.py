@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from learning_compiler.dag import is_acyclic, max_depth as dag_max_depth
-from learning_compiler.agent.quality_types import QualityDiagnostic
+from learning_compiler.agent.quality.quality_types import QualityDiagnostic
 
 
 def max_depth(nodes: list[dict[str, Any]]) -> int:

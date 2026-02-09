@@ -70,7 +70,7 @@ class AgentDeterminismTests(unittest.TestCase):
         spec["context_pack"] = {
             "domain": "repo-engineering",
             "focus_terms": ["orchestration", "validation"],
-            "local_paths": ["README.md", "learning_compiler/agent/spec.py"],
+            "local_paths": ["README.md", "learning_compiler/agent/planning/spec.py"],
             "required_outcomes": ["integration plan"],
         }
         first = generate_curriculum(spec)

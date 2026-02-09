@@ -53,13 +53,13 @@ Boundary rule:
   - constructs loop controller and persists curriculum + optimization trace.
 - `learning_compiler/agent/optimizer.py`
   - iterative controller (`propose -> critique -> judge -> repair`).
-- `learning_compiler/agent/llm_client.py`
+- `learning_compiler/agent/llm/llm_client.py`
   - public LLM facade + provider factory.
-- `learning_compiler/agent/llm_remote.py`
+- `learning_compiler/agent/llm/llm_remote.py`
   - remote Responses API provider implementation.
-- `learning_compiler/agent/llm_codex.py`
+- `learning_compiler/agent/llm/llm_codex.py`
   - `codex exec` provider implementation.
-- `learning_compiler/agent/llm_schema.py` and `learning_compiler/agent/llm_prompt.py`
+- `learning_compiler/agent/llm/llm_schema.py` and `learning_compiler/agent/llm/llm_prompt.py`
   - strict schema and prompt/parse helpers reused by providers.
 - `learning_compiler/validator/rules.py`
   - fixed registry of validation rules in deterministic order.

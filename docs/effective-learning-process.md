@@ -48,7 +48,7 @@ Study in this order so concepts connect naturally:
 - Goal: understand deterministic acceptance and failure boundaries.
 
 4. **Resource and context relevance**
-- Files: `learning_compiler/agent/research.py`, `learning_compiler/domain/models.py`
+- Files: `learning_compiler/agent/resources/research.py`, `learning_compiler/domain/models.py`
 - Goal: understand contextual grounding and evidence quality.
 
 5. **Reliability and operations**

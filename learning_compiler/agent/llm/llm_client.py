@@ -10,12 +10,12 @@ import os
 from pathlib import Path
 import shlex
 
-from learning_compiler.agent import llm_remote as _llm_remote
-from learning_compiler.agent.llm_codex import CodexExecLLMClient, CodingAgentLLMClient
-from learning_compiler.agent.llm_internal import InternalLLMClient
-from learning_compiler.agent.llm_remote import RemoteLLMClient
-from learning_compiler.agent.llm_schema import schema_for
-from learning_compiler.agent.llm_types import LLMClient, LLMRequest
+import learning_compiler.agent.llm.llm_remote as _llm_remote
+from learning_compiler.agent.llm.llm_codex import CodexExecLLMClient, CodingAgentLLMClient
+from learning_compiler.agent.llm.llm_internal import InternalLLMClient
+from learning_compiler.agent.llm.llm_remote import RemoteLLMClient
+from learning_compiler.agent.llm.llm_schema import schema_for
+from learning_compiler.agent.llm.llm_types import LLMClient, LLMRequest
 from learning_compiler.agent.model_policy import ModelPolicy, ModelProvider
 from learning_compiler.config import load_config
 

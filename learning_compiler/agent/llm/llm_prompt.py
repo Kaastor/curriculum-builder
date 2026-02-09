@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 from typing import Any
 
-from learning_compiler.agent.llm_types import LLMRequest
+from learning_compiler.agent.llm.llm_types import LLMRequest
 from learning_compiler.errors import ErrorCode, LearningCompilerError
 
 
