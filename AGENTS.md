@@ -82,10 +82,10 @@
 - `learning_compiler/orchestration/commands_basic.py`: Basic lifecycle commands (`init|status|next|list|archive`).
 - `learning_compiler/orchestration/commands_pipeline.py`: Pipeline commands (`validate|plan|iterate|run`).
 - `learning_compiler/orchestration/command_utils.py`: Shared command argument helpers.
-- `learning_compiler/orchestration/scope_args.py`: Scope CLI argument parsing and mode validation helpers.
-- `learning_compiler/orchestration/scope_selection.py`: Scope file path resolution and selected-scope extraction.
-- `learning_compiler/orchestration/scope_topic_spec.py`: Scope text to `topic_spec` synthesis logic.
-- `learning_compiler/orchestration/scope_pipeline.py`: Scope ingestion pipeline and artifact emission.
+- `learning_compiler/orchestration/scope/args.py`: Scope CLI argument parsing and mode validation helpers.
+- `learning_compiler/orchestration/scope/selection.py`: Scope file path resolution and selected-scope extraction.
+- `learning_compiler/orchestration/scope/topic_spec.py`: Scope text to `topic_spec` synthesis logic.
+- `learning_compiler/orchestration/scope/pipeline.py`: Scope ingestion pipeline and artifact emission.
 - `learning_compiler/orchestration/types.py`: Orchestration enums and typed path contracts.
 - `learning_compiler/orchestration/fs.py`: Filesystem/env/run loading helpers.
 - `learning_compiler/orchestration/events.py`: Standardized run event schema.

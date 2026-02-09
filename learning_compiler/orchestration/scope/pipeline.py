@@ -6,8 +6,8 @@ from pathlib import Path
 
 from learning_compiler.agent import ScopeArtifactType, ScopeIngestMode, build_scope_artifact
 from learning_compiler.orchestration.fs import write_json
-from learning_compiler.orchestration.scope_selection import selected_scope_text
-from learning_compiler.orchestration.scope_topic_spec import display_path, topic_spec_from_scope_text
+from learning_compiler.orchestration.scope.selection import selected_scope_text
+from learning_compiler.orchestration.scope.topic_spec import display_path, topic_spec_from_scope_text
 from learning_compiler.orchestration.types import RunPaths
 
 

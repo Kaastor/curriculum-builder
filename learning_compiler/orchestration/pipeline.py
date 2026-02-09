@@ -17,11 +17,11 @@ from learning_compiler.orchestration.exec import run_validator, write_validation
 from learning_compiler.orchestration.fs import load_run, read_json, required_paths, write_json
 from learning_compiler.orchestration.meta import RunMeta
 from learning_compiler.orchestration.planning import build_plan, compute_diff
-from learning_compiler.orchestration.scope_args import validate_scope_selection
-from learning_compiler.orchestration.scope_pipeline import (
+from learning_compiler.orchestration.scope.args import validate_scope_selection
+from learning_compiler.orchestration.scope.pipeline import (
     synthesize_topic_spec_from_scope,
 )
-from learning_compiler.orchestration.scope_selection import resolve_scope_path
+from learning_compiler.orchestration.scope.selection import resolve_scope_path
 from learning_compiler.orchestration.stage import (
     ensure_stage,
     plan_is_current,

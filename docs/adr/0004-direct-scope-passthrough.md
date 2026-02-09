@@ -12,10 +12,10 @@ Users may provide unordered scope markdown at mixed granularity. We need a robus
 Scope ingestion selects content (`full|section|seed-list`), synthesizes a valid topic spec, and feeds selected scope directly into generation context. No separate heuristic concept-to-DAG builder runs in orchestration scope mode.
 
 Implemented in:
-- `learning_compiler/orchestration/scope_args.py`
-- `learning_compiler/orchestration/scope_selection.py`
-- `learning_compiler/orchestration/scope_topic_spec.py`
-- `learning_compiler/orchestration/scope_pipeline.py`
+- `learning_compiler/orchestration/scope/args.py`
+- `learning_compiler/orchestration/scope/selection.py`
+- `learning_compiler/orchestration/scope/topic_spec.py`
+- `learning_compiler/orchestration/scope/pipeline.py`
 - `learning_compiler/markdown_scope.py`
 - `learning_compiler/agent/planning/spec.py`
 - `learning_compiler/agent/planning/proposer.py`
