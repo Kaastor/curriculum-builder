@@ -2,6 +2,9 @@
 
 This is a **coverage-first** map of the field, written for someone who wants to build agentic systems that survive contact with reality: messy data, flaky tools, impatient users, security reviews, and 3am incidents.
 
+For pass/fail graduation criteria for production readiness, use:
+- `docs/learning/agentic-readiness-standard.md`
+
 ## Context assumptions (since placeholders weren’t filled)
 
 * **Learner level assumed:** **Intermediate** (I include beginner on-ramps and advanced deepening paths per topic)

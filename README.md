@@ -65,6 +65,8 @@ Supporting docs:
 - `docs/effective-learning-process.md`
 - `docs/agentic-engineering-map.md`
 - `docs/agentic-engineering-atlas.md`
+- `docs/learning/agentic-taxonomy.md`
+- `docs/learning/agentic-readiness-standard.md`
 
 ## Topic Spec Contract
 
