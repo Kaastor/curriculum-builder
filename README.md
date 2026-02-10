@@ -62,11 +62,11 @@ Supporting docs:
 - `docs/contributor-playbook.md`
 - `docs/incident-runbook.md`
 - `docs/adr/README.md`
-- `docs/effective-learning-process.md`
-- `docs/agentic-engineering-map.md`
 - `docs/agentic-engineering-atlas.md`
+- `docs/learning/agentic-mental-map.md`
 - `docs/learning/agentic-taxonomy.md`
 - `docs/learning/agentic-readiness-standard.md`
+- `plans/agentic_engineering_learning_roadmap.md`
 
 ## Topic Spec Contract
 
