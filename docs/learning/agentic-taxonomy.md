@@ -52,12 +52,14 @@ Leaves are marked **[Leaf]** and have full playbooks in section B.
 
 * **T2.1.1 Use-case framing & automation boundary** — where autonomy ends, humans begin — **High** **[Leaf]**
 * **T2.1.2 Metrics, SLOs & acceptance criteria** — define success, failure, and “good enough” — **High** **[Leaf]**
+* **T2.1.3 Unfamiliar-domain onboarding protocol** — structured discovery and risk mapping for domains you have not worked in before — **High** **[Leaf]**
 
 ### T2.2 Core agent architecture — the internal organs — **High**
 
 * **T2.2.1 Agent patterns & orchestration** — ReAct, planners, workflows, state machines — **High** **[Leaf]**
 * **T2.2.2 Planning & decision design** — decomposition, constraints, heuristics, routing — **High** **[Leaf]**
 * **T2.2.3 Tool & environment architecture** — tool layer, permissions, sandboxes, environment models — **High** **[Leaf]**
+* **T2.2.4 Control-loop engineering & runtime contracts** — explicit loop state, stop policies, replan triggers, and enforcement checkpoints — **High** **[Leaf]**
 
 ### T2.3 Knowledge & memory architecture — state across time — **High**
 
@@ -72,6 +74,7 @@ Leaves are marked **[Leaf]** and have full playbooks in section B.
 * **T2.4.3 Multi-agent & human collaboration architecture** — roles, protocols, approvals, coordination — **Med** **[Leaf]**
 * **T2.4.4 Trust boundary & assumption-ledger architecture** — explicit trusted/untrusted components and enforceable assumptions — **High** **[Leaf]**
 * **T2.4.5 Execution governance boundary architecture** — policy decision + enforcement mediation for side effects — **High** **[Leaf]**
+* **T2.4.6 Formal assurance & critical-path verification** — model critical invariants, verify high-risk flows, and produce assurance evidence — **High** **[Leaf]**
 
 ### T2.5 Quality & visibility architecture — seeing and measuring — **High**
 
@@ -124,10 +127,12 @@ Leaves are marked **[Leaf]** and have full playbooks in section B.
 * **T4.1.3 Production observability & SLO management** — dashboards, alerts, audits, error budgets — **High** **[Leaf]**
 * **T4.1.4 Incident response, debugging & failure-mode playbooks** — common incidents + triage patterns — **High** **[Leaf]**
 * **T4.1.5 Safe degradation profiles & bounded autonomy operations** — deterministic behavior tightening under uncertainty/failure — **High** **[Leaf]**
+* **T4.1.6 Disaster recovery & continuity engineering** — RTO/RPO targets, failover strategy, restore drills, and resilience under regional/provider failures — **High** **[Leaf]**
 
 ### T4.2 Risk & compliance in production — staying allowed to exist — **High**
 
 * **T4.2.1 Security, privacy & compliance operations** — red teaming, audits, retention, legal/IP/vendor — **Med** **[Leaf]**
+* **T4.2.2 Supply-chain and dependency governance** — provider, model, prompt, and package risk controls with provenance and update discipline — **High** **[Leaf]**
 
 ### T4.3 People & org systems — adoption is a systems problem — **High**
 
@@ -475,6 +480,38 @@ Below, each leaf includes:
 
 ---
 
+## T2.1.3 Unfamiliar-domain onboarding protocol — **High**
+
+* **Definition:** A repeatable protocol for entering an unfamiliar domain: extracting constraints, mapping risks, discovering source-of-truth systems, and setting bounded delivery scope before implementation.
+* **Why it matters:** Most failures in unfamiliar domains come from wrong assumptions early, not from coding mistakes later.
+* **Typical failure modes:**
+
+  * Building with generic patterns that violate domain-specific constraints.
+  * Missing hard regulatory or safety requirements until late integration.
+  * Confusing stakeholder language and shipping the wrong capability.
+* **Key design decisions/tradeoffs:**
+
+  * Discovery depth vs delivery speed in first sprint.
+  * Broad interviews vs targeted risk-first discovery.
+  * Conservative boundary (assist mode) vs early automation.
+* **Observable metrics/signals:**
+
+  * Time to first validated domain constraint map.
+  * Number of late-stage requirement surprises.
+  * Rework ratio caused by misunderstood domain assumptions.
+* **Required prerequisites:** **T2.1.1**, **T2.1.2**, **T2.4.4**.
+* **Artifacts to produce:**
+
+  * Domain onboarding brief (glossary, constraints, critical workflows, risk register).
+  * Source-of-truth inventory with owners and freshness expectations.
+  * First-48h unknowns list with validation plan.
+* **Hands-on exercises:**
+
+  * *Beginner:* Pick an unfamiliar domain and produce a one-page onboarding brief with top 10 constraints.
+  * *Advanced:* Run a 5-day delivery spike in an unfamiliar domain, logging assumption changes and quantifying rework from corrected assumptions.
+
+---
+
 ## T2.2.1 Agent patterns & orchestration — **High**
 
 * **Definition:** High-level control designs: single-loop agents (ReAct), plan-then-execute, hierarchical agents (manager/workers), and workflow/state-machine orchestrations.
@@ -568,6 +605,38 @@ Below, each leaf includes:
 
   * *Beginner:* Design a tool catalog with read/write separation and explicit permissions.
   * *Advanced:* Implement a “world state” store that records tool effects and prevents duplicate actions via state checks.
+
+---
+
+## T2.2.4 Control-loop engineering & runtime contracts — **High**
+
+* **Definition:** Engineering the control loop as a contract-driven runtime subsystem: explicit state machine, loop budgets, stop/escape conditions, replan rules, and policy checkpoints before side effects.
+* **Why it matters:** Control loops are the execution spine. If loop semantics are implicit, reliability and safety degrade under complexity.
+* **Typical failure modes:**
+
+  * Loop logic spread across modules without a canonical state model.
+  * Retry/replan behavior creates hidden infinite loops.
+  * Side-effecting steps execute without pre-action policy mediation.
+* **Key design decisions/tradeoffs:**
+
+  * Event-driven state machine vs simpler linear loop.
+  * Aggressive replanning vs bounded deterministic fallback.
+  * Single global budget vs per-phase budgets (plan, act, verify, repair).
+* **Observable metrics/signals:**
+
+  * Termination reason distribution (`success`, `budget_exhausted`, `policy_denied`, `failed_validation`).
+  * Loop efficiency (useful actions / total steps).
+  * Recovery success rate after loop perturbations.
+* **Required prerequisites:** **T1.1.1**, **T1.2.3**, **T2.4.5**.
+* **Artifacts to produce:**
+
+  * Runtime state machine contract with transition invariants.
+  * Loop budget policy and stop-condition matrix.
+  * Failure/recovery matrix tied to typed errors and policy outcomes.
+* **Hands-on exercises:**
+
+  * *Beginner:* Implement a typed loop state model with explicit stop conditions and structured termination logs.
+  * *Advanced:* Add deterministic replan + recovery semantics with chaos scenarios; prove no unbounded loop behavior in stress tests.
 
 ---
 
@@ -824,6 +893,38 @@ Below, each leaf includes:
 
   * *Beginner:* Add a policy boundary that denies all write actions by default and emits structured decision logs.
   * *Advanced:* Implement PDP/PEP mediation with approval states and prove via tests that denied actions cannot execute through any runtime path.
+
+---
+
+## T2.4.6 Formal assurance & critical-path verification — **High**
+
+* **Definition:** Applying formal and semi-formal assurance methods to critical paths: invariant modeling, contract verification, model checking where feasible, and assurance cases linking claims to evidence.
+* **Why it matters:** For high-impact workflows, testing alone is insufficient. You need stronger guarantees for safety and correctness properties.
+* **Typical failure modes:**
+
+  * Critical invariants defined in prose but not machine-checked.
+  * Safety claims cannot be traced to executable evidence.
+  * Verification done once and not maintained after architecture changes.
+* **Key design decisions/tradeoffs:**
+
+  * Full formal methods (strong guarantees, high cost) vs targeted critical-path verification.
+  * Runtime assertions vs offline model/property checking.
+  * Proof strength vs development velocity under release pressure.
+* **Observable metrics/signals:**
+
+  * Coverage of critical paths with formal/contract verification.
+  * Number of invariant violations detected pre-release vs production.
+  * Assurance artifact freshness after system changes.
+* **Required prerequisites:** **T2.4.1**, **T2.4.4**, **T3.4.4**.
+* **Artifacts to produce:**
+
+  * Critical invariant catalog with severity and ownership.
+  * Verification specification for high-impact workflows.
+  * Assurance case linking claims -> tests/checks -> conformance evidence.
+* **Hands-on exercises:**
+
+  * *Beginner:* Write machine-checkable pre/postcondition contracts for two high-risk actions and enforce them in CI.
+  * *Advanced:* Model one critical workflow (state machine + invariants), run property checks, and publish an assurance case tied to release gates.
 
 ---
 
@@ -1566,6 +1667,38 @@ Below, each leaf includes:
 
 ---
 
+## T4.1.6 Disaster recovery & continuity engineering — **High**
+
+* **Definition:** Designing and operating continuity mechanisms for major failures: region/provider outages, datastore corruption, queue backlog collapse, and recovery with explicit `RTO`/`RPO` targets.
+* **Why it matters:** Reliable systems are defined by behavior during major failures, not only normal operation.
+* **Typical failure modes:**
+
+  * No restore path validated for critical state/artifacts.
+  * Failover plan exists but was never tested end-to-end.
+  * Recovery restores service but violates governance or data integrity guarantees.
+* **Key design decisions/tradeoffs:**
+
+  * Active-active vs active-passive failover.
+  * Fast recovery vs strict consistency and data integrity.
+  * Automated failover vs operator-controlled failover for high-risk domains.
+* **Observable metrics/signals:**
+
+  * Recovery time objective (RTO) attainment rate.
+  * Recovery point objective (RPO) data loss incidents.
+  * Restore drill success rate and time-to-stable-service.
+* **Required prerequisites:** **T4.1.1**, **T4.1.3**, **T3.3.1**.
+* **Artifacts to produce:**
+
+  * Continuity architecture doc with RTO/RPO targets.
+  * Backup/restore runbooks and failover decision matrix.
+  * Quarterly restore/failover drill reports.
+* **Hands-on exercises:**
+
+  * *Beginner:* Define RTO/RPO for one agent service and execute a backup-restore drill.
+  * *Advanced:* Simulate region/provider outage and demonstrate controlled failover with intact governance controls and post-recovery conformance checks.
+
+---
+
 ## T4.2.1 Security, privacy & compliance operations — **Med**
 
 * **Definition:** Ongoing security/compliance posture: red teaming, vulnerability management, access reviews, audit readiness, incident disclosure policies, legal/IP/vendor risk control.
@@ -1595,6 +1728,38 @@ Below, each leaf includes:
 
   * *Beginner:* Create a permission review checklist and apply it to your tool catalog.
   * *Advanced:* Build a red-team suite (prompt injections + tool misuse scenarios) that runs continuously in CI and gates releases.
+
+---
+
+## T4.2.2 Supply-chain and dependency governance — **High**
+
+* **Definition:** Governing external dependencies across models, providers, prompts, tools, libraries, and datasets: provenance, update controls, trust policies, and rollback readiness.
+* **Why it matters:** Complex agentic systems inherit risk from upstream components; uncontrolled dependency drift is a common root cause of production regressions.
+* **Typical failure modes:**
+
+  * Provider/model behavior changes silently degrade safety or quality.
+  * Third-party prompt/tool packages introduce insecure behavior.
+  * Dependency updates break contracts without compatibility detection.
+* **Key design decisions/tradeoffs:**
+
+  * Strict pinning and staged upgrades vs faster feature adoption.
+  * Central dependency governance vs team-level autonomy.
+  * Continuous upstream monitoring vs periodic review cadence.
+* **Observable metrics/signals:**
+
+  * Dependency drift detection time.
+  * % dependencies with provenance metadata and owner assignment.
+  * Regression incidents traced to upstream changes.
+* **Required prerequisites:** **T4.1.2**, **T2.4.4**, **T4.2.1**.
+* **Artifacts to produce:**
+
+  * Dependency inventory with provenance, owner, and risk class.
+  * Update policy (canary, compatibility checks, rollback criteria).
+  * Upstream change monitoring and alerting plan.
+* **Hands-on exercises:**
+
+  * *Beginner:* Build a dependency inventory for your agent stack and classify top risks.
+  * *Advanced:* Implement staged dependency rollout with automatic conformance re-checks and rollback on threshold breaches.
 
 ---
 
@@ -1670,23 +1835,28 @@ Below, each leaf includes:
 * ✅ **Problem framing** — **T2.1.1**
 * ✅ **Decomposition** — **T2.2.2**, **T3.1.2**
 * ✅ **Planning** — **T2.2.2**, **T3.1.2**
-* ✅ **Tool use** — **T1.2.1**, **T2.2.3**, **T3.2.1–T3.2.4**
+* ✅ **Tool use** — **T1.2.1**, **T2.2.3**, **T3.2.1–T3.2.5**
 * ✅ **Memory/state** — **T2.3.1**, **T3.3.1–T3.3.3**
-* ✅ **Control loops** — **T1.1.1**, **T2.2.1**, **T3.1.2**
+* ✅ **Control loops** — **T1.1.1**, **T2.2.1**, **T2.2.4**, **T3.1.2**
 * ✅ **Validation/judge** — **T2.4.1**, **T3.4.1**
 * ✅ **Repair** — **T2.4.1**, **T3.1.2**
 * ✅ **Safety** — **T2.4.2**, **T3.2.3**, **T4.2.1**
 * ✅ **Eval** — **T2.5.1**, **T3.4.2–T3.4.3**
 * ✅ **Observability** — **T2.5.1**, **T3.3.1**, **T4.1.3**
-* ✅ **Reliability** — **T1.2.3**, **T4.1.1**, **T4.1.4**
-* ✅ **Deployment** — **T4.1.1**, **T4.1.2**
-* ✅ **Governance** — **T2.3.3**, **T4.2.1**, **T4.3.1**
+* ✅ **Reliability** — **T1.2.3**, **T4.1.1**, **T4.1.4**, **T4.1.6**
+* ✅ **Deployment** — **T4.1.1**, **T4.1.2**, **T4.1.6**
+* ✅ **Governance** — **T2.3.3**, **T4.2.1**, **T4.2.2**, **T4.3.1**
+* ✅ **Unfamiliar-domain transfer protocol** — **T2.1.3**
+* ✅ **Control-loop runtime contracts** — **T2.2.4**
+* ✅ **Formal assurance for critical paths** — **T2.4.6**
 * ✅ **Trust boundaries & explicit assumptions** — **T2.4.4**
 * ✅ **Execution governance mediation (policy decision + enforcement)** — **T2.4.5**
 * ✅ **Effect-typed side effects / commitment semantics** — **T3.2.5**
 * ✅ **Conformance scorecards (hard invariants + utility evidence)** — **T3.4.4**
 * ✅ **Eval protocol rigor (paired-seed, ablation, metamorphic)** — **T3.4.5**
 * ✅ **Safe degradation profiles & bounded autonomy operations** — **T4.1.5**
+* ✅ **Disaster recovery & continuity engineering** — **T4.1.6**
+* ✅ **Supply-chain and dependency governance** — **T4.2.2**
 * ✅ **Cost/latency** — **T3.5.2**, **T4.1.3**
 * ✅ **Human-in-the-loop** — **T1.3.1**, **T2.4.3**
 * ✅ **Multi-agent coordination** — **T2.4.3**, **T3.5.1**
@@ -1695,7 +1865,7 @@ Below, each leaf includes:
 
 These are *still likely gaps or fast-moving areas* after the latest coverage pass:
 
-* **Formal verification for agent actions** (contracts, model checking for critical workflows) — partly in **T2.4.1**, but could be its own deep branch (Confidence: Low/Med)
+* **Full-system formal guarantees beyond critical-path verification** — critical-path assurance is covered in **T2.4.6**, but whole-system proofs remain difficult in practice (Low/Med)
 * **Model internals interpretability** (probing, logit lens, mechanistic interpretability) — mostly research-oriented (Low)
 * **On-device / edge agents** (privacy + latency + offline constraints) — partially in **T4.1.1**, could expand (Med)
 * **Regulatory regimes evolving quickly** (AI Act-like frameworks, sector-specific regs) — mentioned in **T1.3.3**/**T4.2.1** but needs ongoing updates (Low confidence because fast-moving)
@@ -1738,12 +1908,14 @@ This plan is **intentionally intense**. If you’re a true beginner, treat the f
 
 ### Week 3: Architecture discipline
 
-* Study/design: **T2.1.1**, **T2.1.2**, **T2.2.1**, **T2.4.1**, **T2.4.4**, **T2.4.5**
+* Study/design: **T2.1.1**, **T2.1.2**, **T2.1.3**, **T2.2.1**, **T2.2.4**, **T2.4.1**, **T2.4.4**, **T2.4.5**
 * Checkpoint:
 
   * One-page use-case + automation boundary
+  * Unfamiliar-domain onboarding brief (constraints, glossary, risk map)
   * Metrics + acceptance criteria (even if rough)
   * Validator + repair path implemented
+  * Loop contract with explicit state transitions and stop budgets
   * Trust-boundary diagram + first policy mediation path in code
 
 ### Week 4: Observability + basic safety
@@ -1775,20 +1947,23 @@ This plan is **intentionally intense**. If you’re a true beginner, treat the f
 
 ### Days 46–55: Human workflows + enterprise realism
 
-* Implement: **T1.3.1**, **T2.4.3**, **T3.2.4**
+* Implement: **T1.3.1**, **T2.4.3**, **T3.2.4**, **T2.4.6**, **T4.2.2**
 * Checkpoint:
 
   * Approval workflow for write actions
   * Audit log for approvals and changes
+  * Critical-path invariant checks wired into CI
+  * Dependency inventory with provenance and rollout policy
   * Clear UX for uncertainty + escalation
 
 ### Days 56–60: Deployment + version discipline
 
-* Implement: **T4.1.1**, **T4.1.2**, **T3.3.1**
+* Implement: **T4.1.1**, **T4.1.2**, **T4.1.6**, **T3.3.1**
 * Checkpoint:
 
   * Deployed service (even small)
   * Versioned prompts/models/tools recorded per run
+  * RTO/RPO defined and one restore/failover drill executed
   * Rollback plan documented and tested in staging
 
 **60-day milestone:** You can ship changes without crossing fingers.
@@ -1801,7 +1976,7 @@ This plan is **intentionally intense**. If you’re a true beginner, treat the f
 
 ### Days 61–75: Production observability + SLOs
 
-* Implement: **T4.1.3**, **T2.1.2**, **T3.5.2**, **T4.1.5**
+* Implement: **T4.1.3**, **T2.1.2**, **T3.5.2**, **T4.1.5**, **T4.1.6**
 * Checkpoint:
 
   * Dashboards + alerts tied to SLOs
@@ -1820,20 +1995,21 @@ This plan is **intentionally intense**. If you’re a true beginner, treat the f
 
 ### Days 86–90: Org readiness + frontier awareness
 
-* Process: **T4.3.1**, **T4.4.1**, plus revisit weakest areas
+* Process/capstone: **T4.3.1**, **T4.4.1**, **T2.1.3**, plus revisit weakest areas
 * Checkpoint:
 
   * Operating model doc (ownership, reviews, support)
   * Frontier risk register started and reviewed
+  * Unfamiliar-domain capstone completed with reliability and governance evidence
   * “Known limitations” published to users/stakeholders
 
-**90-day milestone:** You can plausibly run an agent in production without it becoming a haunted vending machine.
+**90-day milestone:** You can run an agent in production and transfer the approach to at least one unfamiliar domain with measurable reliability and governance.
 
 ---
 
 ## Minimum project portfolio to demonstrate competence
 
-Aim for **3–5 projects** that map clearly to taxonomy IDs.
+Aim for **5–8 projects** that map clearly to taxonomy IDs.
 
 1. **Bounded Task Agent (single-agent)**
 
@@ -1864,6 +2040,16 @@ Aim for **3–5 projects** that map clearly to taxonomy IDs.
 
    * PDP/PEP mediation, effect-typed actions, degradation profiles, executable conformance report
    * Maps: **T2.4.5**, **T3.2.5**, **T3.4.4**, **T3.4.5**, **T4.1.5**
+
+7. **Unfamiliar-Domain Delivery Capstone**
+
+   * 1-week constrained delivery in a new domain with onboarding protocol, loop contract, and postmortem
+   * Maps: **T2.1.3**, **T2.2.4**, **T4.1.4**
+
+8. **Continuity + Failover Drill Program**
+
+   * RTO/RPO definition, restore tests, failover simulation, and post-recovery conformance checks
+   * Maps: **T4.1.6**, **T4.1.3**, **T3.4.4**
 
 ---
 
