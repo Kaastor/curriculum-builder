@@ -67,6 +67,8 @@ Leaves are marked **[Leaf]** and have full playbooks in section B.
 * **T2.4.1 Validation & repair architecture** — validators, judges, fallbacks, escalations — **High** **[Leaf]**
 * **T2.4.2 Safety architecture** — guardrails, policy enforcement, sandboxing strategy — **High** **[Leaf]**
 * **T2.4.3 Multi-agent & human collaboration architecture** — roles, protocols, approvals, coordination — **Med** **[Leaf]**
+* **T2.4.4 Trust boundary & assumption-ledger architecture** — explicit trusted/untrusted components and enforceable assumptions — **High** **[Leaf]**
+* **T2.4.5 Execution governance boundary architecture** — policy decision + enforcement mediation for side effects — **High** **[Leaf]**
 
 ### T2.5 Quality & visibility architecture — seeing and measuring — **High**
 
@@ -87,6 +89,7 @@ Leaves are marked **[Leaf]** and have full playbooks in section B.
 * **T3.2.2 Tool adapters & side-effect-safe execution** — idempotency, retries, transactional patterns — **High** **[Leaf]**
 * **T3.2.3 Sandboxing & permissioning implementation** — OS/code/browser sandboxes, secrets, scopes — **High** **[Leaf]**
 * **T3.2.4 Enterprise integrations & automation** — SaaS connectors, RPA, queues, approval gates — **Med** **[Leaf]**
+* **T3.2.5 Effect typing & commitment semantics implementation** — classify action impact and bind policy/approval/idempotency to effect class — **High** **[Leaf]**
 
 ### T3.3 Memory & knowledge implementation — storage that doesn’t rot — **High**
 
@@ -99,6 +102,8 @@ Leaves are marked **[Leaf]** and have full playbooks in section B.
 * **T3.4.1 Validation & judging implementation** — tests/rules + LLM judges + calibration — **High** **[Leaf]**
 * **T3.4.2 Evaluation harness & CI** — datasets, simulations, regression gates — **High** **[Leaf]**
 * **T3.4.3 Online evaluation & experimentation** — A/B tests, bandits, human feedback — **Med** **[Leaf]**
+* **T3.4.4 Conformance reporting & scorecards** — executable evidence for hard invariants + utility tradeoffs — **High** **[Leaf]**
+* **T3.4.5 Evaluation protocol rigor (causal + comparable)** — paired-seed comparisons, ablations, metamorphic checks — **High** **[Leaf]**
 
 ### T3.5 Scale & cost implementation — performance without bankruptcy — **High**
 
@@ -115,6 +120,7 @@ Leaves are marked **[Leaf]** and have full playbooks in section B.
 * **T4.1.2 Versioning, release management & rollback** — model/prompt/tool versions, canaries, rollback — **High** **[Leaf]**
 * **T4.1.3 Production observability & SLO management** — dashboards, alerts, audits, error budgets — **High** **[Leaf]**
 * **T4.1.4 Incident response, debugging & failure-mode playbooks** — common incidents + triage patterns — **High** **[Leaf]**
+* **T4.1.5 Safe degradation profiles & bounded autonomy operations** — deterministic behavior tightening under uncertainty/failure — **High** **[Leaf]**
 
 ### T4.2 Risk & compliance in production — staying allowed to exist — **High**
 
@@ -754,6 +760,70 @@ Below, each leaf includes:
 
 ---
 
+## T2.4.4 Trust boundary & assumption-ledger architecture — **High**
+
+* **Definition:** Defining explicit trust boundaries (what is trusted vs untrusted) and maintaining an assumption ledger that states why each boundary is considered safe and how it is verified.
+* **Why it matters:** Reliability claims are meaningless if you cannot state which components are allowed to be wrong and which components must enforce invariants.
+* **Typical failure modes:**
+
+  * Untrusted tool output treated as authoritative truth.
+  * Implicit trust in prompts/model behavior without enforcement.
+  * Architecture drift bypasses the intended mediation path.
+* **Key design decisions/tradeoffs:**
+
+  * Granularity: coarse boundary diagrams vs component-level trust annotations.
+  * Static assumptions (simple) vs runtime-validated assumptions (safer).
+  * Single centralized ledger vs per-team ledgers with federation rules.
+* **Observable metrics/signals:**
+
+  * Coverage of components with explicit trust classification.
+  * Number of incidents caused by violated/untracked assumptions.
+  * % of high-risk paths with boundary enforcement tests.
+* **Required prerequisites:** **T1.3.2**, **T2.2.3**, **T2.4.2**.
+* **Artifacts to produce:**
+
+  * Trust-boundary diagram with trusted/untrusted data flow labels.
+  * Assumption ledger (assumption, owner, validation test, review cadence).
+  * Boundary bypass regression tests.
+* **Hands-on exercises:**
+
+  * *Beginner:* Draw trust boundaries for one agent workflow and annotate where untrusted data enters and where policy is enforced.
+  * *Advanced:* Create an assumption manifest plus tests that fail when a new tool path bypasses policy mediation.
+
+---
+
+## T2.4.5 Execution governance boundary architecture — **High**
+
+* **Definition:** Designing a first-class governance boundary that separates **policy decision** (allow/deny/requires approval) from **enforcement** (blocking/allowing actual side effects).
+* **Why it matters:** Prompt-level rules are advisory. A governance boundary is the enforceable control plane for real-world actions.
+* **Typical failure modes:**
+
+  * Decision and enforcement mixed in one component, creating bypass paths.
+  * Inconsistent rule application across tools.
+  * “Requires approval” decisions not persisted as protocol artifacts.
+* **Key design decisions/tradeoffs:**
+
+  * PDP/PEP split (more explicit) vs embedded checks (simpler but riskier).
+  * Declarative policy rules vs imperative rule code.
+  * Synchronous enforcement vs queued enforcement with human gates.
+* **Observable metrics/signals:**
+
+  * Policy decision distribution (allow/deny/approval).
+  * Blocked high-impact action attempts.
+  * Approval latency and approval override rate.
+* **Required prerequisites:** **T2.4.2**, **T1.3.1**, **T3.2.3**.
+* **Artifacts to produce:**
+
+  * `PolicyInput`/`PolicyDecision` schema contracts.
+  * Governance boundary architecture doc (decision path + enforcement path).
+  * Approval protocol artifacts (request/decision/audit trail).
+* **Hands-on exercises:**
+
+  * *Beginner:* Add a policy boundary that denies all write actions by default and emits structured decision logs.
+  * *Advanced:* Implement PDP/PEP mediation with approval states and prove via tests that denied actions cannot execute through any runtime path.
+
+---
+
 ## T2.5.1 Observability & evaluation architecture — **High**
 
 * **Definition:** Designing the measurement nervous system: tracing, logs, audit trails, quality evaluation pipelines, feedback capture, and dashboards tied to SLOs.
@@ -978,6 +1048,38 @@ Below, each leaf includes:
 
 ---
 
+## T3.2.5 Effect typing & commitment semantics implementation — **High**
+
+* **Definition:** Implementing explicit effect classes for actions (for example `READ`, `REVERSIBLE`, `IRREVERSIBLE`, `HIGH_IMPACT`) and binding execution controls to those classes.
+* **Why it matters:** Side effects are not equal. Effect-aware execution prevents treating “read docs” and “delete customer data” as equivalent operations.
+* **Typical failure modes:**
+
+  * Tool names used as risk proxy; dangerous operations hidden behind benign names.
+  * Retries on non-idempotent high-impact actions.
+  * Missing approval requirements for irreversible commits.
+* **Key design decisions/tradeoffs:**
+
+  * Central effect classifier vs per-tool local classification.
+  * Static effect classes vs context-dependent dynamic effects.
+  * Strict fail-closed behavior vs adaptive fallback under uncertainty.
+* **Observable metrics/signals:**
+
+  * Action distribution by effect class.
+  * Policy denials and approval requests by effect class.
+  * Duplicate irreversible action incidents.
+* **Required prerequisites:** **T1.2.1**, **T3.2.2**, **T2.4.5**.
+* **Artifacts to produce:**
+
+  * Effect taxonomy enum and classifier rules.
+  * Idempotency/approval/trace requirements matrix by effect class.
+  * Regression tests asserting effect classification and policy routing.
+* **Hands-on exercises:**
+
+  * *Beginner:* Classify existing tools into effect classes and enforce stricter logging for non-read actions.
+  * *Advanced:* Implement context-aware effect classification (for example update action classified as `HIGH_IMPACT` when target record is production-critical) and test policy outcomes.
+
+---
+
 ## T3.3.1 State persistence & run bookkeeping — **High**
 
 * **Definition:** Recording everything needed to reproduce and audit agent behavior: run IDs, step logs, tool inputs/outputs, versions, and checkpoints.
@@ -1167,6 +1269,70 @@ Below, each leaf includes:
 
   * *Beginner:* Add a thumbs-up/down feedback capture and review weekly.
   * *Advanced:* Run an A/B test comparing two orchestration strategies and implement auto-rollback when guardrails degrade.
+
+---
+
+## T3.4.4 Conformance reporting & scorecards — **High**
+
+* **Definition:** Producing executable conformance artifacts that report hard invariants (safety/boundedness/compliance) and utility outcomes (quality/latency/cost) for each release or run cohort.
+* **Why it matters:** Teams often claim “safe and reliable” without measurable evidence. Conformance scorecards turn claims into auditable facts.
+* **Typical failure modes:**
+
+  * Compliance evidence spread across dashboards/spreadsheets with no single source of truth.
+  * Utility metrics improve while hard invariants silently regress.
+  * Reports are manually produced and therefore stale or incomplete.
+* **Key design decisions/tradeoffs:**
+
+  * Per-run vs per-release conformance granularity.
+  * Hard gates on invariants vs warning-only mode for experimentation.
+  * Human-readable reports vs machine-consumable artifacts (best: both).
+* **Observable metrics/signals:**
+
+  * % releases with complete conformance artifact.
+  * Hard invariant pass rate over time.
+  * Ratio of blocked deployments due to conformance failures.
+* **Required prerequisites:** **T3.4.1**, **T3.4.2**, **T4.2.1**.
+* **Artifacts to produce:**
+
+  * Conformance schema (`invariants`, `utility_metrics`, `metadata`, `exceptions`).
+  * Automated conformance generation in CI/CD.
+  * Release gate policy referencing conformance thresholds.
+* **Hands-on exercises:**
+
+  * *Beginner:* Create a conformance JSON for each CI run with at least 5 invariant checks and 3 utility metrics.
+  * *Advanced:* Gate deployment on conformance rules and implement exception workflow requiring explicit risk sign-off.
+
+---
+
+## T3.4.5 Evaluation protocol rigor (causal + comparable) — **High**
+
+* **Definition:** Designing eval protocols that produce comparable and causal insights: paired-seed comparisons, controlled budgets, ablations, and metamorphic tests for harness quality.
+* **Why it matters:** Raw benchmark wins can be artifacts of randomness, budget differences, or data leakage. Protocol rigor prevents false confidence.
+* **Typical failure modes:**
+
+  * Comparing two methods with unequal token/tool budgets.
+  * Reporting average scores without variance or confidence intervals.
+  * Eval harness bugs mistaken for model/runtime improvements.
+* **Key design decisions/tradeoffs:**
+
+  * Paired-seed deterministic comparisons vs broader random stress tests.
+  * Aggregate metrics simplicity vs per-scenario diagnostics depth.
+  * Fast smoke eval cadence vs slower causal deep-dive cadence.
+* **Observable metrics/signals:**
+
+  * Variance across repeated runs on same scenarios.
+  * Ablation deltas that isolate component contribution.
+  * Metamorphic test pass rate for harness integrity.
+* **Required prerequisites:** **T3.4.2**, **T2.1.2**, **T2.5.1**.
+* **Artifacts to produce:**
+
+  * Eval protocol spec (budget parity, seeding policy, statistical reporting).
+  * Ablation plan template and comparator script.
+  * Metamorphic test suite for evaluator correctness.
+* **Hands-on exercises:**
+
+  * *Beginner:* Run paired-seed comparisons for two prompt variants under equal budgets and report variance, not just means.
+  * *Advanced:* Build a causal ablation matrix (remove one subsystem at a time) and include metamorphic tests that intentionally perturb inputs to validate harness sensitivity.
 
 ---
 
@@ -1365,6 +1531,38 @@ Below, each leaf includes:
 
 ---
 
+## T4.1.5 Safe degradation profiles & bounded autonomy operations — **High**
+
+* **Definition:** Operating with explicit runtime profiles (for example `NORMAL`, `RESTRICTED`, `SAFE_HOLD`) that monotonically tighten admissible actions as uncertainty, incidents, or policy risk increase.
+* **Why it matters:** Under stress, many systems fail open. Safe degradation ensures systems fail predictably and conservatively.
+* **Typical failure modes:**
+
+  * “Safe mode” exists in docs but is not executable in runtime.
+  * Profile transitions are ad hoc and irreversible without operator visibility.
+  * High-impact actions still execute in degraded states.
+* **Key design decisions/tradeoffs:**
+
+  * Triggering strategy: automatic thresholds vs manual operator control vs hybrid.
+  * Profile strictness granularity (few broad profiles vs many specific profiles).
+  * Recovery policy: immediate re-enable vs staged requalification.
+* **Observable metrics/signals:**
+
+  * Count/duration of degraded-profile periods.
+  * Number of blocked high-impact actions while degraded.
+  * MTTR from degraded mode back to normal with explicit requalification.
+* **Required prerequisites:** **T4.1.3**, **T4.1.4**, **T2.4.5**.
+* **Artifacts to produce:**
+
+  * Profile policy spec with monotonic admissibility rules.
+  * Transition matrix (trigger, required evidence, operator controls).
+  * Profile transition audit logs and automated tests.
+* **Hands-on exercises:**
+
+  * *Beginner:* Add a `RESTRICTED` mode that disables write/high-impact tools and expose mode status in dashboards.
+  * *Advanced:* Implement automated profile switching based on anomaly + policy signals, with monotonicity checks and human override protocol.
+
+---
+
 ## T4.2.1 Security, privacy & compliance operations — **Med**
 
 * **Definition:** Ongoing security/compliance posture: red teaming, vulnerability management, access reviews, audit readiness, incident disclosure policies, legal/IP/vendor risk control.
@@ -1480,13 +1678,19 @@ Below, each leaf includes:
 * ✅ **Reliability** — **T1.2.3**, **T4.1.1**, **T4.1.4**
 * ✅ **Deployment** — **T4.1.1**, **T4.1.2**
 * ✅ **Governance** — **T2.3.3**, **T4.2.1**, **T4.3.1**
+* ✅ **Trust boundaries & explicit assumptions** — **T2.4.4**
+* ✅ **Execution governance mediation (policy decision + enforcement)** — **T2.4.5**
+* ✅ **Effect-typed side effects / commitment semantics** — **T3.2.5**
+* ✅ **Conformance scorecards (hard invariants + utility evidence)** — **T3.4.4**
+* ✅ **Eval protocol rigor (paired-seed, ablation, metamorphic)** — **T3.4.5**
+* ✅ **Safe degradation profiles & bounded autonomy operations** — **T4.1.5**
 * ✅ **Cost/latency** — **T3.5.2**, **T4.1.3**
 * ✅ **Human-in-the-loop** — **T1.3.1**, **T2.4.3**
 * ✅ **Multi-agent coordination** — **T2.4.3**, **T3.5.1**
 
 ## Likely missing or emerging topics (explicit list)
 
-These are *not omitted*—they’re mostly embedded inside leaves, but calling them out helps completeness:
+These are *still likely gaps or fast-moving areas* after the latest coverage pass:
 
 * **Formal verification for agent actions** (contracts, model checking for critical workflows) — partly in **T2.4.1**, but could be its own deep branch (Confidence: Low/Med)
 * **Model internals interpretability** (probing, logit lens, mechanistic interpretability) — mostly research-oriented (Low)
@@ -1531,12 +1735,13 @@ This plan is **intentionally intense**. If you’re a true beginner, treat the f
 
 ### Week 3: Architecture discipline
 
-* Study/design: **T2.1.1**, **T2.1.2**, **T2.2.1**, **T2.4.1**
+* Study/design: **T2.1.1**, **T2.1.2**, **T2.2.1**, **T2.4.1**, **T2.4.4**, **T2.4.5**
 * Checkpoint:
 
   * One-page use-case + automation boundary
   * Metrics + acceptance criteria (even if rough)
   * Validator + repair path implemented
+  * Trust-boundary diagram + first policy mediation path in code
 
 ### Week 4: Observability + basic safety
 
@@ -1557,12 +1762,13 @@ This plan is **intentionally intense**. If you’re a true beginner, treat the f
 
 ### Days 31–45: Quality engineering + CI
 
-* Implement: **T3.4.1**, **T3.4.2**, **T2.5.1**
+* Implement: **T3.4.1**, **T3.4.2**, **T2.5.1**, **T3.4.4**, **T3.4.5**
 * Checkpoint:
 
   * Offline eval harness with at least 100 cases
   * CI gate that blocks merges on regressions
   * Judge calibration experiment (basic)
+  * Conformance artifact generated per CI run with hard invariant checks
 
 ### Days 46–55: Human workflows + enterprise realism
 
@@ -1592,12 +1798,13 @@ This plan is **intentionally intense**. If you’re a true beginner, treat the f
 
 ### Days 61–75: Production observability + SLOs
 
-* Implement: **T4.1.3**, **T2.1.2**, **T3.5.2**
+* Implement: **T4.1.3**, **T2.1.2**, **T3.5.2**, **T4.1.5**
 * Checkpoint:
 
   * Dashboards + alerts tied to SLOs
   * Cost per task monitored; anomaly alerts
   * Latency budget enforced
+  * `RESTRICTED`/`SAFE_HOLD` profile transitions tested in staging
 
 ### Days 76–85: Incident response + red teaming
 
@@ -1650,6 +1857,11 @@ Aim for **3–5 projects** that map clearly to taxonomy IDs.
    * Manager-worker + reviewer, with deadlock prevention and conflict resolution
    * Maps: **T2.4.3**, **T3.5.1**, **T4.1.4**
 
+6. **Governance Boundary + Conformance Harness**
+
+   * PDP/PEP mediation, effect-typed actions, degradation profiles, executable conformance report
+   * Maps: **T2.4.5**, **T3.2.5**, **T3.4.4**, **T3.4.5**, **T4.1.5**
+
 ---
 
 ## Final note on “expert-level”
@@ -1657,7 +1869,9 @@ Aim for **3–5 projects** that map clearly to taxonomy IDs.
 In agentic engineering, “expert” is less about clever prompts and more about:
 
 * **Contracts** (schemas, tools, permissions)
+* **Boundaries** (trust assumptions, policy mediation, effect typing)
 * **Measurement** (evals, traces, SLOs)
+* **Conformance evidence** (hard invariants + utility scorecards)
 * **Recovery** (repair loops, safe mode, rollbacks)
 * **Governance** (privacy, audits, org process)
 * **Operational maturity** (incidents, regression control)
