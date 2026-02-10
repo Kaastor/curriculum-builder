@@ -6,6 +6,8 @@ For pass/fail graduation criteria for production readiness, use:
 - `docs/learning/agentic-readiness-standard.md`
 For system-level integration model, contracts, and the canonical 30/60/90 execution plan, use:
 - `docs/learning/agentic-system.md`
+For staff-level judgment, decision quality, and anti-pattern playbooks, use:
+- `docs/learning/agentic-manifesto.md`
 
 ## Context assumptions (since placeholders weren’t filled)
 

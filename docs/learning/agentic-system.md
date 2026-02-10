@@ -4,6 +4,7 @@ This document is a **companion reference** to the Agentic Engineering taxonomy. 
 
 * The taxonomy is the **source of truth for topic depth** (all “what” and “why”).
 * This document is the **source of truth for operational integration** (the “how it fits together,” “what artifacts exist,” “what contracts must hold,” and “how to decide under ambiguity”).
+* For the **judgment/philosophy layer** (decision quality under ambiguity, anti-pattern recognition, and staff calibration), use `docs/learning/agentic-manifesto.md`.
 * When you need depth, jump to the referenced taxonomy IDs (e.g., **T2.2.4**, **T3.4.5**). This doc intentionally avoids reprinting leaf content.
 
 ### Usage modes
