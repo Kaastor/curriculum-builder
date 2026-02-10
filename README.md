@@ -64,6 +64,7 @@ Supporting docs:
 - `docs/adr/README.md`
 - `docs/agentic-engineering-atlas.md`
 - `docs/learning/agentic-mental-map.md`
+- `docs/learning/agentic-system.md`
 - `docs/learning/agentic-taxonomy.md`
 - `docs/learning/agentic-readiness-standard.md`
 - `plans/agentic_engineering_learning_roadmap.md`
